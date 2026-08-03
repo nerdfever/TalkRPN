@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    The manifest is the app's declaration to the operating system: what hardware it
+    needs, what it may do, what it is called, and which screens it offers.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        A watch app, and only a watch app. Marking the feature required means the app
+        is never offered to phones, tablets, TV, Auto or XR.
+
+        (required="true" is already the default for uses-feature, but it is stated
+        explicitly here because it is a deliberate decision rather than an oversight.)
+    -->
+    <uses-feature
+        android:name="android.hardware.type.watch"
+        android:required="true" />
+
+    <!-- Recording audio is the entire point of this build. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+        NOTE: android.permission.INTERNET is deliberately absent, and must stay absent.
+        Without it this process cannot open a socket at all, which makes "no cloud
+        calls" a property enforced by the operating system rather than a promise.
+
+        The caveat worth remembering: the recognition service runs in its *own*
+        process with its own permissions. Our lack of INTERNET stops us reaching the
+        network; it does not stop the recognizer doing so. That is why the app insists
+        on createOnDeviceSpeechRecognizer rather than trusting the default recognizer.
+    -->
+
+    <!--
+        Since Android 11 an app cannot see other installed packages by default.
+        Without this declaration, querying for installed recognition services returns
+        an empty list even when several are present - which would make the probe
+        report "none installed" on a device that has them.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.TalkRPN">
+
+        <!-- "Standalone" means the app works on its own, with no companion phone app. -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+
+        <!--
+            android:exported="true" is required for anything the launcher can start
+            on modern Android; without it the system refuses to install the app.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.TalkRPN"
+            android:exported="true">
+
+            <!-- This filter is what puts the app in the watch's app list. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

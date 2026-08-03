@@ -1,0 +1,28 @@
+# Build output — regenerated on every build, never worth storing.
+build/
+.cxx/
+
+# Gradle's local caches and daemon state.
+.gradle/
+
+# Kotlin compiler's per-project scratch state.
+.kotlin/
+
+# Machine-specific SDK and build-output paths. Must not be shared.
+local.properties
+
+# Captured by run.ps1 -Screenshot; regenerated on demand.
+screenshot.png
+
+# Android Studio / IntelliJ workspace files.
+.idea/
+*.iml
+captures/
+
+# Signing material — keep private keys out of version control, always.
+*.jks
+*.keystore
+
+# OS clutter.
+.DS_Store
+Thumbs.db

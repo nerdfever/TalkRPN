@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    User-visible text lives here rather than in the code, so it can be proofread in one
+    place and translated later by adding values-<language>/strings.xml alongside this file.
+-->
+<resources>
+
+    <!-- The name shown under the icon in the watch's app list. Kept short: the launcher truncates. -->
+    <string name="app_name">TalkRPN</string>
+</resources>

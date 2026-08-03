@@ -1,0 +1,52 @@
+# Gradle "version catalog" — the single place where every dependency version lives.
+# Build files refer to entries here as libs.something, so upgrading a library is a
+# one-line change in this file rather than a hunt through build scripts.
+
+[versions]
+
+# Build tooling.
+agp = "9.3.1"                    # Android Gradle Plugin — turns our sources into an APK.
+kotlin = "2.4.10"                # Kotlin compiler; also supplies the Compose compiler plugin.
+
+# AndroidX runtime libraries.
+coreKtx = "1.19.0"               # Kotlin conveniences over the core Android framework.
+activityCompose = "1.13.0"       # Lets an Activity host Compose UI via setContent { }.
+composeBom = "2026.06.01"        # "Bill of materials": picks mutually-compatible Compose versions.
+wearCompose = "1.6.2"            # Compose components styled and sized for round watch screens.
+wearToolingPreview = "1.0.0"     # Watch device definitions for @Preview in the IDE.
+
+# Offline speech recognition. Kaldi-based, runs entirely on-device with a bundled
+# model - no network code exists in it, which is the whole reason it is here.
+vosk = "0.3.75"
+
+[libraries]
+
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+
+# The BOM carries no code — it only pins versions for the androidx.compose.* artifacts below,
+# which is why those are declared without a version of their own.
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+
+# Wear-specific Compose. Note these replace the phone/tablet Material library —
+# a watch app uses androidx.wear.compose.material3, not androidx.compose.material3.
+androidx-wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wearCompose" }
+androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wearCompose" }
+androidx-wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
+
+# Vosk ships native Kaldi libraries plus a thin Java API.
+vosk-android = { group = "com.alphacephei", name = "vosk-android", version.ref = "vosk" }
+
+[plugins]
+
+android-application = { id = "com.android.application", version.ref = "agp" }
+
+# No Kotlin plugin here: from AGP 9.0 onward the Android plugin compiles Kotlin itself,
+# so org.jetbrains.kotlin.android is neither needed nor wanted.
+#
+# The Compose compiler is still a separate plugin, and its version must match the
+# Kotlin compiler it plugs into — hence the shared "kotlin" version above.
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

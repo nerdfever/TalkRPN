@@ -1,0 +1,103 @@
+// VSCode tasks for this project.
+//
+// "Deploy to watch" is the default build task, so Ctrl+Shift+B builds, installs and
+// launches in one keystroke. The rest are under Terminal > Run Task.
+//
+// Each build task carries the same problem matcher, which teaches VSCode the shape of a
+// Kotlin compiler diagnostic:
+//   e: file:///G:/.../MainActivity.kt:43:5 Unresolved reference: foo
+// so errors become clickable entries in the Problems panel rather than terminal scroll.
+
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // Build, install and launch. Starts the emulator first if nothing is connected.
+            "label": "Deploy to watch",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/run.ps1",
+                "-Emulator"
+            ],
+
+            // Being the default build task is what binds this to Ctrl+Shift+B.
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+            "problemMatcher": {
+                "owner": "kotlin",
+                "fileLocation": ["autoDetect", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^[ew]: file:///(.*):(\\d+):(\\d+) (.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "message": 4
+                }
+            }
+        },
+        {
+            // Same, plus pull a screenshot back into the project folder afterwards.
+            "label": "Deploy and screenshot",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/run.ps1",
+                "-Emulator",
+                "-Screenshot"
+            ],
+            "group": "build",
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+            "problemMatcher": {
+                "owner": "kotlin",
+                "fileLocation": ["autoDetect", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^[ew]: file:///(.*):(\\d+):(\\d+) (.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "message": 4
+                }
+            }
+        },
+        {
+            // Compile only - no device needed. The fastest way to check that a change
+            // builds before bothering with an install.
+            "label": "Build only",
+            "type": "shell",
+            "command": "${workspaceFolder}/gradlew.bat",
+            "args": ["assembleDebug"],
+            "group": "build",
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+            "problemMatcher": {
+                "owner": "kotlin",
+                "fileLocation": ["autoDetect", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^[ew]: file:///(.*):(\\d+):(\\d+) (.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "message": 4
+                }
+            }
+        },
+        {
+            // Tail the device log for this app only. Runs until you stop it.
+            "label": "Show app log",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/run.ps1",
+                "-Log"
+            ],
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated" }
+        }
+    ]
+}

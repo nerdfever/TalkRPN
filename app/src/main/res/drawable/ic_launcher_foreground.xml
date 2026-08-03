@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    The glyph layer of the launcher icon: a white "H", drawn as vector geometry so it
+    stays sharp at every screen density without shipping a folder of PNGs.
+
+    Adaptive icons are always authored on a 108x108 canvas, of which only the middle
+    66x66 is guaranteed visible — the launcher may mask or animate the rest away.
+    The H below is kept comfortably inside that safe circle.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Left upright, crossbar, right upright — one continuous outline. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,34 h8 v16 h16 v-16 h8 v40 h-8 v-16 h-16 v16 h-8 z" />
+</vector>

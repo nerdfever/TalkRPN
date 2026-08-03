@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Named colours referenced from other resource files. -->
+<resources>
+
+    <!-- The disc the launcher icon's glyph sits on. -->
+    <color name="ic_launcher_background">#005D57</color>
+</resources>

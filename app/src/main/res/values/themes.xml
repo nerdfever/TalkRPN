@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    The app's theme, used for the window the system draws *before* Compose takes over.
+    Inheriting from DeviceDefault means the launch window matches whatever styling the
+    watch manufacturer applies, so there is no visible jolt at startup.
+-->
+<resources>
+
+    <style name="Theme.TalkRPN" parent="@android:style/Theme.DeviceDefault">
+
+        <!-- Watch screens are OLED and the system UI assumes black. Anything else
+             shows as a bright flash while the app starts. -->
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

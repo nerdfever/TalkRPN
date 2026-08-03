@@ -1,0 +1,19 @@
+# Normalise line endings so the repository does not depend on which OS committed.
+#
+# Everything textual is stored with LF inside git. Without this, working on Windows
+# quietly rewrites files to CRLF and every line of every file shows up as changed.
+
+* text=auto eol=lf
+
+# gradlew is executed by a POSIX shell, which fails outright on CRLF line endings.
+# Pin it explicitly rather than relying on auto-detection.
+gradlew text eol=lf
+
+# The Windows launcher is the mirror image: cmd.exe wants CRLF.
+gradlew.bat text eol=crlf
+
+# Binary files git must never try to translate.
+*.jar binary
+*.png binary
+*.jks binary
+*.keystore binary
