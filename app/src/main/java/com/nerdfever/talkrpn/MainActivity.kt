@@ -40,14 +40,12 @@ import androidx.wear.compose.material3.Text
 /*
  * A free-running listening tool.
  *
- * No script, no prompts, no pass structure - just say things and watch what comes
- * back. The earlier scripted version answered "which engine is faster"; this one
- * exists to answer "does it actually hear what I mean", which needs unstructured
- * play rather than a fixed list.
+ * Say things; watch what comes back. The live guess is the largest thing on screen
+ * and updates as you speak, with finished utterances stacking underneath.
  *
- * The live guess is the largest thing on screen and updates as you speak. Finished
- * utterances stack up underneath with their timings, so a run of experiments can be
- * compared without looking at a log.
+ * The engine question is settled: Android's platform recognizer, measured against a
+ * bundled Vosk model over a long evening. Vosk was removed, but the SpeechSource
+ * seam it forced into existence was kept - see that file for why.
  */
 
 private val GOOD = Color(0xFF6BD46B)
@@ -63,14 +61,11 @@ class MainActivity : ComponentActivity() {
     /**
      * Whether this screen is in the foreground.
      *
-     * The microphone must be released the moment it is not. Two reasons, and the first
-     * one bit us: leaving the app does not necessarily destroy the composition, so a
-     * second visit created a second recognizer while the first was still listening -
-     * two of them competing for one microphone, interleaving results, and transcribing
-     * conversation that had nothing to do with the calculator.
-     *
-     * The second reason is the stated design rule: this app listens only while it is
-     * being used. Anything else is a battery drain and a privacy surprise.
+     * The microphone is released the moment it is not. Two reasons: leaving the app
+     * does not necessarily destroy the composition, so a second visit would otherwise
+     * create a second recognizer while the first was still listening - two of them
+     * competing for one microphone. And the standing design rule is that this app
+     * listens only while it is being used.
      */
     private var resumed by mutableStateOf(false)
 
@@ -82,11 +77,8 @@ class MainActivity : ComponentActivity() {
 
         // Wear OS dismisses an app back to the watch face after a spell without touch
         // input - and talking to it is not touch input. Without this the app vanishes
-        // mid-sentence, which then releases the microphone via onPause and looks like
-        // the recognizer failing.
-        //
-        // Reasonable for a calculator you are actively speaking to; it would not be
-        // reasonable for something left open in the background.
+        // mid-sentence, which releases the microphone via onPause and looks like the
+        // recognizer failing.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setContent {
@@ -111,7 +103,6 @@ class MainActivity : ComponentActivity() {
 
 /** One finished utterance, kept for the on-screen history. */
 private data class Heard(
-    val engine: String,
     val text: String,
     val totalMs: Long?,
     val thinkMs: Long?,
@@ -135,37 +126,20 @@ private fun ListenScreen(resumed: Boolean) {
         hasAudioPermission = granted
     }
 
-    val platformSource = remember { PlatformSpeechSource(context) }
-    val voskSource = remember { VoskSpeechSource(context) }
+    val source: SpeechSource = remember { PlatformSpeechSource(context) }
 
     DisposableEffect(Unit) {
-        onDispose {
-            platformSource.dispose()
-            voskSource.dispose()
-        }
+        onDispose { source.dispose() }
     }
-
-    // Default to the platform engine: it is the one that currently works, so play
-    // starts somewhere useful rather than on the broken path.
-    var useVosk by remember { mutableStateOf(false) }
-    val source: SpeechSource = if (useVosk) voskSource else platformSource
 
     var history by remember { mutableStateOf<List<Heard>>(emptyList()) }
 
-    val ready = hasAudioPermission && (!useVosk || voskSource.modelReady)
+    // Listen continuously while in the foreground.
+    LaunchedEffect(hasAudioPermission, resumed) {
 
-    // Listen continuously while in the foreground, and re-arm on any change of engine,
-    // readiness, or lifecycle.
-    //
-    // Both engines are stopped first, every time. That is deliberate belt-and-braces:
-    // two recognizers competing for one microphone is the failure we just spent an
-    // evening misdiagnosing, and it is cheap to make structurally impossible.
-    LaunchedEffect(useVosk, ready, resumed) {
+        source.cancel()
 
-        platformSource.cancel()
-        voskSource.cancel()
-
-        if (!ready || !resumed) return@LaunchedEffect
+        if (!hasAudioPermission || !resumed) return@LaunchedEffect
 
         source.continuous = true
         source.start()
@@ -178,14 +152,8 @@ private fun ListenScreen(resumed: Boolean) {
 
         if (text.isBlank()) return@LaunchedEffect
 
-        history = (listOf(
-            Heard(
-                engine = if (useVosk) "V" else "A",
-                text = text,
-                totalMs = source.totalMs,
-                thinkMs = source.processingMs,
-            )
-        ) + history).take(HISTORY_DEPTH)
+        history = (listOf(Heard(text, source.totalMs, source.processingMs)) + history)
+            .take(HISTORY_DEPTH)
     }
 
     Column(
@@ -209,28 +177,18 @@ private fun ListenScreen(resumed: Boolean) {
             return@Column
         }
 
-        // Which engine, and whether it is actually listening. The bias state is shown
-        // because it materially changes what comes back and is easy to forget.
-        Detail(source.label, HEADING)
-        Detail(if (BIAS_TO_VOCABULARY) "biased to vocabulary" else "unbiased", NEUTRAL)
-
-        // Whether the microphone is actually open, stated plainly. The platform engine
-        // shuts it between utterances, and anything said in that window is lost — so
-        // "is it hearing me right now" needs to be visible, not inferred.
+        // Whether the microphone is actually open, stated plainly. The recognizer shuts
+        // it between utterances and takes ~2s to reopen; anything said in that window is
+        // lost, so "is it hearing me right now" has to be visible rather than inferred.
         val micOpen = source.state == TrialState.Listening || source.state == TrialState.Hearing
 
         Detail(
             text = when {
-                useVosk && !voskSource.modelReady -> "loading model…"
                 source.state == TrialState.Failed -> source.message ?: "failed"
                 micOpen -> "● MIC OPEN"
                 else -> "○ deaf — wait"
             },
-            colour = when {
-                source.state == TrialState.Failed -> BAD
-                micOpen -> GOOD
-                else -> BAD
-            },
+            colour = if (micOpen) GOOD else BAD,
         )
 
         source.deafWindowMs?.let { Detail("last gap ${it}ms", NEUTRAL) }
@@ -247,16 +205,8 @@ private fun ListenScreen(resumed: Boolean) {
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Gap(10.dp)
+        Gap(14.dp)
 
-        Button(onClick = { useVosk = !useVosk }) {
-            Text(if (useVosk) "Use Android" else "Use Vosk", fontSize = 12.sp)
-        }
-
-        Gap(12.dp)
-
-        // Finished utterances, newest first. "A" is the Android platform engine,
-        // "V" is Vosk, so a mixed run stays readable.
         if (history.isNotEmpty()) {
 
             SectionHeading("heard")
@@ -265,14 +215,14 @@ private fun ListenScreen(resumed: Boolean) {
 
                 Text(
                     text = it.text,
-                    color = if (it.engine == "V") Color(0xFF8FB8E8) else GOOD,
+                    color = GOOD,
                     fontSize = 15.sp,
                     fontFamily = FontFamily.Monospace,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Detail("${it.engine}  ${it.totalMs ?: "-"}ms  think ${it.thinkMs ?: "-"}ms", NEUTRAL)
+                Detail("${it.totalMs ?: "-"}ms  think ${it.thinkMs ?: "-"}ms", NEUTRAL)
                 Gap(6.dp)
             }
         }

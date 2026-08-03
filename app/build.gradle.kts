@@ -1,98 +1,8 @@
 // Build file for the watch app module.
 
-import java.net.URI
-import java.util.zip.ZipInputStream
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-}
-
-// ---------------------------------------------------------------------------
-// The Vosk speech model.
-//
-// 67 MB unpacked, which is far too much to keep in the source tree - the project
-// lives on Google Drive and every byte would sync. It is also a third-party
-// artifact that can be re-downloaded at will, so it is treated exactly like build
-// output: fetched on demand into the redirected build directory on SSD.
-//
-// The consequence worth stating: a clean checkout needs one network round trip
-// before its first build. After that the task is a no-op.
-// ---------------------------------------------------------------------------
-
-val voskModelUrl = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
-
-/**
- * Where the unpacked model lands. Under build/, so it follows the SSD redirect.
- *
- * Resolved to a plain File at configuration time rather than left as a Provider:
- * AGP 9 refuses Providers in the source set API, because it cannot tell generated
- * directories from static ones. The task ordering that a Provider would have carried
- * automatically is declared explicitly below instead.
- */
-val voskAssetsDir: File = layout.buildDirectory.dir("vosk-assets").get().asFile
-
-val fetchVoskModel = tasks.register("fetchVoskModel") {
-
-    description = "Downloads and unpacks the Vosk speech model into the build directory."
-    outputs.dir(voskAssetsDir)
-
-    // Skip entirely when the model is already unpacked - this is the common case,
-    // and re-checking a 67 MB tree on every build would be pointless work. The uuid
-    // marker is part of the check because the model is useless to Vosk without it.
-    outputs.upToDateWhen {
-        File(voskAssetsDir, "model-en-us/am").exists() && File(voskAssetsDir, "model-en-us/uuid").exists()
-    }
-
-    doLast {
-
-        val target = File(voskAssetsDir, "model-en-us")
-
-        // Vosk's StorageService copies the model out of the APK into internal storage
-        // on first run, and uses a `uuid` file to decide whether the unpacked copy is
-        // stale. The models published on alphacephei.com do not contain one - Vosk's
-        // own demo generates it during the build - so without this the load fails with
-        // FileNotFoundException: model-en-us/uuid. Any stable string will do; using the
-        // model name means swapping models later forces a re-extract, which is correct.
-        fun writeUuid() = File(target, "uuid").writeText("vosk-model-small-en-us-0.15\n")
-
-        if (target.resolve("am").exists()) {
-            writeUuid()
-            return@doLast
-        }
-
-        logger.lifecycle("Fetching Vosk model (~39 MB) — one time only...")
-        target.mkdirs()
-
-        // Stream the zip straight into place rather than staging a copy on disk.
-        URI(voskModelUrl).toURL().openStream().use { raw ->
-            ZipInputStream(raw.buffered()).use { zip ->
-
-                while (true) {
-                    val entry = zip.nextEntry ?: break
-
-                    // The archive wraps everything in a vosk-model-small-en-us-0.15/
-                    // directory; strip it so the model files sit at the asset root,
-                    // which is the layout Vosk's StorageService expects.
-                    val relative = entry.name.substringAfter('/', "")
-                    if (relative.isEmpty()) continue
-
-                    val out = target.resolve(relative)
-
-                    if (entry.isDirectory) {
-                        out.mkdirs()
-                    } else {
-                        out.parentFile.mkdirs()
-                        out.outputStream().buffered().use { zip.copyTo(it) }
-                    }
-                }
-            }
-        }
-
-        writeUuid()
-
-        logger.lifecycle("Vosk model unpacked to $target")
-    }
 }
 
 android {
@@ -134,22 +44,11 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Vosk ships a ~10 MB native library per architecture, and by default all five
-        // go into the APK - roughly 30 MB of code that can never run on anything we own.
-        //
-        // MEASURED, not assumed: the Galaxy Watch7 reports
-        //     ro.product.cpu.abi       = armeabi-v7a
-        //     ro.product.cpu.abilist64 = (empty)
-        // so despite the Exynos W1000 having 64-bit cores, Wear OS runs a 32-bit
-        // userspace on it and **armeabi-v7a is the only ABI it can install**. Filtering
-        // to arm64-v8a produced INSTALL_FAILED_NO_MATCHING_ABIS.
-        //
-        // arm64-v8a is kept anyway for whatever 64-bit Wear device comes next, and
-        // x86_64 for the emulator. A Play release would use an app bundle and let Play
-        // split these; for sideloading an explicit filter does the same job.
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
-        }
+        // NOTE for any future native dependency: this watch is 32-bit only.
+        // Measured, not assumed — ro.product.cpu.abi = armeabi-v7a and
+        // ro.product.cpu.abilist64 is empty, despite the Exynos W1000 having 64-bit
+        // cores. Filtering to arm64-v8a produces INSTALL_FAILED_NO_MATCHING_ABIS.
+        // No abiFilters block is needed while the app ships no native code of its own.
     }
 
     buildTypes {
@@ -179,28 +78,6 @@ android {
         // Turn on the Compose compiler for this module.
         compose = true
     }
-
-    sourceSets {
-        named("main") {
-
-            // The fetched model is an additional asset root alongside the normal one,
-            // so nothing has to be copied into the source tree.
-            assets.srcDir(voskAssetsDir)
-        }
-    }
-
-    androidResources {
-
-        // Vosk memory-maps parts of the model straight out of the APK. Compressed
-        // assets cannot be mapped, so these must be stored uncompressed - otherwise
-        // the model fails to load at runtime rather than at build time.
-        noCompress += listOf("mdl", "fst", "conf", "int", "dubm", "ie", "carpa", "txt")
-    }
-}
-
-// Make sure the model exists before assets are merged into the APK.
-tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
-    dependsOn(fetchVoskModel)
 }
 
 dependencies {
@@ -219,9 +96,6 @@ dependencies {
     // Wear-specific Compose: layout primitives and watch-styled widgets.
     implementation(libs.androidx.wear.compose.foundation)
     implementation(libs.androidx.wear.compose.material3)
-
-    // Offline speech recognition: native Kaldi plus a thin Java API. No network code.
-    implementation(libs.vosk.android)
 
     // Tooling used only by @Preview in the IDE.
     implementation(libs.androidx.compose.ui.tooling.preview)

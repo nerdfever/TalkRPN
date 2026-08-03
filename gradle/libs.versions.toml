@@ -15,10 +15,6 @@ composeBom = "2026.06.01"        # "Bill of materials": picks mutually-compatibl
 wearCompose = "1.6.2"            # Compose components styled and sized for round watch screens.
 wearToolingPreview = "1.0.0"     # Watch device definitions for @Preview in the IDE.
 
-# Offline speech recognition. Kaldi-based, runs entirely on-device with a bundled
-# model - no network code exists in it, which is the whole reason it is here.
-vosk = "0.3.75"
-
 [libraries]
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,9 +32,6 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wearCompose" }
 androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wearCompose" }
 androidx-wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
-
-# Vosk ships native Kaldi libraries plus a thin Java API.
-vosk-android = { group = "com.alphacephei", name = "vosk-android", version.ref = "vosk" }
 
 [plugins]
 
