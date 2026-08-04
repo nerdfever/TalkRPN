@@ -2,17 +2,24 @@
 #
 # Usage:
 #   .\run.ps1                 build, install, launch
+#   .\run.ps1 -Wait           wait for the watch to appear first, then do all that
 #   .\run.ps1 -Emulator       also start the emulator first if nothing is connected
 #   .\run.ps1 -Screenshot     grab the screen afterwards and save it next to this script
 #   .\run.ps1 -Log            skip the build; just tail this app's device log
 #
 # The device can be the emulator or a real watch paired over Wi-Fi; the script does
 # not care which, it just uses whatever adb reports as connected.
+#
+# -Wait is for the real watch, whose adbd comes up only briefly when wireless
+# debugging is switched on and then dies again. Start this first, then press the
+# button - it connects the moment the watch answers, so there is no window to hit
+# by hand. Discovery itself lives in watch.ps1; this only calls it.
 
 param(
     [switch] $Emulator,
     [switch] $Screenshot,
-    [switch] $Log
+    [switch] $Log,
+    [switch] $Wait
 )
 
 # Stop at the first failure rather than blundering on to the next step.
@@ -55,6 +62,12 @@ if ($localProperties.ContainsKey('buildDir.root')) {
 $appId = "com.nerdfever.talkrpn"
 $activity = "$appId/.MainActivity"
 
+# Where the APK is staged on the device before being installed from there.
+$remoteApk = "/data/local/tmp/$appId.apk"
+
+# How many times to retry the transfer when the Wi-Fi link drops part-way.
+$PUSH_ATTEMPTS = 4
+
 # ---------------------------------------------------------------------------
 # Log mode: tail this app's output and nothing else, then stop.
 # ---------------------------------------------------------------------------
@@ -79,6 +92,12 @@ if ($Log) {
 # ---------------------------------------------------------------------------
 # Make sure something is listening before we spend time on a build.
 # ---------------------------------------------------------------------------
+
+if ($Wait) {
+
+    # Blocks until the watch answers, or throws if it never does.
+    & "$projectRoot\watch.ps1" -Wait
+}
 
 $connected = & $adb devices | Select-String -Pattern "\sdevice$"
 
@@ -111,9 +130,38 @@ Write-Host "Building..."
 if ($LASTEXITCODE -ne 0) { throw "Build failed." }
 
 Write-Host "Installing..."
-& $adb install -r $apk
+
+# Push first, then install from the device.
+#
+# A streamed "adb install" that dies part-way leaves nothing behind to resume, and
+# on the real watch it has died part-way - the link drops, the install reports
+# "device offline", and adbd then comes back on a different port. A push can simply
+# be retried whole, and the install that follows is local to the device.
+#
+# Waking the screen first keeps the Wi-Fi radio up for the duration of the transfer.
+& $adb shell input keyevent KEYCODE_WAKEUP
+
+$pushed = $false
+
+foreach ($attempt in 1..$PUSH_ATTEMPTS) {
+
+    # Not $ErrorActionPreference-safe as a plain call: adb reports transfer progress
+    # on stderr, which "Stop" would treat as a failure. Look at what it says instead.
+    $output = & $adb push $apk $remoteApk 2>&1 | ForEach-Object { "$_" }
+
+    if ($output -match 'file pushed|bytes in') { $pushed = $true; break }
+
+    Write-Host "  transfer dropped, attempt $attempt of $PUSH_ATTEMPTS - reconnecting"
+
+    & "$projectRoot\watch.ps1" -Wait
+}
+
+if (-not $pushed) { throw "Could not get the APK onto the device after $PUSH_ATTEMPTS attempts." }
+
+& $adb shell pm install -r -t $remoteApk
 
 Write-Host "Launching..."
+& $adb shell am force-stop $appId
 & $adb shell am start -n $activity
 
 # ---------------------------------------------------------------------------
