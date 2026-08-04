@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    The launcher icon, as an "adaptive icon": two separate layers that the launcher
+    composes, masks to the device's icon shape, and can animate independently.
+
+    Only this density-independent version is provided. The folder carries no -v26
+    qualifier: that existed to hide adaptive icons from devices too old to understand
+    them, and minSdk is 34, so every device that can install this app supports them.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+
+    <!--
+        Themed-icon layer, used when the user turns on themed icons: the launcher tints
+        this single silhouette to match their wallpaper and ignores the colour layers
+        above. Reusing the foreground works because it is already a flat shape.
+    -->
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

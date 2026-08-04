@@ -1,5 +1,13 @@
 # TalkRPN — design decisions
 
+> **Constraint change, 2026-08-03.** The original "no cloud service calls, ever" rule
+> is **withdrawn**. Dave's position now: audio leaving the device is fine if it works
+> better; what he does not want to pay is a latency tax. This is for personal use, so
+> anyone else's view of the trade does not enter into it.
+>
+> The `INTERNET` permission is still absent, but as an artefact of how the app was
+> built rather than as a guarantee anyone is defending. Adding it is a normal option.
+
 Decisions settled in discussion, with the reasoning. Written down because the
 reasoning is the part that gets forgotten, and several of these look arbitrary
 without it.

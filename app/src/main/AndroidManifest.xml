@@ -4,7 +4,8 @@
     The manifest is the app's declaration to the operating system: what hardware it
     needs, what it may do, what it is called, and which screens it offers.
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
         A watch app, and only a watch app. Marking the feature required means the app
@@ -19,6 +20,30 @@
 
     <!-- Recording audio is the entire point of this build. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+        Read-only: lets each logged result record whether a network was even reachable
+        at the time. The platform recognizer never says whether it used a server, so
+        "was one available" is the only handle we have on that question.
+
+        Note this grants no ability to USE the network - see the INTERNET note below.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+        Development-only, and it does nothing unless explicitly granted over ADB:
+            adb shell pm grant com.nerdfever.talkrpn android.permission.WRITE_SECURE_SETTINGS
+
+        Used solely to toggle Settings.Global.adb_wifi_enabled, so wireless debugging
+        can be switched back on from inside the app. Android turns it off whenever the
+        Wi-Fi connection so much as flickers, and digging through developer options
+        every time has cost us three test sessions.
+
+        REMOVE THIS before the app is ever anything but a test rig.
+    -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
 
     <!--
         NOTE: android.permission.INTERNET is deliberately absent, and must stay absent.
@@ -43,8 +68,12 @@
         </intent>
     </queries>
 
+    <!--
+        android:allowBackup is deliberately absent: it was deprecated in Android 12,
+        and backup is on by default. Declaring it added nothing but a lint warning.
+    -->
     <application
-        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
@@ -60,9 +89,15 @@
             android:exported="true" is required for anything the launcher can start
             on modern Android; without it the system refuses to install the app.
         -->
+        <!--
+            taskAffinity="" keeps this activity in its own task, which is what Wear OS
+            expects - otherwise it can surface oddly in the recents carousel.
+
+            No android:label here: it would only repeat the application label above.
+        -->
         <activity
             android:name=".MainActivity"
-            android:label="@string/app_name"
+            android:taskAffinity=""
             android:theme="@style/Theme.TalkRPN"
             android:exported="true">
 

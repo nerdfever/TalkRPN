@@ -1,0 +1,39 @@
+{
+    // Turn off the Kotlin extension's Gradle project import for THIS workspace.
+    //
+    // Why: JetBrains' Kotlin extension (alpha, v0.0.8) crashes importing an Android
+    // Gradle Plugin 9 project. Its own log shows the Gradle build succeeding and the
+    // import failing afterwards:
+    //
+    //     BUILD SUCCESSFUL in 9s
+    //     Error importing project:
+    //     java.lang.ClassCastException: IdeaKotlinResolvedBinaryDependency cannot be
+    //     cast to IdeaKotlinDependency
+    //         at SourceSetDependencyResolver.populateDependenciesForAndroidModule(...)
+    //
+    // The same class failing to cast to itself, loaded by two different plugin class
+    // loaders — a bug inside the extension, on the Android-specific code path that its
+    // documentation already calls experimental. Alongside it: "Failed to call
+    // 'onVariants' in 'androidComponents' extension", which is AGP 9 having changed an
+    // API the importer still calls in its old shape.
+    //
+    // Nothing is lost by disabling it. The import has never once succeeded, so the
+    // dependency-aware features it would provide (completion and go-to-definition
+    // across Compose and the Android SDK) are not working today either. Switching it
+    // off only removes the crash and the misleading "Gradle: Build Error" badge, which
+    // reports a build that in fact passes.
+    //
+    // Kept alive: syntax highlighting, which comes from the extension's TextMate
+    // grammar and needs no project model.
+    //
+    // Revisit when the extension leaves alpha or its AGP support stops being
+    // experimental — set this back to null to re-enable automatic detection.
+    "intellij.buildTool": "",
+
+    // Gradle remains the real build: Ctrl+Shift+B runs the tasks in tasks.json, and
+    // the command line is unaffected by any of the above.
+    "files.exclude": {
+        "**/.gradle": true,
+        "**/.kotlin": true
+    }
+}

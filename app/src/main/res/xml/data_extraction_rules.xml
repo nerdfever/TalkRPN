@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    What may leave the device when Android backs the app up or transfers it to a new
+    watch. Required from Android 12 onward, which replaced the old android:allowBackup
+    flag with this finer-grained declaration.
+
+    Everything this app stores is disposable: the speech test logs and the unpacked
+    recogniser state are regenerated on the next run, and carrying them to a new device
+    would only import stale measurements. So both paths exclude the whole sandbox.
+
+    <cloud-backup> is Google's backup service; <device-transfer> is the direct
+    watch-to-watch copy during setup. They are configured separately because an app can
+    reasonably want one and not the other - here, neither.
+-->
+<data-extraction-rules>
+
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

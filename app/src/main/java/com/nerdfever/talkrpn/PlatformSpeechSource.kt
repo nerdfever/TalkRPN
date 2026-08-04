@@ -40,6 +40,27 @@ const val TRIAL_LANGUAGE_TAG = "en-US"
 private const val RESTART_DELAY_MS = 80L
 
 /**
+ * Silence that ends one segment, in milliseconds.
+ *
+ * Only a boundary between results — not the end of listening — so it can be short
+ * without costing anything. Long enough to ride over the pause between "two point
+ * five" and "e six"; short enough that a finished command is reported promptly.
+ */
+private const val SEGMENT_SILENCE_MS = 1200L
+
+/** How many competing interpretations to ask for. More costs nothing to request. */
+private const val MAX_ALTERNATIVES = 5
+
+/**
+ * Range of onRmsChanged, for normalising the level meter to 0..1.
+ *
+ * The platform documents this only as "roughly" -2 dB silence to +10 dB loud, so the
+ * result is clamped rather than trusted.
+ */
+private const val RMS_QUIET_DB = -2f
+private const val RMS_LOUD_DB = 10f
+
+/**
  * Runs a single recognition through the platform recognizer.
  *
  * Must be constructed and driven from the main thread; SpeechRecognizer requires it.
@@ -71,6 +92,20 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
 
     override var continuous = false
 
+    override var preferOffline = true
+
+    override var onPartial: ((String, Long, List<TokenArrival>) -> Unit)? = null
+
+    /**
+     * Tokens belonging to the utterance just completed.
+     *
+     * Kept separately because the session-wide list is what gets logged otherwise,
+     * which made the tokens column of the results file grow until it described the
+     * whole session rather than the row it was on.
+     */
+    var lastUtteranceTokens by mutableStateOf<List<TokenArrival>>(emptyList())
+        private set
+
     /** Words from utterances already closed out. */
     private var committedTokens by mutableStateOf<List<TokenArrival>>(emptyList())
 
@@ -85,6 +120,18 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
 
     /** Used to defer the restart; see [restartIfContinuous]. */
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    /**
+     * Our own microphone, held open for the whole session.
+     *
+     * The recognizer reads from a pipe rather than the microphone, so its constant
+     * stopping and restarting no longer costs us any audio. See MicStream.
+     */
+    private val mic = MicStream()
+
+    /** Whether the recognizer actually accepted the piped audio source. */
+    var usingOwnMic by mutableStateOf(false)
+        private set
 
     override var results by mutableStateOf<List<Candidate>>(emptyList())
         private set
@@ -104,6 +151,24 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
     override var deafWindowMs by mutableStateOf<Long?>(null)
         private set
 
+    override var failureCount by mutableStateOf(0)
+        private set
+
+    override var lastFailure by mutableStateOf<String?>(null)
+        private set
+
+    override var lastFailurePartial by mutableStateOf<String?>(null)
+        private set
+
+    /**
+     * Whether onBeginningOfSpeech fired this utterance.
+     *
+     * The discriminator between "you said something and it failed" and "nothing was
+     * said". Without it every pause looks like a failure and the failure rate is
+     * meaningless.
+     */
+    private var speechDetected = false
+
     /** Whether this attempt managed to use the offline recognizer at all. */
     var usedOnDeviceRecognizer by mutableStateOf(false)
         private set
@@ -114,6 +179,10 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
     private var speechEndedAt = 0L
 
     override fun start() {
+
+        // One microphone for the whole session, opened before the first recognizer
+        // and kept open across every restart.
+        usingOwnMic = mic.start()
 
         // A fresh session: clear the accumulated token history and reset the clock
         // that all arrival times are measured against.
@@ -146,6 +215,7 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
 
         startedAt = SystemClock.elapsedRealtime()
         speechEndedAt = 0L
+        speechDetected = false
 
         // Insist on the offline recognizer if the device has one.
         val onDeviceAvailable = SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
@@ -177,6 +247,8 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
         mainHandler.removeCallbacksAndMessages(null)
 
         releaseRecognizer()
+        mic.stop()
+        usingOwnMic = false
 
         state = TrialState.Idle
         soundLevel = 0f
@@ -187,21 +259,60 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
         mainHandler.removeCallbacksAndMessages(null)
 
         releaseRecognizer()
+        mic.stop()
+        usingOwnMic = false
     }
 
     private fun buildTrialIntent(): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
 
+        // ------------------------------------------------------------------
+        // Feed the recognizer from our own microphone rather than letting it open
+        // one. This is what makes continuous listening possible: the recognizer may
+        // stop and restart as often as it likes, and capture never pauses.
+        //
+        // If it refuses the piped source it falls back to opening the microphone
+        // itself, and behaves exactly as before.
+        // ------------------------------------------------------------------
+        if (usingOwnMic) {
+            mic.openPipe()?.let { readEnd ->
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, readEnd)
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, MIC_SAMPLE_RATE)
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, MIC_ENCODING)
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, MIC_CHANNELS)
+            }
+        }
+
         putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         putExtra(RecognizerIntent.EXTRA_LANGUAGE, TRIAL_LANGUAGE_TAG)
 
-        putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+        putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, preferOffline)
         putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, MAX_ALTERNATIVES)
 
-        // Hints only; this recognizer appears to ignore them.
-        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
-        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
-        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 3000L)
+        // ------------------------------------------------------------------
+        // Segmented session: one recognition session spanning many utterances.
+        //
+        // Without it the recognizer stops dead on every result and has to be rebuilt,
+        // and the microphone is shut for the ~200 ms that takes. Worse, if it decides
+        // an utterance ended while you are mid-phrase, the rest of the phrase falls
+        // into that gap and is simply lost.
+        //
+        // In segmented mode the microphone stays open across boundaries: results come
+        // back per segment via onSegmentResults, and the session only ends at
+        // onEndOfSegmentedSession. A premature cut then splits the text instead of
+        // eating your words.
+        //
+        // The value is the KEY of whichever extra bounds a segment — here, the silence
+        // length below. If the recognizer does not support segmented mode it ignores
+        // the extra and falls back to plain onResults, which is still handled.
+        // ------------------------------------------------------------------
+        putExtra(
+            RecognizerIntent.EXTRA_SEGMENTED_SESSION,
+            RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
+        )
+
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, SEGMENT_SILENCE_MS)
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, SEGMENT_SILENCE_MS)
 
         // Biasing tilts the odds towards the calculator's words without restricting
         // anything. Off by default so the engines are compared unaided — see
@@ -244,10 +355,12 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
     override fun onBeginningOfSpeech() {
         state = TrialState.Hearing
         message = "Speech detected."
+
+        speechDetected = true
     }
 
     override fun onRmsChanged(rmsdB: Float) {
-        soundLevel = ((rmsdB + 2f) / 12f).coerceIn(0f, 1f)
+        soundLevel = ((rmsdB - RMS_QUIET_DB) / (RMS_LOUD_DB - RMS_QUIET_DB)).coerceIn(0f, 1f)
     }
 
     override fun onBufferReceived(buffer: ByteArray?) {
@@ -275,15 +388,60 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
             partial = text
             partialUpdates += 1
 
+            // Which tokens are new relative to the previous hypothesis. The API gives
+            // no delta - each partial is a full rewrite - so the difference has to be
+            // computed here, and it is the input to any "safe to execute yet" rule.
+            val previous = inFlightTokens
+
             // Stamped against the session clock, not the utterance clock, so that
             // timings stay comparable across an auto-restart.
-            inFlightTokens = stampNewTokens(inFlightTokens, text, now - sessionStartedAt)
+            inFlightTokens = stampNewTokens(previous, text, now - sessionStartedAt)
+
+            val fresh = inFlightTokens.drop(
+                inFlightTokens.zip(previous).takeWhile { (a, b) -> a.token == b.token }.size
+            )
 
             Log.d(LOG_TAG, "platform partial #$partialUpdates at ${now - startedAt}ms: \"$text\"")
+
+            onPartial?.invoke(text, now - startedAt, fresh)
         }
     }
 
+    /**
+     * One segment finished, but the session — and the microphone — continue.
+     *
+     * This is the callback that makes continuous listening viable: no teardown, no
+     * restart, no deaf window. Only fires if the recognizer supports segmented mode;
+     * otherwise everything arrives through onResults as before.
+     */
+    override fun onSegmentResults(segmentResults: Bundle) {
+
+        Log.d(LOG_TAG, "platform: segment result (session still open)")
+
+        deliverResults(segmentResults, endOfSession = false)
+    }
+
+    /** The segmented session itself has ended; now a restart is needed. */
+    override fun onEndOfSegmentedSession() {
+
+        Log.d(LOG_TAG, "platform: segmented session ended")
+
+        releaseRecognizer()
+        restartIfContinuous()
+    }
+
     override fun onResults(results: Bundle?) {
+        deliverResults(results, endOfSession = true)
+    }
+
+    /**
+     * Shared handling for both result callbacks.
+     *
+     * [endOfSession] distinguishes them: a plain result means the recognizer has
+     * stopped and must be rebuilt, whereas a segment result means it is still
+     * listening and rebuilding would throw away a perfectly good open microphone.
+     */
+    private fun deliverResults(results: Bundle?, endOfSession: Boolean) {
 
         val texts = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
         val scores = results?.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
@@ -296,28 +454,41 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
         totalMs = now - startedAt
         processingMs = if (speechEndedAt > 0L) now - speechEndedAt else null
 
-        state = TrialState.Finished
         soundLevel = 0f
 
-        message = if (this.results.isEmpty()) {
-            "Finished, but the recognizer returned no candidates."
-        } else {
-            "Finished."
-        }
-
         // Capture before committing — afterwards the in-flight list is empty.
-        // Same one-line shape as the Vosk side, so a mixed run reads as a comparison.
         val utterance = inFlightTokens.joinToString(" ") { "${it.token}@${it.atMs}" }
 
-        // Words from this utterance are settled; move them into the session history so
-        // the next utterance starts with a clean in-flight list.
+        // Words from this segment are settled; move them into the session history so
+        // the next one starts with a clean in-flight list.
+        lastUtteranceTokens = inFlightTokens
         committedTokens = committedTokens + inFlightTokens
         inFlightTokens = emptyList()
 
         Log.d(LOG_TAG, "platform: \"${this.results.firstOrNull()?.text.orEmpty()}\" think=${processingMs}ms total=${totalMs}ms | $utterance")
 
-        releaseRecognizer()
-        restartIfContinuous()
+        if (endOfSession) {
+
+            state = TrialState.Finished
+            message = if (this.results.isEmpty()) "no candidates" else "Finished."
+
+            releaseRecognizer()
+            restartIfContinuous()
+
+        } else {
+
+            // Still listening — the microphone never closed, so say so rather than
+            // flashing "deaf" at someone who is mid-sentence.
+            state = TrialState.Listening
+            message = "listening"
+
+            // A new segment begins now; reset the per-utterance bookkeeping without
+            // touching the recognizer.
+            startedAt = SystemClock.elapsedRealtime()
+            speechEndedAt = 0L
+            speechDetected = false
+            partial = ""
+        }
     }
 
     override fun onError(error: Int) {
@@ -329,6 +500,17 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
         // a perfectly healthy idle state look broken.
         val routine = error == SpeechRecognizer.ERROR_NO_MATCH ||
             error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+
+        // A failure that followed actual speech is the interesting case: you said
+        // something and got nothing back. A failure during silence is just a pause.
+        if (speechDetected) {
+
+            lastFailure = recognizerErrorName(error)
+            lastFailurePartial = partial.ifBlank { null }
+            failureCount += 1
+
+            Log.d(LOG_TAG, "platform: FAILED after speech — ${recognizerErrorName(error)} (partial was \"$partial\")")
+        }
 
         if (routine && continuous) {
             state = TrialState.Listening

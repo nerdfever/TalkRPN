@@ -121,9 +121,35 @@ interface SpeechSource {
      */
     var continuous: Boolean
 
+    /**
+     * Ask the engine to avoid the network.
+     *
+     * A request, not a guarantee — the platform recognizer decides for itself and
+     * never reports which path it took. Exposed so the two settings can be compared,
+     * but the only *proof* of local operation is having no network at all.
+     */
+    var preferOffline: Boolean
+
     val state: TrialState
     val partial: String
     val partialUpdates: Int
+
+    /**
+     * Number of recognitions that failed *after speech was detected*.
+     *
+     * Counted separately from silence timeouts, which happen constantly while
+     * listening continuously and mean nothing. This counts the case that matters:
+     * you spoke, the engine heard you begin, and it returned nothing.
+     *
+     * Increments so a caller can observe each new failure and record it.
+     */
+    val failureCount: Int
+
+    /** Name of the most recent such failure. */
+    val lastFailure: String?
+
+    /** What the engine had heard, if anything, when it gave up. */
+    val lastFailurePartial: String?
 
     /** Every word heard this session, with the moment it became available. */
     val tokens: List<TokenArrival>
@@ -146,6 +172,18 @@ interface SpeechSource {
      * real gap; Vosk holds a single continuous audio stream and has none.
      */
     val deafWindowMs: Long?
+
+    /**
+     * Called for every partial hypothesis, before any of the state above updates.
+     *
+     * Exists because partials are where the useful timing lives and they are far too
+     * frequent to observe reliably through Compose state — several arrive between
+     * recompositions, so a UI-driven observer would miss most of them.
+     *
+     * Arguments: the full hypothesis text, milliseconds since the utterance began,
+     * and the tokens that are new relative to the previous hypothesis.
+     */
+    var onPartial: ((String, Long, List<TokenArrival>) -> Unit)?
 
     /** Begin listening. Safe to call repeatedly; any previous attempt is torn down. */
     fun start()
