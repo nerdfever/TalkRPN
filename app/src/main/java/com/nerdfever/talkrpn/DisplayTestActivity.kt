@@ -121,8 +121,20 @@ private const val INITIAL_ROW_GAP_FRACTION = 0.013f
 private const val ROW_GAP_FRACTION_MIN = 0.0f
 private const val ROW_GAP_FRACTION_MAX = 0.10f
 
-/** Every adjustment moves by this much per press. */
+/** Every proportional adjustment moves by this much per press. */
 private const val ADJUST_STEP_FRACTION = 0.05f
+
+/**
+ * Slant, in degrees from vertical. The HP-01's own is 7.8.
+ *
+ * Stepped by a fixed amount rather than by a percentage: slant is the one
+ * adjustment whose useful range includes zero, and a percentage step cannot move
+ * away from zero or cross it. Upright is a legitimate choice here, so the control
+ * has to be able to reach it and pass through.
+ */
+private const val SLANT_STEP_DEGREES = 0.5f
+private const val SLANT_DEGREES_MIN = -6f
+private const val SLANT_DEGREES_MAX = 24f
 
 /**
  * Smallest row gap the "+" can climb out of.
@@ -331,6 +343,7 @@ private fun DisplayTestScreen() {
     var heightFraction by remember { mutableStateOf(INITIAL_HEIGHT_FRACTION) }
 
     var rowGapFraction by remember { mutableStateOf(INITIAL_ROW_GAP_FRACTION) }
+    var slantDegrees by remember { mutableStateOf(Hp01Font.SLANT_DEGREES) }
     var sampleIndex by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(false) }
 
@@ -352,7 +365,7 @@ private fun DisplayTestScreen() {
     val scale = xCellHeightPx / Hp01Font.CELL_HEIGHT
     val cellsAcross =
         if (rowWidthPx <= 0 || scale <= 0f) 0
-        else ((rowWidthPx / scale - Hp01Font.SHEARED_WIDTH) / advanceUnits).toInt() + 1
+        else ((rowWidthPx / scale - Hp01Font.shearedWidth(slantDegrees)) / advanceUnits).toInt() + 1
 
     // Fit the digits first, then punctuate: the radix and the separators are all
     // narrower than a cell, so counting them as cells would under-fill the row.
@@ -394,7 +407,7 @@ private fun DisplayTestScreen() {
             for (name in UPPER_REGISTERS) {
                 RegisterRow(
                     name, samples[name].orEmpty(), smallCellHeightPx, advanceUnits,
-                    LED_RED, metrics.density, screenPx, insetPx
+                    LED_RED, metrics.density, screenPx, insetPx, slantDegrees
                 )
                 Spacer(Modifier.height(rowGap))
             }
@@ -426,7 +439,7 @@ private fun DisplayTestScreen() {
 
                 drawRegister(
                     samples["X"].orEmpty(), xCellHeightPx, advanceUnits, LED_RED,
-                    limit.coerceAtMost(size.width)
+                    limit.coerceAtMost(size.width), slantDegrees
                 )
             }
 
@@ -435,7 +448,7 @@ private fun DisplayTestScreen() {
             for (name in LOWER_REGISTERS) {
                 RegisterRow(
                     name, samples[name].orEmpty(), smallCellHeightPx, advanceUnits,
-                    LED_RED, metrics.density, screenPx, insetPx
+                    LED_RED, metrics.density, screenPx, insetPx, slantDegrees
                 )
                 Spacer(Modifier.height(rowGap))
             }
@@ -495,10 +508,11 @@ private fun DisplayTestScreen() {
                 )
 
                 Text(
-                    text = "p %.2f  h %.1f%%  r %.1f%%".format(
+                    text = "p %.2f  h %.1f  r %.1f  s %.1f".format(
                         pitchFactor,
                         heightFraction * 100f,
-                        rowGapFraction * 100f
+                        rowGapFraction * 100f,
+                        slantDegrees
                     ),
                     color = LABEL,
                     fontSize = TEXT_READOUT,
@@ -556,9 +570,22 @@ private fun DisplayTestScreen() {
 
                     Spacer(Modifier.width(GAP_SMALL))
 
-                    CompactButton("sample", Modifier.weight(1f)) {
-                        sampleIndex = (sampleIndex + 1) % SAMPLE_SETS.size
-                    }
+                    SplitButton("slant", Modifier.weight(1f),
+                        onIncrease = {
+                            slantDegrees = (slantDegrees + SLANT_STEP_DEGREES)
+                                .coerceAtMost(SLANT_DEGREES_MAX)
+                        },
+                        onDecrease = {
+                            slantDegrees = (slantDegrees - SLANT_STEP_DEGREES)
+                                .coerceAtLeast(SLANT_DEGREES_MIN)
+                        }
+                    )
+                }
+
+                Spacer(Modifier.height(GAP_SMALL))
+
+                CompactButton("sample", Modifier.fillMaxWidth()) {
+                    sampleIndex = (sampleIndex + 1) % SAMPLE_SETS.size
                 }
             }
         }
@@ -644,7 +671,8 @@ private fun RegisterRow(
     color: Color,
     density: Float,
     screenPx: Float,
-    insetPx: Float
+    insetPx: Float,
+    slantDegrees: Float
 ) {
     // Where this row ended up on screen, so the chord at its height can be found.
     var topInRootPx by remember { mutableStateOf(0f) }
@@ -667,7 +695,7 @@ private fun RegisterRow(
             // Convert the screen-space limit into this Canvas's own coordinates.
             val limit = chordRightEdgePx(topInRootPx, cellHeightPx, screenPx, insetPx) - leftInRootPx
 
-            drawRegister(value, cellHeightPx, advanceUnits, color, limit.coerceAtMost(size.width))
+            drawRegister(value, cellHeightPx, advanceUnits, color, limit.coerceAtMost(size.width), slantDegrees)
         }
 
         // The label sits over the left end of the row. A smaller register is
@@ -789,7 +817,8 @@ private fun DrawScope.drawRegister(
     cellHeightPx: Float,
     advanceUnits: Float,
     color: Color,
-    widthPx: Float
+    widthPx: Float,
+    slantDegrees: Float
 ) {
     if (value.isEmpty() || cellHeightPx <= 0f) return
 
@@ -802,14 +831,14 @@ private fun DrawScope.drawRegister(
     // can be a little wider than the row. Drop from the left - the display is
     // right-aligned, so that is the end that would run off the screen anyway.
     while (drawable.isNotEmpty() &&
-        Hp01Font.measureWidth(drawable, cellHeightPx, advanceUnits) > widthPx
+        Hp01Font.measureWidth(drawable, cellHeightPx, advanceUnits, Hp01Font.PUNCTUATION_ADVANCE, slantDegrees) > widthPx
     ) {
         drawable = drawable.drop(1)
     }
 
     if (drawable.isEmpty()) return
 
-    val inkWidth = Hp01Font.measureWidth(drawable, cellHeightPx, advanceUnits)
+    val inkWidth = Hp01Font.measureWidth(drawable, cellHeightPx, advanceUnits, Hp01Font.PUNCTUATION_ADVANCE, slantDegrees)
 
     with(Hp01Font) {
         drawHp01Text(
@@ -817,7 +846,9 @@ private fun DrawScope.drawRegister(
             origin = Offset(widthPx - inkWidth, 0f),
             cellHeight = cellHeightPx,
             color = color,
-            advance = advanceUnits
+            advance = advanceUnits,
+            punctuationAdvance = Hp01Font.PUNCTUATION_ADVANCE,
+            slantDegrees = slantDegrees
         )
     }
 }
@@ -893,6 +924,9 @@ private fun pxToDp(px: Float, density: Float) = (px / density).dp
  * Rounding up costs a pixel of layout and removes the failure mode entirely.
  */
 private fun canvasHeightDp(px: Float, density: Float) = ((ceil(px) + 1f) / density).dp
+
+
+
 
 
 

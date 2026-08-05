@@ -91,17 +91,6 @@ object Hp01Font {
      *  edge of the bar it grows from. */
     private const val HOOK_R = 7.25f
 
-    private val SHEAR = tan(Math.toRadians(SLANT_DEGREES.toDouble())).toFloat()
-
-    /** Added to every x so that a sheared cell still starts at x = 0. */
-    private val SHEAR_OFFSET = SHEAR * CELL_HEIGHT
-
-    /** Total advance-independent ink width of one sheared cell. */
-    val SHEARED_WIDTH = CELL_WIDTH + SHEAR_OFFSET
-
-    /** Maps an unsheared cell coordinate to its sheared x. */
-    private fun sx(x: Float, y: Float) = x - SHEAR * y + SHEAR_OFFSET
-
     // ---- Segment identity ---------------------------------------------------
 
     enum class Seg(val bit: Int) {
@@ -113,7 +102,7 @@ object Hp01Font {
     // computed once at class-init instead.
     private val CAP_ROUND_MASK = Seg.A.bit or Seg.D.bit or Seg.G.bit
 
-    // ---- Path construction --------------------------------------------------
+    // ---- Cell geometry, independent of slant --------------------------------
 
     /**
      * A 90-degree circular arc is exact as a single cubic Bezier to within
@@ -122,16 +111,8 @@ object Hp01Font {
      */
     private const val KAPPA = 0.5522848f
 
-    private fun path(build: Path.() -> Unit) = Path().apply(build)
-
-    private fun Path.moveToCell(x: Float, y: Float) = moveTo(sx(x, y), y)
-    private fun Path.lineToCell(x: Float, y: Float) = lineTo(sx(x, y), y)
-    private fun Path.cubicToCell(
-        x1: Float, y1: Float, x2: Float, y2: Float, x3: Float, y3: Float
-    ) = cubicTo(sx(x1, y1), y1, sx(x2, y2), y2, sx(x3, y3), y3)
-
     // Hook control-point offset along each tangent.
-    private val HOOK_K = KAPPA * HOOK_R      // 4.004
+    private const val HOOK_K = KAPPA * HOOK_R      // 4.004
 
     // Centreline y of the three horizontal bars.
     private const val Y_A = STROKE / 2f              // 4.25
@@ -142,51 +123,19 @@ object Hp01Font {
     private const val X_LEFT = STROKE / 2f                    // 4.25
     private const val X_RIGHT = CELL_WIDTH - STROKE / 2f      // 57.75
 
+    // Segment b runs taller than f, and c lower than e.
+    private const val Y_B_TOP = 4.25f
+    private const val Y_C_BOTTOM = 95f
+    private const val Y_F_TOP = 11.5f
+    private const val Y_E_BOTTOM = 89f
+
     // Where each horizontal bar's straight run ends and its hook begins.
-    private val HOOK_START_X = X_LEFT + HOOK_R                // 11.5
-
-    private val PATH_A = path {
-        moveToCell(X_RIGHT, Y_A)
-        lineToCell(HOOK_START_X, Y_A)
-        cubicToCell(
-            HOOK_START_X - HOOK_K, Y_A,
-            X_LEFT, Y_A + HOOK_R - HOOK_K,
-            X_LEFT, Y_A + HOOK_R
-        )
-    }
-
-    private val PATH_D = path {
-        moveToCell(X_RIGHT, Y_D)
-        lineToCell(HOOK_START_X, Y_D)
-        cubicToCell(
-            HOOK_START_X - HOOK_K, Y_D,
-            X_LEFT, Y_D - HOOK_R + HOOK_K,
-            X_LEFT, Y_D - HOOK_R
-        )
-    }
-
-    private val PATH_G = path {
-        moveToCell(X_RIGHT, Y_G)
-        lineToCell(X_LEFT, Y_G)
-    }
-
-    private val PATH_B = path { moveToCell(X_RIGHT, 4.25f); lineToCell(X_RIGHT, Y_G) }
-    private val PATH_C = path { moveToCell(X_RIGHT, Y_G); lineToCell(X_RIGHT, 95f) }
-    private val PATH_F = path { moveToCell(X_LEFT, 11.5f); lineToCell(X_LEFT, Y_G) }
-    private val PATH_E = path { moveToCell(X_LEFT, Y_G); lineToCell(X_LEFT, 89f) }
-
-    private val PATHS = mapOf(
-        Seg.A to PATH_A, Seg.B to PATH_B, Seg.C to PATH_C, Seg.D to PATH_D,
-        Seg.E to PATH_E, Seg.F to PATH_F, Seg.G to PATH_G
-    )
+    private const val HOOK_START_X = X_LEFT + HOOK_R          // 11.5
 
     // Dot centres: sheared in POSITION, drawn as true circles.
     private const val DOT_AXIS_X = CELL_WIDTH / 2f   // 31
     private const val DOT_UPPER_Y = 23f
     private const val DOT_LOWER_Y = 78f
-
-    private val DOT_UPPER_CENTRE = Offset(sx(DOT_AXIS_X, DOT_UPPER_Y), DOT_UPPER_Y)
-    private val DOT_LOWER_CENTRE = Offset(sx(DOT_AXIS_X, DOT_LOWER_Y), DOT_LOWER_Y)
 
     /**
      * The comma's tail, hanging from the lower dot.
@@ -196,65 +145,153 @@ object Hp01Font {
      * is wanted, and a comma has to be distinguishable from a decimal point at a
      * glance or it is worse than useless.
      *
-     * Drawn as the same dot plus a short stroke down and to the left. The leftward
-     * lean is what reads as a comma rather than as a smudge; it runs against the
-     * font's rightward shear, which makes it more distinct, not less.
+     * The leftward lean is what reads as a comma rather than as a smudge; it runs
+     * against the font's rightward shear, which makes it more distinct, not less.
+     *
+     * It tapers rather than being a constant-width stroke: a stroke at STROKE width
+     * is exactly half the dot's 17-unit diameter, so a plain stroked tail meets the
+     * dot at a visible step and reads as a dot with something stuck to it. Starting
+     * at the dot's full width and narrowing to a stroke reads as one mark - which
+     * means a filled outline, since a stroke has one width by definition.
      */
     private const val COMMA_TAIL_DROP = 19f
     private const val COMMA_TAIL_LEFT = 7f
 
+    private const val COMMA_TAIL_START_HALF = DOT_RADIUS   // meets the dot at full width
+    private const val COMMA_TAIL_END_HALF = STROKE / 2f    // ends at a segment's width
+
+    private const val COMMA_TAIL_TIP_X = DOT_AXIS_X - COMMA_TAIL_LEFT
+    private const val COMMA_TAIL_TIP_Y = DOT_LOWER_Y + COMMA_TAIL_DROP
+
+    // ---- Slant-dependent geometry -------------------------------------------
+
     /**
-     * The tail tapers rather than being a constant-width stroke.
+     * Everything the shear touches, built for one slant.
      *
-     * A stroke at STROKE width is exactly half the dot's 17-unit diameter, so a
-     * plain stroked tail meets the dot at a visible step - it reads as a dot with
-     * something stuck to it. Starting at the dot's full width and narrowing to a
-     * stroke reads as one mark.
-     *
-     * That means a filled outline rather than a stroked line, since a stroke has
-     * one width by definition.
+     * The shear is baked into the paths at construction rather than applied as a
+     * transform at draw time, because a sheared cubic is still a cubic - so the
+     * hooks stay exact instead of being re-approximated on every frame. The price
+     * is that changing the slant means rebuilding, which is what this class is for.
      */
-    private val COMMA_TAIL_START_HALF = DOT_RADIUS        // meets the dot at its full width
-    private val COMMA_TAIL_END_HALF = STROKE / 2f         // ends at a segment's width
+    private class Geometry(val slantDegrees: Float) {
 
-    private val COMMA_TAIL_TIP_X = DOT_AXIS_X - COMMA_TAIL_LEFT
-    private val COMMA_TAIL_TIP_Y = DOT_LOWER_Y + COMMA_TAIL_DROP
+        val shear = tan(Math.toRadians(slantDegrees.toDouble())).toFloat()
 
-    private val PATH_COMMA_TAIL = run {
+        /** Added to every x so that a sheared cell still starts at x = 0. */
+        val shearOffset = shear * CELL_HEIGHT
 
-        // Unit vector along the tail, and its perpendicular - the taper is applied
-        // across the tail, so the outline has to be built in its own frame.
-        val alongX = COMMA_TAIL_TIP_X - DOT_AXIS_X
-        val alongY = COMMA_TAIL_TIP_Y - DOT_LOWER_Y
-        val length = sqrt(alongX * alongX + alongY * alongY)
+        /** Total advance-independent ink width of one sheared cell. */
+        val shearedWidth = CELL_WIDTH + shearOffset
 
-        val acrossX = -alongY / length
-        val acrossY = alongX / length
+        /** Maps an unsheared cell coordinate to its sheared x. */
+        fun sx(x: Float, y: Float) = x - shear * y + shearOffset
 
-        path {
-            moveToCell(
-                DOT_AXIS_X + acrossX * COMMA_TAIL_START_HALF,
-                DOT_LOWER_Y + acrossY * COMMA_TAIL_START_HALF
-            )
-            lineToCell(
-                COMMA_TAIL_TIP_X + acrossX * COMMA_TAIL_END_HALF,
-                COMMA_TAIL_TIP_Y + acrossY * COMMA_TAIL_END_HALF
-            )
-            lineToCell(
-                COMMA_TAIL_TIP_X - acrossX * COMMA_TAIL_END_HALF,
-                COMMA_TAIL_TIP_Y - acrossY * COMMA_TAIL_END_HALF
-            )
-            lineToCell(
-                DOT_AXIS_X - acrossX * COMMA_TAIL_START_HALF,
-                DOT_LOWER_Y - acrossY * COMMA_TAIL_START_HALF
-            )
-            close()
+        private fun path(build: Path.() -> Unit) = Path().apply(build)
+
+        private fun Path.moveToCell(x: Float, y: Float) = moveTo(sx(x, y), y)
+        private fun Path.lineToCell(x: Float, y: Float) = lineTo(sx(x, y), y)
+        private fun Path.cubicToCell(
+            x1: Float, y1: Float, x2: Float, y2: Float, x3: Float, y3: Float
+        ) = cubicTo(sx(x1, y1), y1, sx(x2, y2), y2, sx(x3, y3), y3)
+
+        val paths: Map<Seg, Path> = mapOf(
+
+            Seg.A to path {
+                moveToCell(X_RIGHT, Y_A)
+                lineToCell(HOOK_START_X, Y_A)
+                cubicToCell(
+                    HOOK_START_X - HOOK_K, Y_A,
+                    X_LEFT, Y_A + HOOK_R - HOOK_K,
+                    X_LEFT, Y_A + HOOK_R
+                )
+            },
+
+            Seg.D to path {
+                moveToCell(X_RIGHT, Y_D)
+                lineToCell(HOOK_START_X, Y_D)
+                cubicToCell(
+                    HOOK_START_X - HOOK_K, Y_D,
+                    X_LEFT, Y_D - HOOK_R + HOOK_K,
+                    X_LEFT, Y_D - HOOK_R
+                )
+            },
+
+            Seg.G to path { moveToCell(X_RIGHT, Y_G); lineToCell(X_LEFT, Y_G) },
+
+            Seg.B to path { moveToCell(X_RIGHT, Y_B_TOP); lineToCell(X_RIGHT, Y_G) },
+            Seg.C to path { moveToCell(X_RIGHT, Y_G); lineToCell(X_RIGHT, Y_C_BOTTOM) },
+            Seg.F to path { moveToCell(X_LEFT, Y_F_TOP); lineToCell(X_LEFT, Y_G) },
+            Seg.E to path { moveToCell(X_LEFT, Y_G); lineToCell(X_LEFT, Y_E_BOTTOM) },
+        )
+
+        val dotUpperCentre = Offset(sx(DOT_AXIS_X, DOT_UPPER_Y), DOT_UPPER_Y)
+        val dotLowerCentre = Offset(sx(DOT_AXIS_X, DOT_LOWER_Y), DOT_LOWER_Y)
+
+        val commaTail: Path = run {
+
+            // Unit vector along the tail, and its perpendicular - the taper is
+            // applied across the tail, so the outline is built in its own frame.
+            val alongX = COMMA_TAIL_TIP_X - DOT_AXIS_X
+            val alongY = COMMA_TAIL_TIP_Y - DOT_LOWER_Y
+            val length = sqrt(alongX * alongX + alongY * alongY)
+
+            val acrossX = -alongY / length
+            val acrossY = alongX / length
+
+            path {
+                moveToCell(
+                    DOT_AXIS_X + acrossX * COMMA_TAIL_START_HALF,
+                    DOT_LOWER_Y + acrossY * COMMA_TAIL_START_HALF
+                )
+                lineToCell(
+                    COMMA_TAIL_TIP_X + acrossX * COMMA_TAIL_END_HALF,
+                    COMMA_TAIL_TIP_Y + acrossY * COMMA_TAIL_END_HALF
+                )
+                lineToCell(
+                    COMMA_TAIL_TIP_X - acrossX * COMMA_TAIL_END_HALF,
+                    COMMA_TAIL_TIP_Y - acrossY * COMMA_TAIL_END_HALF
+                )
+                lineToCell(
+                    DOT_AXIS_X - acrossX * COMMA_TAIL_START_HALF,
+                    DOT_LOWER_Y - acrossY * COMMA_TAIL_START_HALF
+                )
+                close()
+            }
         }
+
+        /** Rounds off the tip, so the taper does not end in a flat chop. */
+        val commaTailTip = Offset(sx(COMMA_TAIL_TIP_X, COMMA_TAIL_TIP_Y), COMMA_TAIL_TIP_Y)
     }
 
-    /** Rounds off the tip, so the taper does not end in a flat chop. */
-    private val COMMA_TAIL_TIP_CENTRE =
-        Offset(sx(COMMA_TAIL_TIP_X, COMMA_TAIL_TIP_Y), COMMA_TAIL_TIP_Y)
+    /**
+     * The geometry currently built, cached so that drawing at an unchanged slant
+     * costs nothing.
+     *
+     * One entry is enough: a display shows one slant at a time, and the only thing
+     * that changes it is a person adjusting it. Ten paths get rebuilt on the frame
+     * where that happens and no others - so this is affordable to put on a control,
+     * which a per-frame rebuild would not be.
+     *
+     * Not synchronised. Compose draws on a single thread, and the worst a race
+     * could do is build the same geometry twice.
+     */
+    private var cachedGeometry = Geometry(SLANT_DEGREES)
+
+    private fun geometryFor(slantDegrees: Float): Geometry {
+        if (slantDegrees != cachedGeometry.slantDegrees) {
+            cachedGeometry = Geometry(slantDegrees)
+        }
+        return cachedGeometry
+    }
+
+    /**
+     * Total ink width of one cell at [slantDegrees], including the lean.
+     *
+     * Was a constant until the slant became adjustable. Layout needs it - it is
+     * what right-alignment measures against - so it has to follow the slant or
+     * rows drift as the slant changes.
+     */
+    fun shearedWidth(slantDegrees: Float) = geometryFor(slantDegrees).shearedWidth
 
     // ---- Character map ------------------------------------------------------
 
@@ -316,32 +353,35 @@ object Hp01Font {
         ch: Char,
         origin: Offset,
         cellHeight: Float,
-        color: Color
+        color: Color,
+        slantDegrees: Float
     ) {
         val m = GLYPHS[ch] ?: return
         if (m == 0) return
+
         val k = cellHeight / CELL_HEIGHT
+        val g = geometryFor(slantDegrees)
 
         withTransform({
             translate(origin.x, origin.y)
             scale(k, k, pivot = Offset.Zero)
         }) {
-            for ((seg, p) in PATHS) {
+            for ((seg, p) in g.paths) {
                 if (m and seg.bit == 0) continue
                 val cap =
                     if (seg.bit and CAP_ROUND_MASK != 0) StrokeCap.Round else StrokeCap.Butt
                 drawPath(p, color, style = Stroke(width = STROKE, cap = cap))
             }
             if (m and Seg.DOT_UPPER.bit != 0) {
-                drawCircle(color, DOT_RADIUS, DOT_UPPER_CENTRE)
+                drawCircle(color, DOT_RADIUS, g.dotUpperCentre)
             }
             if (m and Seg.DOT_LOWER.bit != 0) {
-                drawCircle(color, DOT_RADIUS, DOT_LOWER_CENTRE)
+                drawCircle(color, DOT_RADIUS, g.dotLowerCentre)
             }
             if (m and Seg.COMMA_TAIL.bit != 0) {
                 // Filled, not stroked - the outline already carries the taper.
-                drawPath(PATH_COMMA_TAIL, color)
-                drawCircle(color, COMMA_TAIL_END_HALF, COMMA_TAIL_TIP_CENTRE)
+                drawPath(g.commaTail, color)
+                drawCircle(color, COMMA_TAIL_END_HALF, g.commaTailTip)
             }
         }
     }
@@ -355,8 +395,9 @@ object Hp01Font {
         origin: Offset,
         cellHeight: Float,
         color: Color,
-        advance: Float = ADVANCE,
-        punctuationAdvance: Float = PUNCTUATION_ADVANCE
+        advance: Float,
+        punctuationAdvance: Float,
+        slantDegrees: Float
     ) {
         val k = cellHeight / CELL_HEIGHT
         var x = origin.x
@@ -379,7 +420,7 @@ object Hp01Font {
             // shifting it left would just hang it off the end of the row.
             val shift = if (index > 0 && isNarrow(ch)) (step - advance) / 2f * k else 0f
 
-            drawHp01Glyph(ch, Offset(x + shift, origin.y), cellHeight, color)
+            drawHp01Glyph(ch, Offset(x + shift, origin.y), cellHeight, color, slantDegrees)
 
             x += step * k
         }
@@ -399,8 +440,9 @@ object Hp01Font {
     fun measureWidth(
         text: String,
         cellHeight: Float,
-        advance: Float = ADVANCE,
-        punctuationAdvance: Float = PUNCTUATION_ADVANCE
+        advance: Float,
+        punctuationAdvance: Float,
+        slantDegrees: Float
     ): Float {
         if (text.isEmpty()) return 0f
 
@@ -412,7 +454,7 @@ object Hp01Font {
             advanceFor(it, advance, punctuationAdvance).toDouble()
         }.toFloat()
 
-        return (advances + SHEARED_WIDTH) * k
+        return (advances + shearedWidth(slantDegrees)) * k
     }
 }
 
@@ -432,15 +474,33 @@ object Hp01Font {
  *             text = x,
  *             origin = Offset(8f, 8f),
  *             cellHeight = size.height - 16f,
- *             color = lit
+ *             color = lit,
+ *             advance = ADVANCE,
+ *             punctuationAdvance = PUNCTUATION_ADVANCE,
+ *             slantDegrees = SLANT_DEGREES
  *         )
  *     }
  * }
  *
- * Right-alignment, which is what an RPN display wants:
+ * Right-alignment, which is what an RPN display wants. Measure with the SAME
+ * metrics you draw with:
  *
- *     val w = Hp01Font.measureWidth(x, cellHeight)
- *     drawHp01Text(x, Offset(size.width - w - pad, pad), cellHeight, lit)
+ *     val w = Hp01Font.measureWidth(x, cellHeight, ADVANCE, PUNCTUATION_ADVANCE, SLANT_DEGREES)
+ *     drawHp01Text(x, Offset(size.width - w - pad, pad), cellHeight, lit,
+ *                  ADVANCE, PUNCTUATION_ADVANCE, SLANT_DEGREES)
+ *
+ * ---------------------------------------------------------------------------
+ * Why advance, punctuationAdvance and slantDegrees have no defaults
+ * ---------------------------------------------------------------------------
+ * They used to. It cost a real bug: slant was threaded into measureWidth but the
+ * neighbouring drawHp01Text call was missed, so measurement used the new slant
+ * while drawing quietly fell back to the default. It compiled, and the symptom
+ * was a display that shifted a few pixels sideways when the slant was adjusted
+ * but never actually tilted - measure and draw disagreeing, which reads as a
+ * rendering fault rather than a missing argument.
+ *
+ * Requiring them makes that a compile error. The rule the types now enforce:
+ * measure and draw with the same metrics, always.
  *
  * ---------------------------------------------------------------------------
  * Scaling
@@ -470,4 +530,5 @@ object Hp01Font {
  * through drawHp01Text; calling drawHp01Glyph directly for '.' ',' or ':' puts the
  * mark back on the cell axis.
  */
+
 
