@@ -38,9 +38,10 @@
  *    middle bar. Lit together they read as a colon; the lower one alone is the
  *    decimal point. On the real HP-01 a dot occupies an entire digit position,
  *    which is why 3.141593 fills eight of the nine positions.
- *  - Everything is sheared 7.8 degrees to the right. The dots are positioned
- *    by the shear but NOT shaped by it: they are true circles. Shearing the
- *    circles turns them into ellipses, which is visibly wrong.
+ *  - Everything is sheared to the right; see SLANT_DEGREES. The dots are
+ *    positioned by the shear but NOT shaped by it: they are true circles.
+ *    Shearing the circles turns them into ellipses, which is visibly wrong.
+ *    The slant is adjustable at run time - see the Geometry class.
  */
 
 import androidx.compose.ui.geometry.Offset
@@ -60,7 +61,19 @@ object Hp01Font {
     const val CELL_HEIGHT = 100f
     const val CELL_WIDTH = 62f
     const val STROKE = 8.5f
-    const val SLANT_DEGREES = 7.8f
+
+    /**
+     * Default slant, in degrees from vertical.
+     *
+     * Chosen by eye at 7.5, not measured. The reconstruction reads 7.8 from the
+     * photographs and rates that one of its more confident figures - so this is a
+     * deliberate small departure from the original, not a correction to it. Restore
+     * 7.8 for the authentic lean.
+     *
+     * A default only: the slant is a parameter on every drawing and measuring call,
+     * and the test screen adjusts it live.
+     */
+    const val SLANT_DEGREES = 7.5f
 
     /** Dot diameter is exactly twice the stroke width. */
     const val DOT_RADIUS = STROKE
@@ -530,5 +543,6 @@ object Hp01Font {
  * through drawHp01Text; calling drawHp01Glyph directly for '.' ',' or ':' puts the
  * mark back on the cell axis.
  */
+
 
 

@@ -495,7 +495,26 @@ For a single right-aligned line on a fixed cell grid, Compose's text layout buys
 little — a segment display *is* a fixed grid, which is what the vector renderer does
 natively and what a proportional text engine has to be argued out of.
 
-Housekeeping: `HP01font.kt` still declares `package com.example.hp01`.
+### Open: stroke width may be too thin on the real watch
+
+Nothing is resampled between devices — the layout is stored as fractions of the
+screen and recomputed natively, so 396 px is drawn for 396 px. But the *absolute*
+stroke width falls with the screen, and the real watch is smaller than the
+emulator being tuned on:
+
+| | Emulator (454 px) | Watch 7 40 mm (396 px) |
+|---|---|---|
+| X register stroke | ~2.9 px | ~2.6 px |
+| Smaller registers | ~2.0 px | **~1.8 px** |
+
+A sub-two-pixel anti-aliased stroke reads as soft grey-red rather than a crisp lit
+segment — the opposite of the LED look being aimed at. The emulator flatters this
+by roughly 15%.
+
+**Do not fix this blind.** It is a look-at-it-on-the-wrist question. If it does
+need addressing, the levers are fewer or larger registers, a larger
+`SMALL_ROW_SCALE`, or a `STROKE` that does not scale purely with cell height —
+in ascending order of how much they depart from the original font.
 
 ---
 

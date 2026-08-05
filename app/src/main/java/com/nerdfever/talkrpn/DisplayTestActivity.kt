@@ -125,7 +125,7 @@ private const val ROW_GAP_FRACTION_MAX = 0.10f
 private const val ADJUST_STEP_FRACTION = 0.05f
 
 /**
- * Slant, in degrees from vertical. The HP-01's own is 7.8.
+ * Slant, in degrees from vertical. The default is Hp01Font.SLANT_DEGREES.
  *
  * Stepped by a fixed amount rather than by a percentage: slant is the one
  * adjustment whose useful range includes zero, and a percentage step cannot move
@@ -137,12 +137,21 @@ private const val SLANT_DEGREES_MIN = -6f
 private const val SLANT_DEGREES_MAX = 24f
 
 /**
- * Smallest row gap the "+" can climb out of.
+ * The row gap steps by whole pixels, not by a percentage.
  *
- * Stepping by a percentage cannot escape zero - five percent of nothing is nothing -
- * so the gap starts from this instead of from its own value when it is at the floor.
+ * It is the smallest quantity on the panel - about six pixels - and Compose lays
+ * out in whole pixels, so a 5% step of 0.3 px spent two to four clicks crossing
+ * each pixel boundary. Most presses did nothing visible, which reads as a control
+ * that is broken or laggy rather than one working below the display's resolution.
+ *
+ * A pixel step guarantees every press moves the layout exactly once. It also
+ * removes the percentage step's other problem here: five percent of nothing is
+ * nothing, so a proportional control could never climb back out of a zero gap.
+ *
+ * The value is still stored as a fraction of the screen, so it transfers to the
+ * watch; only the step is in pixels.
  */
-private const val ROW_GAP_FRACTION_FLOOR_STEP = 0.002f
+private const val ROW_GAP_STEP_PX = 1f
 
 /**
  * The lit-segment colour.
@@ -508,10 +517,12 @@ private fun DisplayTestScreen() {
                 )
 
                 Text(
-                    text = "p %.2f  h %.1f  r %.1f  s %.1f".format(
+                    // Row gap in pixels, since pixels are what it moves in and what
+                    // was confusing when it appeared not to move at all.
+                    text = "p%.2f h%.1f%% r%.0fpx s%.1f".format(
                         pitchFactor,
                         heightFraction * 100f,
-                        rowGapFraction * 100f,
+                        rowGapFraction * screenPx,
                         slantDegrees
                     ),
                     color = LABEL,
@@ -557,13 +568,11 @@ private fun DisplayTestScreen() {
 
                     SplitButton("spacing", Modifier.weight(1f),
                         onIncrease = {
-                            // A percentage step cannot climb out of zero.
-                            val from = maxOf(rowGapFraction, ROW_GAP_FRACTION_FLOOR_STEP)
-                            rowGapFraction = (from * (1f + ADJUST_STEP_FRACTION))
+                            rowGapFraction = ((rowGapFraction * screenPx + ROW_GAP_STEP_PX) / screenPx)
                                 .coerceAtMost(ROW_GAP_FRACTION_MAX)
                         },
                         onDecrease = {
-                            rowGapFraction = (rowGapFraction / (1f + ADJUST_STEP_FRACTION))
+                            rowGapFraction = ((rowGapFraction * screenPx - ROW_GAP_STEP_PX) / screenPx)
                                 .coerceAtLeast(ROW_GAP_FRACTION_MIN)
                         }
                     )
@@ -924,6 +933,7 @@ private fun pxToDp(px: Float, density: Float) = (px / density).dp
  * Rounding up costs a pixel of layout and removes the failure mode entirely.
  */
 private fun canvasHeightDp(px: Float, density: Float) = ((ceil(px) + 1f) / density).dp
+
 
 
 
