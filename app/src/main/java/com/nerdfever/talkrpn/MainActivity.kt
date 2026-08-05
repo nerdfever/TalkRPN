@@ -458,6 +458,17 @@ private fun ListenScreen(resumed: Boolean) {
             Detail(it, if (it.startsWith("needs")) BAD else GOOD)
         }
 
+        Gap(GAP_SMALL)
+
+        // How large an HP-01 digit has to be to read comfortably, and how many fit
+        // across. A measuring instrument rather than a feature, so it hangs off this
+        // test screen instead of taking a second launcher icon.
+        Button(onClick = {
+            context.startActivity(Intent(context, DisplayTestActivity::class.java))
+        }) {
+            Text("display size test", fontSize = TEXT_BUTTON_SMALL)
+        }
+
         Gap(GAP_SECTION)
 
         if (history.isNotEmpty()) {

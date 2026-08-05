@@ -107,5 +107,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            The display-size test. Reached from a button on the main screen rather
+            than from the launcher: it is a measuring instrument, not a second app,
+            and a second icon in the watch's app list would only be in the way.
+
+            exported="true" so that `adb shell am start` can open it directly, which
+            is the whole development loop for a screen whose only purpose is to be
+            looked at and adjusted. It displays fixed sample digits and reads nothing,
+            so there is nothing here for another app to reach. Revisit if this screen
+            ever survives into the shipped app.
+        -->
+        <activity
+            android:name=".DisplayTestActivity"
+            android:taskAffinity=""
+            android:theme="@style/Theme.TalkRPN"
+            android:exported="true" />
     </application>
 </manifest>

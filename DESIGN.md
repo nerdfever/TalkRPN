@@ -27,16 +27,61 @@ numbers. Summary:
 | accuracy on test phrases | all correct | mangled spoken `e` |
 | compound numbers | `nine hundred eighty eight` → `988` | returns words |
 | app size | **zero** | 97 MB |
-| deaf window between utterances | **~2000 ms** | none |
+| deaf window between utterances | **~200 ms** | none |
 
 Vosk was removed but stayed in git history. The `SpeechSource` interface it forced
 into existence was kept: it cost nothing, it is what made the comparison possible,
 and a future engine drops in without the calculator noticing.
 
-**The one open weakness** is the deaf window — the platform recognizer closes the
-microphone after every result and takes ~2 s to reopen it. Anything said in that
-window is lost. `EXTRA_SEGMENTED_SESSION` (API 33) exists to keep a session open
-across utterances and is the first thing to try if this proves annoying in use.
+### The deaf window, and how it was closed
+
+The platform recognizer closes the microphone after every result, so anything said
+between utterances was lost. Two corrections to what was first written here:
+
+- The ~2000 ms figure was **cold start**, not steady state. Measured steady state is
+  ~200 ms mean.
+- `EXTRA_SEGMENTED_SESSION` (API 33) is **not supported on this device**. It was the
+  obvious fix and it does nothing here.
+
+What actually fixed it was inverting the ownership. The app now owns the microphone
+and the recognizer reads from it, rather than the recognizer owning the microphone
+and the app waiting its turn:
+
+    MicStream ── AudioRecord, runs continuously ──┐
+                                                  ├── ParcelFileDescriptor.createPipe()
+    SpeechRecognizer ── EXTRA_AUDIO_SOURCE ───────┘
+
+`AudioRecord` runs for as long as the screen is up. Restarting a recognizer session
+replays the buffered backlog into the new session instead of discarding it, so
+speech that begins before the recognizer is ready survives. This is why the mic can
+stay visibly "open" to the user — the earlier red/green signalling problem, where
+the indicator flipped to red a few milliseconds after the user had already started
+talking, no longer arises.
+
+---
+
+## Cloud recognition: not now, and the reason is measurement not principle
+
+The constraint against it was withdrawn (see the note at the top), so this is a
+free engineering choice. The measurement says stay local:
+
+| `EXTRA_PREFER_OFFLINE` | Silent failures |
+|---|---|
+| **ON** | **0%** |
+| OFF | 36% |
+
+Counterintuitive — Google's server-side models are plainly better in general, and
+the same watch dictating to Gemini performs well. The discrepancy is not explained.
+The working guess is that with the flag off the recognizer waits on a network round
+trip that this watch's Wi-Fi does not reliably complete, and gives up silently
+rather than falling back.
+
+Whatever the cause, building a cloud path now would mean adding the route that
+measured **worse**. Revisit only if a specific token proves unrecognizable offline
+after biasing — then it is a targeted fix rather than speculation.
+
+`INTERNET` stays absent for now, as a consequence of this decision rather than as a
+principle being defended.
 
 ---
 
@@ -135,9 +180,95 @@ Two of the three never reach the parser, so at parse time it is a single test: i
 number entry in progress.
 
 **Risk worth remembering:** `e` is the acoustically weakest token in the vocabulary
-carrying the most meaning. Vosk rendered it `ie`, `he`, `east`, or dropped it
-entirely — and a dropped `e` turns 2.5e6 into 2.56 silently. Needs testing on the
-platform engine before it is committed to.
+carrying the most meaning, and a dropped `e` turns 2.5e6 into 2.56 silently.
+
+### What the platform engine actually does with `e` (measured 2026-08-04)
+
+| Spoken | Result |
+|---|---|
+| `e` alone | **nothing comes back** |
+| `e` … pause … `f` | `e f` — both words, emitted only once `f` arrives |
+| `e to the x` | recognized |
+| `log base e` | recognized, most of the time |
+
+The pattern is not that `e` is misheard. It is that **the engine will not emit a
+result for an utterance this short on its own** — it needs neighbouring speech
+before it will commit. Given a neighbour, the `e` is there and correct.
+
+This is better news than it first appears, because in real use `e` is almost never
+alone. `2.5 e 6` surrounds it with digits on both sides, which is exactly the
+condition under which it works. The failing case — `e` as an entire utterance — is
+one a calculator rarely produces.
+
+Two consequences:
+
+- **Do not judge `e` by speaking it in isolation.** That tests the endpointer, not
+  the vocabulary.
+- **Keep a long spoken form for EEX.** `times ten to the` already exists as an alias
+  and carries enough acoustic weight to stand alone. It is the fallback when `e`
+  does fail.
+
+Biasing has **not** been tried yet, and this is the token most likely to benefit
+from it.
+
+---
+
+## Display modes
+
+Three, each with a settable number of digits after the radix, defaulting to **3**:
+
+| Mode | Behaviour |
+|---|---|
+| **Fixed** | Ordinary positional notation. **Overflows to Scientific** when the value will not fit. |
+| **Scientific** | One digit before the radix, exponent free. |
+| **Engineering** | Exponent constrained to a multiple of 3, so one to three digits sit before the radix. |
+
+**Note a change from `speech_tokens.xlsx`.** The sheet says Fixed overflows to
+*Engineering*; the decision here is *Scientific*. Worth reconciling — Engineering
+would keep an overflowed value in the same 10³ family as the units the rest of the
+calculation is in, which is an argument for the sheet's version.
+
+### The radix is always shown
+
+An integer displays as `5.`, never `5` — as HP calculators do, and including when
+the digit count after the radix is zero.
+
+Not decoration. On a display this narrow, truncating a value to fit is routine, so
+a reader needs to know whether they are looking at a whole number or at the leading
+digits of something longer. The trailing point is that signal. It also separates a
+displayed number from a register label or an error word at a glance.
+
+On a value carrying an exponent the radix belongs to the mantissa: `6e23` displays
+as `6.e23`, not `6e23.`.
+
+Cost is one narrow slot per integer — about a third of a digit position at the
+current `PUNCTUATION_ADVANCE`.
+
+### Digit grouping
+
+Groups of three left of the radix, separated by commas.
+
+Grouping is a **display** concern, not a font one - the renderer draws a `,` if it
+is handed one and has no opinion about where. This matters because the
+`radix comma` / `radix dot` commands swap the two characters, so the separator and
+the radix have to be decided together, in one place.
+
+Only the integer part is grouped. Never the fraction, and never the exponent.
+
+Grouping applies in Fixed mode only in practice: Scientific has a single digit
+before the radix and Engineering at most three, so neither ever reaches a group
+boundary.
+
+**Separators are narrower than a digit cell.** On the real HP-01 every character
+consumed a whole digit position, which is why `3.141593` filled eight of its nine.
+Authentic and unaffordable: grouping `1,234,567` would spend three of ten positions
+on punctuation. `Hp01Font.PUNCTUATION_ADVANCE` sets the width as a fraction of a
+full advance - 1.0 is the original behaviour, 0.35 is the current setting and looks
+like a calculator LCD, 0 draws the mark inside the preceding gap for nothing. Note
+that 0 and a tight pitch do not combine, since the gap is what shrinks.
+
+The comma is drawn as the decimal point's own dot plus one extra tail stroke below
+it, so it costs the cell no new geometry.
 
 ---
 
@@ -164,6 +295,28 @@ variable-base log is `ln ÷ ln`.
 
 ---
 
+## Vocabulary: what is still unsettled
+
+`speech_tokens.xlsx` is the working list — roughly 60 tokens and 90 spoken forms.
+It is explicitly not final. Reading it against the decisions above, these need
+resolving before biasing is worth measuring:
+
+| Open question | Where |
+|---|---|
+| **Bare `log` and `antilog` are missing.** The naming scheme says bare means base 10, but neither has a row — and base 10 is the common case. | — |
+| **`drop` means two things.** It is an alias for `roll`, and separately its own token `DROP`. The note on the `roll` row ("drop, copy T to Z") describes DROP, not a four-register roll-down. So: is there a true R↓ at all, or only drop? | rows 23, 63 |
+| **`swap` appears twice**, same token both times. | rows 21, 39 |
+| **No roll *up*.** HP-21 has R↓ only, so this may be deliberate. | — |
+| **`sine` and `sign` are homophones** — and `change sign` contains the word. No recognizer will separate these reliably; the parser needs an explicit rule. | rows 15, 31 |
+
+**Biasing is gated on this.** `EXTRA_BIASING_STRINGS` is not unbounded, so the list
+may have to be tokens only rather than every alias — and biasing measured against a
+vocabulary that then changes has to be measured again. Settle the sheet, then bias,
+then measure against a fixed script so before/after is real rather than
+impressionistic.
+
+---
+
 ## Sign handling
 
     negative  →  set sign negative   (idempotent)
@@ -175,6 +328,35 @@ it negative" is safe to say without looking, and a toggle isn't.
 
 ---
 
+## Stack naming: HP's convention is kept, inconsistency and all
+
+HP calls the fourth register **T**, glossed as "top", and draws it at the top of the
+display. In the ordinary stack sense it is the *bottom*: push and pop happen at X,
+so X is top-of-stack and T is the far end.
+
+HP's own metaphor is not push/pop but **stack lift** — their term. Values enter at
+the bottom and the column rises toward T, which makes the naming self-consistent
+within that model. What is unusual is only that the *active* register sits at the
+bottom, which is backwards from most stacks anyone meets.
+
+T is not quite a normal bottom either: **on a drop it replicates itself** rather
+than emptying, which is what makes `2 ENTER × × ×` keep squaring against a
+constant.
+
+**Decision: keep HP's naming and drawing order** — T, Z, Y, X down the screen. The
+alternative considered was Forth order, with Y, Z and T *under* X so that X reads
+visibly as top-of-stack. Rejected: every HP manual and forty years of muscle memory
+agree with each other, and being locally more correct at the cost of disagreeing
+with all of that is a bad trade for a calculator meant to be used.
+
+**But the convention must not leak into the engine.** The stack is held in one
+unambiguous order — index 0 = X = top-of-stack, ascending into the machine — and
+the display layer reverses it when drawing. Naming registers by screen position
+would bake the ambiguity in permanently, and something would eventually be indexed
+the wrong way round.
+
+---
+
 ## Undo
 
 Snapshot the whole machine — four stack registers, LastX, the STO registers, mode
@@ -183,7 +365,7 @@ state is small enough that nothing cleverer is warranted.
 
 ---
 
-## Units (later, but decide the value type now)
+## Units (deferred, but decide the value type now)
 
 Plus42-style units are a natural fit for voice — saying "five point two kilometres"
 is far easier than keying a unit. The open-vocabulary engine makes the extra
@@ -193,10 +375,60 @@ vocabulary free.
 — `Value(magnitude, unit?)` rather than a bare `Double` — so units can be added
 later without rewriting the stack, display and parser.
 
-One question still open: on switching unit systems, do stored values *convert*
-(10 gallons becomes 37.85 litres, changing the number on screen), or do they keep
-their entered unit with the mode only setting the default for new entries? The first
-is more surprising mid-calculation.
+### Unit mode
+
+An explicit mode state — **SI, US, Imperial** — with a command to set each.
+
+Keeping US and Imperial apart is not pedantry. Since 1959 both share the foot and
+the pound, so length and mass are identical; **volume is not**. A US gallon is
+3.785 L against the imperial 4.546 L, and a US pint is 16 fl oz against 20. Merging
+them would silently corrupt exactly the calculations someone reaches for a
+calculator to do.
+
+The mode governs two things and no others:
+
+1. What unit a **bare number** is assumed to be.
+2. What unit **results are displayed** in.
+
+It does not govern what a value *is*. A value carries its own unit, so an explicit
+`five feet` is five feet regardless of mode.
+
+### Switching modes does not convert what is already stored
+
+Entered values keep the unit they were entered in — feet stay feet in SI mode.
+Changing mode changes the defaults for what comes next, nothing more. Converting
+everything the instant the mode changes is the more surprising behaviour
+mid-calculation, and surprise is expensive on a device with no undo button in
+reach.
+
+To convert the machine, **say the mode twice in a row**: `SI SI` converts every
+register and store into SI. Two adjacent mode tokens is unambiguous in the token
+stream, and it echoes the double-press idiom HP users already have in their fingers.
+
+Undo covers the accident case, since a snapshot is taken per operation — a stray
+repeat is recoverable rather than catastrophic.
+
+**Repeats survive recognition.** This was raised as a worry — the idiom depends on
+two identical tokens arriving as two — and the evidence says it is not one. No
+collapsing has been observed in use, and a deliberate test of three `arcsin`
+followed by three `arcsine` returned all six as separate results.
+
+The lone `e` failure is a different mechanism and does not generalise here: that is
+an utterance too short to commit to in isolation, a minimum-context problem. `SI SI`
+is four syllables of continuous speech.
+
+### Automatic mode switching: maybe, and narrowly
+
+Speaking a unit from another system could switch the mode — `meters` selects SI,
+`feet` selects US, `imperial gallons` selects Imperial.
+
+Attractive, and low risk *only because of the rule above*: since switching does not
+convert anything, a wrong guess costs nothing already on the stack. It changes what
+the next bare number means, and that is all.
+
+Left as MAYBE. The thing to watch is whether it surprises in practice — saying
+`five feet` once in an otherwise metric session would quietly make the following
+bare number a US measure.
 
 ---
 
@@ -212,6 +444,58 @@ offline routes:
 
 An LLM would only add tolerance for sloppy phrasing, which is worth much less given
 a fixed token vocabulary.
+
+---
+
+## Display: HP-01 as inspiration, not as emulation
+
+`HP01font.kt` reconstructs the HP-01's 1977 LED font by measurement from
+photographs, cross-checked against the December 1977 *HP Journal* and the Panamatik
+repair-kit manual. It draws segments as vector paths on a Compose `Canvas`.
+
+**Explicit divergences from the original**, decided rather than inherited:
+
+- **A `.` or `:` will not consume a whole digit cell.** On the real HP-01 it does,
+  which is why `3.141593` fills eight of nine positions. That is authentic and
+  wasteful, and this is not an emulator.
+- **No unlit-segment ghosting.** (The idea: draw `8` in a dim colour first, then the
+  lit glyph over it, so dark segments stay faintly visible — the way an LCD looks.
+  It was suggested in the file's own notes as reading well on OLED. The HP-01 was
+  LED and showed no such thing, and it is not wanted.)
+
+What is being kept is the *look*: the 7.8° shear, the stroke weight, segments `a`
+and `d` hooking through 90° at their left ends, `b` taller than `f`, and butt caps
+so a `1` has no waist at the midline.
+
+### The open question: more segments, and a real font
+
+The display should be able to show **text**, not just digits — which the HP-01's
+seven segments cannot do. So: extend the cell to a larger segment count (14- or
+16-segment starburst), keeping the HP-01 geometry rules, and pretend the hardware
+had more segments than it did.
+
+That decision is separate from the delivery mechanism:
+
+| | Vector paths (today) | Built TTF/OTF |
+|---|---|---|
+| Glyph design work | same | same |
+| Layout | hand-rolled; `measureWidth` exists | Compose `Text` handles it |
+| Per-segment control | yes | no |
+| Toolchain | none | FontForge/fonttools, plus a build step |
+| Small sizes | explicit stroke width, consistent | hinting can distort thin segments |
+| Reuse outside the app | no | yes |
+
+The hard part — deciding the geometry of ~95 glyphs — is identical either way, and
+its output is a **segment mask table plus path data**. That table is the asset; the
+renderer is swappable. So this is not a permanent fork: design the masks first, and
+a TTF can be generated from the same data later if the layout convenience turns out
+to be worth the toolchain.
+
+For a single right-aligned line on a fixed cell grid, Compose's text layout buys
+little — a segment display *is* a fixed grid, which is what the vector renderer does
+natively and what a proportional text engine has to be argued out of.
+
+Housekeeping: `HP01font.kt` still declares `package com.example.hp01`.
 
 ---
 
