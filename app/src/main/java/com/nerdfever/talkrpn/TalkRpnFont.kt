@@ -173,9 +173,9 @@ object TalkRpnFont {
     // ---- Segment identity ---------------------------------------------------
 
     /**
-     * 30 elements, so the mask needs 30 bits. An Int has 32, which still fits -
-     * but there is now room for only two more, so nothing else may be packed in
-     * and any further split needs a Long.
+     * 31 elements, so the mask needs 31 bits. An Int has 32, which still fits -
+     * but there is room for exactly one more, so nothing else may be packed in
+     * and any further addition needs a Long.
      */
     enum class Seg {
         A1, A2, A3, A4,
@@ -186,7 +186,7 @@ object TalkRpnFont {
         H, I, J, K, L,
         M, N, O,
         P, Q,
-        COL1, COL2, DP, COMMA;
+        COL1, COL2, COL2_TAIL, DP, COMMA;
 
         val bit: Int get() = 1 shl ordinal
     }
@@ -321,6 +321,19 @@ object TalkRpnFont {
         // Centre column.
         Seg.P to line(X_MID, Y_TOP, X_MID, Y_MID),
         Seg.Q to line(X_MID, Y_MID, X_MID, Y_BASE),
+
+        // The semicolon's tail.
+        //
+        // A semicolon is a colon whose lower dot grew a tail, so that is exactly
+        // what this is: the comma's tail shape, hung off COL2 instead of off the
+        // decimal point. It has to be its own element rather than reusing COMMA
+        // because the two live in different places - the comma sits outside the
+        // cell to the right, where a thousands separator belongs, while this
+        // belongs on the cell axis under the upper dot.
+        Seg.COL2_TAIL to line(
+            DOT_AXIS_X, COL2_Y,
+            DOT_AXIS_X - COMMA_TAIL_LEFT, COL2_Y + COMMA_TAIL_DROP
+        ),
 
         // Descender.
         Seg.M to line(X_MID, Y_BASE, X_MID, Y_DESC),

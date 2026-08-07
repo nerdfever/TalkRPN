@@ -724,14 +724,14 @@ Divergences from the DL-3422, all deliberate:
 |---|---|
 | **Horizontal placement** | Half-width glyphs sit in different halves of the cell — digits and most lower case on the left, `p` on the right, `i j l` in the centre. At a fixed pitch that reads as uneven spacing even though the pitch is exact. Needs one rule, applied throughout. |
 | **`I` and `L` to the corners** | Both stop short of the cell corner; extending them would close the diagonals against the columns. |
-| **Semicolon** | Cannot be drawn with what exists. Needs a new segment. |
+| ~~Semicolon~~ | **Done.** `COL2_TAIL`, the 31st element: the comma's tail hung off the lower colon dot, so a semicolon is a colon whose lower dot grew a tail. One bit left in the `Int`. |
 | **Comma taper** | Should narrow gradually to the decimal point's size rather than being a constant-width tail. |
 | **`M` is too long** | Geometry, not mask. |
 | **`P`/`Q` shift** | Both may want to move left a little; `B` and `D` are what show it. |
 | **Decimal-point position** | `DP_X` is 86.64, which is 28.17 past the right column. Fine at the authentic advance of 142.08, but it collides with the next glyph at any tighter pitch — so it is coupled to whatever pitch is finally chosen. |
 | **Stroke width** | The HP-01's 9.29 is too heavy for 26 bars. Around 5.5 reads well; not yet fixed. |
 | **`l` and `\|` are identical** | Both are `P Q`. Fine or not, but it should be a decision rather than an accident. |
-| **Parens vs brackets** | `(` is distinguished from `[` by hooking *both* corners, so it is round where `[` is square — the real typographic difference. `)` cannot mirror it, there being no hook on the right, so it sits on the centre column instead. Symmetric parens would need a right-hand hook pair, taking the font to 32 elements and exactly filling an `Int` mask. |
+| **Parens vs brackets** | Both are the centre column with bars pointing the way they open, so a paren still resembles a bracket. Left alone: the fix needs right-hand rounding, tried and rejected. |
 | **Not yet wired in** | `DisplayTestActivity` still renders with `Hp01Font`. The calculator display needs moving onto `TalkRpnFont`. |
 | **Still guessed** | `'`, `f` and `t` — the chart is ambiguous at those three. |
 | **Final LED colour** | Three candidate reds are cycled in the test screens; the choice has to be made on the watch, not the emulator. |
@@ -775,16 +775,35 @@ That suggests a rule for spending new segments:
   before the hooks — is a legibility failure. Buy the segment.
 - A `W` that is readable but not beautiful is a fidelity failure. Leave it.
 
-**Rounding *all* the corners** is the interesting experiment, and worth actually
-rendering rather than arguing about. Two more hook pairs, top-right and
-bottom-right, would take us to 32 elements. Note it might read as *more* period,
-not less: the HP-01's rounded left corners are its signature, and the bubble lens
-softened everything anyway. It would also fix the parenthesis asymmetry for free.
-The risk is convergence — `0 O D U C` all becoming the same rounded rectangle,
-which is a legibility cost, not a style one.
+**Settled by looking at it: more rounding ruins the effect.** A single rounded
+`(` sitting among square glyphs was enough to answer it. The HP-01 look depends
+on corners being *mostly* square, with the left-hand curl as the exception that
+reads as a signature. Round more and it drifts toward a 1980s
+vacuum-fluorescent face. So: no further rounding, and the only new element bought
+is the one the semicolon needed.
+
+Two corrections to what was first written here, both worth keeping:
+
+- **The cost was quoted wrong.** "Two more hook pairs would take us to 32" is
+  false. The left corner needs three pieces beyond the main bar and column —
+  `A4` (square stub), `A3` (arc), `F2` (column stub). The right side has no
+  stubs: `A2` and `B` run straight to the corner, so an arc there would sit
+  inside square ink and round nothing. Making the right corner *choosable* means
+  splitting `A2`, `B`, `D2` and `C` into main + stub too: **+6, so 36 elements,
+  and the mask becomes a `Long`.**
+- **Going fully round would have been *cheaper*, not dearer** — drop
+  `A4 D4 F2 E2`, add two arcs, and the font falls to 28 elements. The
+  square-or-hooked *choice* is what costs; the curves are nearly free. Cost and
+  boldness pointed in opposite directions here, and the look decided it.
+
+A method note, since it cost a round trip. The mismatched `(` `)` pair was
+described accurately in three places and still shipped. *"No hook exists on the
+right"* is a fact about the segment table; *"that pair looks broken"* is a fact
+about the glyph. Reasoning carefully about the first is not a substitute for
+rendering the second and looking at it.
 
 **And we do have a hard ceiling, just a different one.** The mask is an `Int`.
-Thirty elements now, two spare, and 32 is the wall — past that it is a `Long` and
+Thirty-one elements now, one spare, and 32 is the wall — past that it is a `Long` and
 every mask constant doubles. Their budget was pins; ours is bits; both land at
 about the same number. Worth deciding what those last two bits buy before
 spending them.
@@ -832,3 +851,4 @@ two disagree, the Kotlin wins.
 **This vindicates the rule that the app listens only while actively calculating.** A
 real calculation is thirty seconds, which costs nothing. An always-listening
 calculator would be unusable.
+

@@ -230,7 +230,12 @@ object TalkRpnGlyphs {
         '.' to m(Seg.DP),
         ',' to m(Seg.COMMA),
         ':' to m(Seg.COL1, Seg.COL2),
-        ';' to m(Seg.COL1, Seg.COMMA),
+
+        // A colon whose lower dot has grown a tail - which is what a semicolon
+        // is. Previously COL1 + COMMA, which put the dot on the cell axis and
+        // the comma outside the cell to the right: two marks that belonged to
+        // different characters.
+        ';' to m(Seg.COL1, Seg.COL2, Seg.COL2_TAIL),
         '-' to MID,
         '+' to (MID or STEM),
         '*' to m(Seg.H, Seg.I, Seg.L, Seg.K, Seg.P, Seg.Q, Seg.G1, Seg.G2),
@@ -255,22 +260,16 @@ object TalkRpnGlyphs {
         // Two upper verticals of equal length: F and P.
         '"' to (UL or m(Seg.P)),
 
-        // Parentheses against brackets.
+        // Parentheses: the centre column with bars pointing the way the paren
+        // opens. Brackets take the outer columns.
         //
-        // The problem: a bracket is a column with two bars, and so was a paren -
-        // '(' was the same shape as '[' shifted half a cell right, which in a
-        // string reads as two identical brackets. Position alone cannot carry the
-        // distinction.
-        //
-        // The fix uses the only curve the cell has. '(' takes the left column
-        // with BOTH corners hooked, so it is genuinely round where '[' is square
-        // - the real typographic difference between the two.
-        //
-        // There is no hook on the right, so ')' cannot be its mirror. It stays on
-        // the centre column, which at least separates it from ']' on the outer
-        // one. Truly symmetric parens would need a right-hand hook pair, taking
-        // the font to 32 elements and exactly filling an Int mask.
-        '(' to m(Seg.A1, Seg.A3, Seg.F1, Seg.E1, Seg.D3, Seg.D1),
+        // A rounded '(' was tried and reverted. Hooking both its corners did
+        // distinguish it from '[' - round against square, the real typographic
+        // difference - but there is no hook on the right, so ')' could not
+        // mirror it, and a mismatched pair looks far worse than a pair that
+        // merely resembles brackets. Making the right corners roundable is not a
+        // small change either: see the note in DESIGN.md.
+        '(' to m(Seg.A2, Seg.P, Seg.Q, Seg.D2),
         ')' to m(Seg.A1, Seg.P, Seg.Q, Seg.D1),
         '[' to (TOP_LEFT or UL or LL or BOT_LEFT),
         ']' to (m(Seg.A2) or UR or LR or m(Seg.D2)),
