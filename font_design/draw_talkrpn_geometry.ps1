@@ -140,6 +140,17 @@ $SEGMENTS = @(
     @{ N = "N";  Kind = "Line"; X1 = $X_N_LEFT;     Y1 = $Y_DESC;  X2 = $X_MID;       Y2 = $Y_DESC;     LabelDX =  -6; LabelDY =   6 }
     @{ N = "O";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_DESC;  X2 = $X_O_RIGHT;   Y2 = $Y_DESC;     LabelDX =  -6; LabelDY =   6 }
 
+    @{ N = "A5"; Kind = "Poly"; Alt = $true; LabelX = 54.0; LabelY = 2.0
+       Pts = @(, @(29.235, 0.0)) + @(0..16 | ForEach-Object {
+           $t = (270 + 90 * $_ / 16.0) * [Math]::PI / 180.0
+           , @((50.55 + 7.92 * [Math]::Cos($t)), (7.92 + 7.92 * [Math]::Sin($t)))
+       }) + @(, @(58.47, 50.0)) }
+    @{ N = "D5"; Kind = "Poly"; Alt = $true; LabelX = 54.0; LabelY = 88.0
+       Pts = @(, @(58.47, 50.0)) + @(0..16 | ForEach-Object {
+           $t = (90 * $_ / 16.0) * [Math]::PI / 180.0
+           , @((50.55 + 7.92 * [Math]::Cos($t)), (92.08 + 7.92 * [Math]::Sin($t)))
+       }) + @(, @(29.235, 100.0)) }
+
     @{ N = "COL1";  Kind = "Dot"; X1 = $X_MID; Y1 = $COL1_Y; LabelDX = 10; LabelDY = -9 }
     @{ N = "COL2";  Kind = "Dot"; X1 = $X_MID; Y1 = $COL2_Y; LabelDX = 10; LabelDY = -9 }
     @{ N = "DP";    Kind = "Dot"; X1 = $DP_X;  Y1 = $DP_Y;   LabelDX = 10; LabelDY = -9 }
@@ -175,6 +186,14 @@ foreach ($s in $SEGMENTS) {
             $g.DrawLines($pen, [System.Drawing.PointF[]]$pts)
             $mid = $pts[12]
             $g.DrawString($s.N, $altFont, $brush, ($mid.X + $s.LabelDX), ($mid.Y + $s.LabelDY))
+        }
+
+        "Poly" {
+            $pts = @()
+            foreach ($q in $s.Pts) { $pts += P $q[0] $q[1] }
+            $g.DrawLines($pen, [System.Drawing.PointF[]]$pts)
+            $lp = P $s.LabelX $s.LabelY
+            $g.DrawString($s.N, $altFont, $brush, $lp.X, $lp.Y)
         }
 
         "Dot" {
@@ -223,7 +242,7 @@ $g.DrawString("TalkRPN cell - centreline skeleton", $titleFont, $black, 24, 22)
 $header = @(
     "No stroke width, no slant. Origin is the top-left centreline corner; x right, y down.",
     "Units are the HP-01's centreline box (53.5 x 91.5) scaled by 100/91.5 = 1.0929, so cap height is exactly 100.",
-    "26 bars + COL1 + COL2 + DP + COMMA = 30 elements.  Blue: A3 and D3 are ALTERNATIVES to A4 and D4, never lit together.",
+    "29 bars + COL1 + COL2 + DP + COMMA = 33 elements; the mask is a Long.  Blue: A3/D3 are ALTERNATIVES to A4/D4; A5/D5 are the right-paren halves.",
     "Segments meet flush - no gaps, unlike the DL-3422. TalkRpnFont.kt is the source of truth."
 )
 
@@ -256,6 +275,8 @@ foreach ($s in $SEGMENTS) {
     }
 }
 
+$lines += "  A5    compound     29.24,    0.00 -> arc R7.92 centre 50.55,7.92 ->  58.47,  50.00   right paren, top half"
+$lines += "  D5    compound     58.47,   50.00 -> arc R7.92 centre 50.55,92.08 -> 29.24, 100.00   right paren, bottom half"
 $lines += ""
 $lines += "DOT CENTRES     COL1    {0:F2}, {1:F2}      upper colon dot; also dots i and j" -f $X_MID, $COL1_Y
 $lines += "                COL2    {0:F2}, {1:F2}      lower colon dot, colon only" -f $X_MID, $COL2_Y
@@ -296,6 +317,8 @@ $bmp.Save($OUT, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 
 Write-Output "wrote $OUT  ($CANVAS_W x $CANVAS_H)"
+
+
 
 
 

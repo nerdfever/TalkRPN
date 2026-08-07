@@ -1,4 +1,4 @@
-package com.nerdfever.talkrpn
+﻿package com.nerdfever.talkrpn
 
 import com.nerdfever.talkrpn.TalkRpnFont.Seg
 
@@ -38,7 +38,7 @@ object TalkRpnGlyphs {
 
     // ---- Combinations, so the table below reads as shapes not bit soup -----
 
-    private fun m(vararg s: Seg) = s.fold(0) { acc, seg -> acc or seg.bit }
+    private fun m(vararg s: Seg) = s.fold(0L) { acc, seg -> acc or seg.bit }
 
     // Dave's shorthand when dictating corrections, and what it means here:
     //
@@ -86,9 +86,9 @@ object TalkRpnGlyphs {
 
     // ---- The table ----------------------------------------------------------
 
-    private val GLYPHS: Map<Char, Int> = mapOf(
+    private val GLYPHS: Map<Char, Long> = mapOf(
 
-        ' ' to 0,
+        ' ' to 0L,
 
         // ---- Digits ---------------------------------------------------------
         //
@@ -260,17 +260,16 @@ object TalkRpnGlyphs {
         // Two upper verticals of equal length: F and P.
         '"' to (UL or m(Seg.P)),
 
-        // Parentheses: the centre column with bars pointing the way the paren
-        // opens. Brackets take the outer columns.
+        // Parentheses, both properly curved - the pair that pushed the mask
+        // past an Int.
         //
-        // A rounded '(' was tried and reverted. Hooking both its corners did
-        // distinguish it from '[' - round against square, the real typographic
-        // difference - but there is no hook on the right, so ')' could not
-        // mirror it, and a mismatched pair looks far worse than a pair that
-        // merely resembles brackets. Making the right corners roundable is not a
-        // small change either: see the note in DESIGN.md.
-        '(' to m(Seg.A2, Seg.P, Seg.Q, Seg.D2),
-        ')' to m(Seg.A1, Seg.P, Seg.Q, Seg.D1),
+        // '(' is the left column with both corners hooked: round where '[' is
+        // square, which is the real typographic difference between them. ')'
+        // could not mirror it with what existed - the right side has no hooks -
+        // so A5 and D5 were added, each half of the right parenthesis in one
+        // piece. A mismatched pair had already been tried and looked broken.
+        '(' to m(Seg.A1, Seg.A3, Seg.F1, Seg.E1, Seg.D3, Seg.D1),
+        ')' to m(Seg.A5, Seg.D5),
         '[' to (TOP_LEFT or UL or LL or BOT_LEFT),
         ']' to (m(Seg.A2) or UR or LR or m(Seg.D2)),
         '{' to m(Seg.A2, Seg.P, Seg.G1, Seg.Q, Seg.D2),
@@ -314,7 +313,7 @@ object TalkRpnGlyphs {
     )
 
     /** Segment mask for a character, or null if this font has no glyph for it. */
-    fun maskFor(ch: Char): Int? = GLYPHS[ch]
+    fun maskFor(ch: Char): Long? = GLYPHS[ch]
 
     /** True if every character in [text] can be rendered. */
     fun canRender(text: String) = text.all { GLYPHS.containsKey(it) }
@@ -325,6 +324,8 @@ object TalkRpnGlyphs {
     /** The segment names lit for [ch], for review listings. */
     fun segmentNames(ch: Char): List<String> {
         val mask = GLYPHS[ch] ?: return emptyList()
-        return Seg.entries.filter { mask and it.bit != 0 }.map { it.name }
+        return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
+

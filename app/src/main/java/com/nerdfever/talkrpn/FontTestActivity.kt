@@ -470,7 +470,7 @@ private fun CharacterGrid(page: Int, sizeIndex: Int, stroke: Float, showBounds: 
 @Composable
 private fun GlyphCell(ch: Char, cellHeightPx: Float, stroke: Float, showBounds: Boolean) {
 
-    val mask = TalkRpnGlyphs.maskFor(ch) ?: 0
+    val mask = TalkRpnGlyphs.maskFor(ch) ?: 0L
     val density = LocalDensity.current.density
 
     val scale = cellHeightPx / TalkRpnFont.CELL_HEIGHT
@@ -575,6 +575,7 @@ private fun CompactControl(label: String, modifier: Modifier = Modifier, onClick
         Text(label, color = LABEL, fontSize = TEXT_BUTTON)
     }
 }
+
 
 
 

@@ -1,4 +1,4 @@
-package com.nerdfever.talkrpn
+﻿package com.nerdfever.talkrpn
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -131,6 +131,15 @@ object TalkRpnFont {
     /** Where each horizontal bar's straight run ends and its hook begins. */
     private const val X_HOOK_START = HOOK_R            // 7.92
 
+    /** The mirror point on the right, where the parenthesis arcs turn. */
+    private const val X_HOOK_END_R = CELL_WIDTH - HOOK_R   // 50.55
+
+    /**
+     * Control-point offset for a quarter-circle as one cubic Bezier:
+     * (4/3)tan(pi/8) x radius. Exact to within 0.02%.
+     */
+    private val HOOK_K = (4.0 / 3.0 * tan(Math.PI / 8.0)).toFloat() * HOOK_R
+
     /** The descender bar is inset from the columns, symmetrically. */
     private const val X_N_LEFT = 3.74f
     private const val X_O_RIGHT = 54.72f
@@ -173,14 +182,21 @@ object TalkRpnFont {
     // ---- Segment identity ---------------------------------------------------
 
     /**
-     * 31 elements, so the mask needs 31 bits. An Int has 32, which still fits -
-     * but there is room for exactly one more, so nothing else may be packed in
-     * and any further addition needs a Long.
+     * 33 elements, so the mask is a Long. It was an Int until the parentheses:
+     * A5 and D5 were elements 32 and 33, and crossing that line was a deliberate
+     * decision (see DESIGN.md), not drift.
+     *
+     * A5 and D5 are the right-hand parenthesis halves. Each bundles a bar stub,
+     * the corner arc and a column stub into ONE element, because the right side
+     * has no shortened bars or columns for a bare arc to join - A2, B, C and D2
+     * all run square into the corner. Splitting them properly would cost six
+     * elements; bundling costs two, and loses nothing while ')' is the only
+     * user.
      */
     enum class Seg {
-        A1, A2, A3, A4,
+        A1, A2, A3, A4, A5,
         B, C,
-        D1, D2, D3, D4,
+        D1, D2, D3, D4, D5,
         E1, E2, F1, F2,
         G1, G2,
         H, I, J, K, L,
@@ -188,11 +204,11 @@ object TalkRpnFont {
         P, Q,
         COL1, COL2, COL2_TAIL, DP, COMMA;
 
-        val bit: Int get() = 1 shl ordinal
+        val bit: Long get() = 1L shl ordinal
     }
 
     /** Every segment lit - the display self-test, and what to draw to check geometry. */
-    val ALL_SEGMENTS: Int = Seg.entries.fold(0) { acc, s -> acc or s.bit }
+    val ALL_SEGMENTS: Long = Seg.entries.fold(0L) { acc, s -> acc or s.bit }
 
     /**
      * The cell's own boundary, for diagnosing layout.
@@ -322,6 +338,30 @@ object TalkRpnFont {
         Seg.P to line(X_MID, Y_TOP, X_MID, Y_MID),
         Seg.Q to line(X_MID, Y_MID, X_MID, Y_BASE),
 
+        // The right-hand parenthesis halves: bar stub from the centre, corner
+        // arc, column stub to the middle. One continuous figure each, so the
+        // curve joins its straights without seams.
+        Seg.A5 to path {
+            moveToCell(X_MID, Y_TOP)
+            lineToCell(X_HOOK_END_R, Y_TOP)
+            cubicToCell(
+                X_HOOK_END_R + HOOK_K, Y_TOP,
+                X_RIGHT, Y_F_TOP - HOOK_K,
+                X_RIGHT, Y_F_TOP
+            )
+            lineToCell(X_RIGHT, Y_MID)
+        },
+        Seg.D5 to path {
+            moveToCell(X_RIGHT, Y_MID)
+            lineToCell(X_RIGHT, Y_E_BOTTOM)
+            cubicToCell(
+                X_RIGHT, Y_E_BOTTOM + HOOK_K,
+                X_HOOK_END_R + HOOK_K, Y_BASE,
+                X_HOOK_END_R, Y_BASE
+            )
+            lineToCell(X_MID, Y_BASE)
+        },
+
         // The semicolon's tail.
         //
         // A semicolon is a colon whose lower dot grew a tail, so that is exactly
@@ -375,13 +415,13 @@ object TalkRpnFont {
      * TOTAL_HEIGHT - CELL_HEIGHT below it for the descender.
      */
     fun DrawScope.drawTalkRpnCell(
-        mask: Int,
+        mask: Long,
         origin: Offset,
         cellHeight: Float,
         color: Color,
         strokeWidth: Float = STROKE
     ) {
-        if (mask == 0) return
+        if (mask == 0L) return
 
         val scale = cellHeight / CELL_HEIGHT
 
@@ -401,12 +441,12 @@ object TalkRpnFont {
             val lit = Path()
 
             for ((seg, p) in PATHS) {
-                if (mask and seg.bit == 0) continue
+                if (mask and seg.bit == 0L) continue
                 lit.addPath(p)
             }
 
             // The comma's tail is a bar like any other, so it joins the union.
-            if (mask and Seg.COMMA.bit != 0) lit.addPath(COMMA_TAIL)
+            if (mask and Seg.COMMA.bit != 0L) lit.addPath(COMMA_TAIL)
 
             if (!lit.isEmpty) {
 
@@ -418,9 +458,10 @@ object TalkRpnFont {
             // Dots are filled, not stroked, and never overlap a bar, so they are
             // safe to draw separately.
             for ((seg, centre) in DOT_CENTRES) {
-                if (mask and seg.bit == 0) continue
+                if (mask and seg.bit == 0L) continue
                 drawCircle(color, strokeWidth, centre)
             }
         }
     }
 }
+

@@ -725,13 +725,13 @@ Divergences from the DL-3422, all deliberate:
 | **Horizontal placement** | Half-width glyphs sit in different halves of the cell — digits and most lower case on the left, `p` on the right, `i j l` in the centre. At a fixed pitch that reads as uneven spacing even though the pitch is exact. Needs one rule, applied throughout. |
 | **`I` and `L` to the corners** | Both stop short of the cell corner; extending them would close the diagonals against the columns. |
 | ~~Semicolon~~ | **Done.** `COL2_TAIL`, the 31st element: the comma's tail hung off the lower colon dot, so a semicolon is a colon whose lower dot grew a tail. One bit left in the `Int`. |
-| **Comma taper** | Should narrow gradually to the decimal point's size rather than being a constant-width tail. |
-| **`M` is too long** | Geometry, not mask. |
+| ~~Comma taper~~ | **Decided: keep the constant-width tail.** More period-correct — though the real LED calculators drew no commas at all. |
+| **Segment `M` (the descender stem) is too tall** | Not the letter M. It drops 44 units against a 50-unit x-height, so `g q y j` tails plunge nearly as deep as their bowls are tall. Fix = raise the descender bar: `TOTAL_HEIGHT`, N/O's y, and M's endpoint, one decision. |
 | **`P`/`Q` shift** | Both may want to move left a little; `B` and `D` are what show it. |
 | **Decimal-point position** | `DP_X` is 86.64, which is 28.17 past the right column. Fine at the authentic advance of 142.08, but it collides with the next glyph at any tighter pitch — so it is coupled to whatever pitch is finally chosen. |
 | **Stroke width** | The HP-01's 9.29 is too heavy for 26 bars. Around 5.5 reads well; not yet fixed. |
 | **`l` and `\|` are identical** | Both are `P Q`. Fine or not, but it should be a decision rather than an accident. |
-| **Parens vs brackets** | Both are the centre column with bars pointing the way they open, so a paren still resembles a bracket. Left alone: the fix needs right-hand rounding, tried and rejected. |
+| ~~Parens vs brackets~~ | **Done.** Both parens are now properly curved: `(` is the left column with both corners hooked; `)` got `A5` and `D5`, each half of the right parenthesis as one bundled element (bar stub + arc + column stub — the right side has no shortened bars for a bare arc to join). This crossed the `Int` ceiling deliberately: 33 elements, the mask is now a `Long`. What was rejected earlier was a *mismatched* pair, not curvature. |
 | **Not yet wired in** | `DisplayTestActivity` still renders with `Hp01Font`. The calculator display needs moving onto `TalkRpnFont`. |
 | **Still guessed** | `'`, `f` and `t` — the chart is ambiguous at those three. |
 | **Final LED colour** | Three candidate reds are cycled in the test screens; the choice has to be made on the watch, not the emulator. |
@@ -802,11 +802,13 @@ right"* is a fact about the segment table; *"that pair looks broken"* is a fact
 about the glyph. Reasoning carefully about the first is not a substitute for
 rendering the second and looking at it.
 
-**And we do have a hard ceiling, just a different one.** The mask is an `Int`.
-Thirty-one elements now, one spare, and 32 is the wall — past that it is a `Long` and
-every mask constant doubles. Their budget was pins; ours is bits; both land at
-about the same number. Worth deciding what those last two bits buy before
-spending them.
+**The `Int` ceiling was crossed on 2026-08-07, deliberately, for the parens.**
+The mask is now a `Long`: 33 elements, 31 bits spare. The earlier framing —
+"their budget was pins, ours is bits, both land at about the same number" —
+stays true in spirit: the discipline of paying for each element is what keeps
+the kit legible, and the rule for spending stands (legibility failures yes,
+fidelity failures no). The parens qualified: an unmatched pair is a legibility
+failure, and `A5`/`D5` were the cheapest matched fix.
 
 ### The cell outline might be a feature, not just a tool
 
