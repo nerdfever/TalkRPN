@@ -736,6 +736,59 @@ Divergences from the DL-3422, all deliberate:
 | **Still guessed** | `'`, `f` and `t` — the chart is ambiguous at those three. |
 | **Final LED colour** | Three candidate reds are cycled in the test screens; the choice has to be made on the watch, not the emulator. |
 
+### How many segments is too many? (open question, worth deciding early)
+
+The point was never to reproduce a 1970s LED bubble display. It was to borrow
+its *style*. And we are not constrained the way it was:
+
+| Their constraint | Ours |
+|---|---|
+| Every segment needs a bond pad, a pin and a multiplex line | None. A segment is a `Path` |
+| Segments are straight diffused regions on a monolithic die | Any curve is free |
+| Die area and yield | None |
+| Gaps between emitters are physically necessary | We already abolished them — segments meet flush |
+
+So a dozen more segments would cost nothing and every letter could be made
+handsome. The question is what that would destroy.
+
+**A first answer: the style is the visible kit.** What reads as "segment
+display" is not the segment *count* — it is that you can see each glyph
+assembled from a small, fixed, reusable set of strokes, and see the same set
+recurring in every character. Add segments and glyphs converge on their true
+outlines; the kit stops being legible; and at some point it is no longer a
+segment font but a slightly stiff sans-serif. The count matters only because it
+is what keeps the kit visible.
+
+**A second answer, less comfortable: the wrongness is the charm.** A `W` that is
+really two columns with a peak between them, an `m` that is a compromise, a `V`
+that cannot close because there is no lower-right diagonal — these are what say
+*this is a machine approximating a letter*. Fix them all and the font stops
+saying it.
+
+That suggests a rule for spending new segments:
+
+> Spend them on **legibility** failures, not **fidelity** failures.
+
+- A semicolon that **cannot be drawn at all** is a legibility failure. Buy the
+  segment.
+- Two characters that are **indistinguishable** — `l` and `|`, or `(` and `[`
+  before the hooks — is a legibility failure. Buy the segment.
+- A `W` that is readable but not beautiful is a fidelity failure. Leave it.
+
+**Rounding *all* the corners** is the interesting experiment, and worth actually
+rendering rather than arguing about. Two more hook pairs, top-right and
+bottom-right, would take us to 32 elements. Note it might read as *more* period,
+not less: the HP-01's rounded left corners are its signature, and the bubble lens
+softened everything anyway. It would also fix the parenthesis asymmetry for free.
+The risk is convergence — `0 O D U C` all becoming the same rounded rectangle,
+which is a legibility cost, not a style one.
+
+**And we do have a hard ceiling, just a different one.** The mask is an `Int`.
+Thirty elements now, two spare, and 32 is the wall — past that it is a `Long` and
+every mask constant doubles. Their budget was pins; ours is bits; both land at
+about the same number. Worth deciding what those last two bits buy before
+spending them.
+
 ### The cell outline might be a feature, not just a tool
 
 The bounds box drawn for diagnosing layout — a muted cyan hairline (`#3D8B96`,
