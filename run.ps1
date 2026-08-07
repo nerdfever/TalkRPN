@@ -145,9 +145,19 @@ $pushed = $false
 
 foreach ($attempt in 1..$PUSH_ATTEMPTS) {
 
-    # Not $ErrorActionPreference-safe as a plain call: adb reports transfer progress
-    # on stderr, which "Stop" would treat as a failure. Look at what it says instead.
-    $output = & $adb push $apk $remoteApk 2>&1 | ForEach-Object { "$_" }
+    # adb reports transfer progress on stderr. Under $ErrorActionPreference = "Stop"
+    # a native command's stderr becomes a terminating ErrorRecord, so a SUCCESSFUL
+    # push aborts the script. Relax it for the call itself and judge by what adb
+    # actually said.
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+
+    try {
+        $output = & $adb push $apk $remoteApk 2>&1 | ForEach-Object { "$_" }
+    }
+    finally {
+        $ErrorActionPreference = $previousPreference
+    }
 
     if ($output -match 'file pushed|bytes in') { $pushed = $true; break }
 

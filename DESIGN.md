@@ -12,7 +12,53 @@ Decisions settled in discussion, with the reasoning. Written down because the
 reasoning is the part that gets forgotten, and several of these look arbitrary
 without it.
 
-Nothing here is built yet except the speech layer.
+Nothing here is built yet except the speech layer and the display font.
+
+---
+
+## Open questions
+
+Everything not yet decided, in one place. Each links to the section that discusses
+it. Ordered roughly by what blocks what.
+
+**Speech**
+
+- **Does `e` survive in context?** Measured alone it produces nothing; measured with
+  neighbours it works. `2.5 e 6` should be the good case but has not been tested.
+- **Biasing has never been switched on.** Gated on the vocabulary settling.
+- **How often does the recognizer insert words that match nothing?** Decides whether
+  erroring on unknown words is free or infuriating. The existing logs may answer it.
+
+**Vocabulary**
+
+- `clear` is a prefix of `clear x` — use `clear all`.
+- `absolute` is a prefix of `absolute value` — drop the longer alias.
+- `swap` appears twice; row 55 (`cancel`/`escape`) has no action.
+- `sine` and `sign` are homophones and both are needed.
+- No roll *up*. Deliberate, or an omission?
+
+**Parser**
+
+- **Unknown words: error or ignore?** Settled as error. What is not settled is
+  whether processing stops at the bad word or the whole utterance rolls back, and
+  what phonetic distance counts as "obviously a homophone".
+- **Read-back** — see below. The echo problem is the open part.
+
+**Units** — deferred entirely, but one question is already live: whether an
+automatic mode switch converts stored values or only changes the default.
+
+**Display**
+
+- **Stroke width is probably twice what it should be.** Measured 4.45% of digit
+  height on HP's own part against the 8.5% in use. To be judged on the watch.
+- **The 130 advance and the 62 cell width are reconstruction figures** with no
+  corroboration, and both look wrong in the same direction.
+- **The 22-segment design** — merging HP-01 hooks, the Woodstock in-cell decimal
+  point, and DL-3422 segment count. In progress.
+- **Showing an error word needs letters**, which the seven-segment font does not
+  have. This couples the error policy to the font work.
+
+**Deferred by decision, not open** — programs, units, integer/base mode.
 
 ---
 
@@ -106,11 +152,99 @@ the symbol forms the recognizer emits on its own.
 same as the table of what arrives. Both digits-as-numerals and `/`-for-divide were
 observed. The parser must accept forms no human would ever utter.
 
-**Constraint on aliases:** no phrase alias may be a *suffix* of another. `to the`
-cannot be an alias for `raise` while `times ten to the` exists, or
-"five times ten to the three" acquires two valid parses that differ by thirty orders
-of magnitude. Prefixes are safe under longest-match; suffixes are not. Worth
-enforcing at startup so it fails loudly rather than silently preferring one reading.
+### Constraint on aliases: no token may be a proper PREFIX of another
+
+An earlier version of this note had it backwards — it said prefixes were safe under
+longest-match and only suffixes were dangerous. That is true when parsing a finished
+utterance. It is false in real time, which is the case that matters.
+
+If `clear` and `clear x` are both tokens and the user says "clear" and stops, the
+calculator has to choose between two bad options: act at once, in which case
+`clear x` can never be spoken; or wait to see whether `x` follows, which is exactly
+the timeout that has been ruled out everywhere else. There is no third option.
+
+**Suffixes are fine.** `root` may live inside `square root`, because `square` alone
+commits to nothing — so holding it costs the user nothing and feels like listening
+rather than lagging. The asymmetry is entirely about whether the shorter thing is
+complete and actionable on its own.
+
+Two consequences in the current vocabulary:
+
+- **`clear` must go.** It is a prefix of `clear x`, *and* the shorter phrase is the
+  more destructive of the two, so a dropped word turns "clear one register" into
+  "wipe the machine". `clear all` fixes both at once: two words each, neither a
+  prefix of the other, and a dropped word yields nothing recognisable instead of
+  something catastrophic.
+- **`absolute` is a prefix of `absolute value`.** Harmless in effect, since both mean
+  the same token, but firing on `absolute` leaves `value` behind as a stray word.
+  Simplest to drop `absolute value`.
+
+`times ten to the` has been dropped from the vocabulary entirely, which removes the
+case that prompted the original rule.
+
+Worth enforcing at startup: assert that no token is a proper prefix of another, so
+the table fails loudly the first time someone adds one.
+
+---
+
+## Confirming what was heard
+
+Two mechanisms, one settled and one not.
+
+### Unknown words raise an error rather than being ignored
+
+A word that is not an obvious homophone of any token stops processing and is shown —
+`foobar?` — rather than being discarded so the rest of the utterance can run.
+
+The alternative, ignoring strays, looks tempting because it makes `square root` work
+without `square` being a token. It is the wrong trade: a dropped or invented word
+then silently changes what the remainder means, and the user has no way to tell.
+
+**This is the same principle as the naming rules: fail visibly.** It has now decided
+three separate questions — `clear all` over `clear`, dropping `squared`, and this.
+
+Open parts:
+
+- **Partial results must not trigger it.** The engine revises as it goes; `8086`
+  arrives as `80` first. An error fired on a partial would flash constantly, so
+  errors wait for a stable result and are therefore a beat behind the digits.
+- **Does processing stop at the bad word, or roll the whole utterance back?**
+  Stopping leaves the earlier tokens standing, which were correct. Rolling back
+  treats a garbled tail as evidence the whole utterance is suspect. Undo snapshots
+  make either possible.
+- **What counts as "obviously a homophone"** is the phonetic matcher's threshold:
+  per-word phonetic code plus edit distance. `antilock` for `antilog` must pass,
+  `foobar` must not. Tunable against the logs rather than guessable.
+
+### Reading it back aloud
+
+The calculator says what it heard as it executes, so a spoken sequence can be
+confirmed without looking at the wrist.
+
+**The problem is echo, and it is architectural.** The microphone is deliberately open
+continuously — that is what closed the deaf window — so anything the watch says, it
+also hears, and would then execute again. A read-back of `pi` becomes a second `pi`.
+
+Three ways out, in increasing order of cost:
+
+1. **Feed silence into the recognizer while speaking.** The app owns the pipe between
+   `MicStream` and the recognizer, so it can substitute silence for its own voice
+   without stopping `AudioRecord`. The hardware never closes, so no deaf window
+   returns — but anything the user says *over* the read-back is lost.
+2. **Acoustic echo cancellation.** `AcousticEchoCanceler` exists, but it expects the
+   `VOICE_COMMUNICATION` audio source, which may cost recognition quality — the very
+   thing being protected.
+3. **Only speak when there is something to say** — an error, or an ambiguous match —
+   so the channel is silent in the normal case and echo is confined to moments when
+   the user has stopped talking anyway.
+
+**Timing is the other problem.** Six tokens read back at roughly half a second each is
+three seconds of speech, by which time the user has finished the whole utterance. Per-
+token read-back will always lag; read-back at the end of an utterance will not.
+
+Worth remembering that **the display already is a read-back** — silent, instant, and
+echo-free. Speaking adds value only when the wrist is not being looked at, which
+argues for option 3 rather than narrating everything.
 
 ---
 
@@ -138,6 +272,22 @@ overridden", it's "`clear` was resolved in the names space, where it is just a n
 Keep the set of parsing words **small, fixed and declared**. Forth's hardest corner
 is what happens when it isn't. In particular, user-defined programs must not
 themselves become parsing words.
+
+**Why the argument follows the word rather than coming off the stack.** Pure postfix
+would mean `3 fixed` and `16 word`. Two objections, and the first is decisive: a mode
+setting has no business disturbing the data. Pushing 3 to set the display format
+lifts the stack and shoves T off the bottom, destroying a value the user did not ask
+to lose. The second is that HP did not do it that way either — `FIX 3` is a keystroke
+sequence, not a stack operation.
+
+This is also the strongest argument for keeping the stack at four levels: the whole
+machine has to be visible at once, and an indefinitely deep stack cannot be.
+
+**`undo` must be reserved in every vocabulary.** Aborting a half-finished parsing
+word is done by saying `undo`, but the token after `store` is resolved against NAMES,
+where `undo` would otherwise be an ordinary name. So `undo` and its aliases are
+reserved words, and cannot be used as variable names. Without this the escape hatch
+is unreachable in exactly the situation it exists for.
 
 Related decisions:
 
@@ -219,14 +369,17 @@ Three, each with a settable number of digits after the radix, defaulting to **3*
 
 | Mode | Behaviour |
 |---|---|
-| **Fixed** | Ordinary positional notation. **Overflows to Scientific** when the value will not fit. |
+| **Fixed** | Ordinary positional notation. **Overflows to Engineering** when the value will not fit. |
 | **Scientific** | One digit before the radix, exponent free. |
 | **Engineering** | Exponent constrained to a multiple of 3, so one to three digits sit before the radix. |
 
-**Note a change from `speech_tokens.xlsx`.** The sheet says Fixed overflows to
-*Engineering*; the decision here is *Scientific*. Worth reconciling — Engineering
-would keep an overflowed value in the same 10³ family as the units the rest of the
-calculation is in, which is an argument for the sheet's version.
+Overflowing to Engineering rather than Scientific keeps an out-of-range value in the
+same power-of-1000 family as the units the rest of the calculation is expressed in,
+which is the more useful reading of a number that has just grown too large to show.
+
+Each mode takes a digit count as a following parameter — `fixed 3`, `scientific 2` —
+which makes all three parsing words. See below for why the count follows the mode
+rather than being taken from the stack.
 
 ### The radix is always shown
 
@@ -274,14 +427,20 @@ it, so it costs the cell no new geometry.
 
 ## Naming scheme for logs and powers
 
-One rule rather than six names — bare means ten, `natural` means e, `base N` states
-it:
+Two names, plus an explicit base. **There is no bare `log` or `antilog`, and no
+`10^x`:**
 
 | | log | antilog |
 |---|---|---|
-| bare (base 10) | `log` | `antilog` |
 | base e | `natural log` | `natural antilog` |
-| explicit | `log base two` | `antilog base two` |
+| any base | `log base <n>` | `antilog base <n>` |
+| base 10 | `log base ten` | `antilog base ten`, or `ten swap raise` |
+
+An earlier version had bare meaning base ten. Dropping it removes an irregular
+special case in favour of one uniform rule, at the cost of making base 10 — probably
+the commonest — three words instead of one. That trade was made deliberately.
+
+`<n>` is any real number, so `log base e` is another way to say `natural log`.
 
 Variable-base forms are deliberately absent: `n^x` is already `raise`, and a
 variable-base log is `ln ÷ ln`.
@@ -293,6 +452,21 @@ variable-base log is `ln ÷ ln`.
 - **`antilog` is acoustically weak** and is the root of half the table. Expect
   "auto log" / "and a log" and accept them as aliases.
 
+### `squared` is removed; square root is `root`
+
+`square` and `squared` differ by a final consonant, which is exactly what a
+recognizer drops or invents. With both `squared` and `square root` in the vocabulary,
+`square root` misheard as `squared root` executes x² then √, giving |x| — a plausible
+wrong number rather than an error.
+
+Removing `squared` closes it: `squared root` then has an unknown first word and
+raises an error. Removing `square root` instead does not, because `squared` remains a
+valid token and still fires.
+
+Squaring becomes `enter times` — idiomatic RPN, and acoustically distant from
+everything — or `two raise`. Worth listing explicitly in the vocabulary rather than
+leaving users to derive it.
+
 ---
 
 ## Vocabulary: what is still unsettled
@@ -301,13 +475,21 @@ variable-base log is `ln ÷ ln`.
 It is explicitly not final. Reading it against the decisions above, these need
 resolving before biasing is worth measuring:
 
+Settled since the first pass: bare `log`/`antilog` removed deliberately rather than
+missing; `drop` merged into `roll` with drop semantics, so there is no true R↓ — and
+that is defensible, since rotate exists mainly to inspect a stack you cannot see, and
+all four registers are on screen; `times ten to the` dropped entirely.
+
+Still open:
+
 | Open question | Where |
 |---|---|
-| **Bare `log` and `antilog` are missing.** The naming scheme says bare means base 10, but neither has a row — and base 10 is the common case. | — |
-| **`drop` means two things.** It is an alias for `roll`, and separately its own token `DROP`. The note on the `roll` row ("drop, copy T to Z") describes DROP, not a four-register roll-down. So: is there a true R↓ at all, or only drop? | rows 23, 63 |
-| **`swap` appears twice**, same token both times. | rows 21, 39 |
+| **`clear` is a prefix of `clear x`** — unworkable in real time, and the shorter phrase is the more destructive. Use `clear all`. | row 35 |
+| **`absolute` is a prefix of `absolute value`.** Same token, so harmless in effect, but the trailing word is left stranded. Drop the longer alias. | row 50 |
+| **`swap` appears twice**, same token both times. | rows 23, 38 |
+| **Row 55, `cancel`/`escape`, has no action** — vestigial now that both are `undo` aliases. | row 55 |
+| **`sine` and `sign` are homophones** — and `change sign` contains the word. No recognizer will separate these reliably; the parser needs an explicit rule. | rows 17, 32 |
 | **No roll *up*.** HP-21 has R↓ only, so this may be deliberate. | — |
-| **`sine` and `sign` are homophones** — and `change sign` contains the word. No recognizer will separate these reliably; the parser needs an explicit rule. | rows 15, 31 |
 
 **Biasing is gated on this.** `EXTRA_BIASING_STRINGS` is not unbounded, so the list
 may have to be tokens only rather than every alias — and biasing measured against a
@@ -515,6 +697,71 @@ by roughly 15%.
 need addressing, the levers are fewer or larger registers, a larger
 `SMALL_ROW_SCALE`, or a `STROKE` that does not scale purely with cell height —
 in ascending order of how much they depart from the original font.
+
+---
+
+## The TalkRPN font: where it stands
+
+`TalkRpnFont.kt` is the 30-element cell — HP-01 styling, DL-3422 segment count.
+`TalkRpnGlyphs.kt` maps all 95 printable ASCII characters onto it, derived from
+Litronix's published set and then corrected glyph by glyph against it.
+
+Divergences from the DL-3422, all deliberate:
+
+- **Digits 2 3 5 7 8 9 take the HP-01's hooked corners**, and `4` its short left
+  side. `A3`/`A4` and `D3`/`D4` are alternative corner pieces, never both lit —
+  except `&`, which uses both.
+- **When a corner is hooked, the column stub goes dark.** `F2` with `A3`, `E2`
+  with `D3` — otherwise the column spikes past the arc.
+- **All digits are half-width**, on `P`/`Q` rather than `B`/`C`. This is what
+  keeps `5` and `S` apart.
+- **The decimal point and comma live inside the character cell** rather than
+  consuming one of their own.
+
+### Open font work
+
+| | |
+|---|---|
+| **Horizontal placement** | Half-width glyphs sit in different halves of the cell — digits and most lower case on the left, `p` on the right, `i j l` in the centre. At a fixed pitch that reads as uneven spacing even though the pitch is exact. Needs one rule, applied throughout. |
+| **`I` and `L` to the corners** | Both stop short of the cell corner; extending them would close the diagonals against the columns. |
+| **Semicolon** | Cannot be drawn with what exists. Needs a new segment. |
+| **Comma taper** | Should narrow gradually to the decimal point's size rather than being a constant-width tail. |
+| **`M` is too long** | Geometry, not mask. |
+| **`P`/`Q` shift** | Both may want to move left a little; `B` and `D` are what show it. |
+| **Decimal-point position** | `DP_X` is 86.64, which is 28.17 past the right column. Fine at the authentic advance of 142.08, but it collides with the next glyph at any tighter pitch — so it is coupled to whatever pitch is finally chosen. |
+| **Stroke width** | The HP-01's 9.29 is too heavy for 26 bars. Around 5.5 reads well; not yet fixed. |
+| **`l` and `\|` are identical** | Both are `P Q`. Fine or not, but it should be a decision rather than an accident. |
+| **Parens vs brackets** | `(` is distinguished from `[` by hooking *both* corners, so it is round where `[` is square — the real typographic difference. `)` cannot mirror it, there being no hook on the right, so it sits on the centre column instead. Symmetric parens would need a right-hand hook pair, taking the font to 32 elements and exactly filling an `Int` mask. |
+| **Not yet wired in** | `DisplayTestActivity` still renders with `Hp01Font`. The calculator display needs moving onto `TalkRpnFont`. |
+| **Still guessed** | `'`, `f` and `t` — the chart is ambiguous at those three. |
+| **Final LED colour** | Three candidate reds are cycled in the test screens; the choice has to be made on the watch, not the emulator. |
+
+### The cell outline might be a feature, not just a tool
+
+The bounds box drawn for diagnosing layout — a muted cyan hairline (`#3D8B96`,
+1.2 cell units) against the LED red — reads better than it has any right to. It
+was built to answer "where does the ink sit inside its fixed pitch", but the
+contrast against the red is worth trying on the calculator display itself. Judge
+it on the watch before committing: a hairline that looks crisp on a 1700 px page
+may not survive at 2 px on the wrist.
+
+### A rendering bug worth remembering
+
+Segments were drawn one stroke at a time, which looked right at heavy strokes and
+wrong at light ones: where two overlap, the second stroke's antialiased edge
+blends over the first, and the doubled coverage reads as a **brighter** line. A
+real display has no such seam. Every lit bar now goes into one `Path`, stroked
+once, so an overlap is painted exactly as often as anything else. The PDF
+renderer had the same bug and the same fix.
+
+### Reviewing it
+
+`font_design/talkrpn_font_reference.pdf` is the artefact: geometry diagram,
+centreline listing, then every glyph drawn over its unlit ghost inside its cell
+bounds, with the lit segment names printed underneath — so a correction can be
+dictated as segment names rather than described as a shape.
+`make_font_reference.ps1` regenerates it and **mirrors** the Kotlin table; if the
+two disagree, the Kotlin wins.
 
 ---
 

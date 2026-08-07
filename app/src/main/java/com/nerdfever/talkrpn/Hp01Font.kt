@@ -75,9 +75,6 @@ object Hp01Font {
      */
     const val SLANT_DEGREES = 7.5f
 
-    /** Dot diameter is exactly twice the stroke width. */
-    const val DOT_RADIUS = STROKE
-
     /**
      * Horizontal distance between successive cell origins on the real HP-01.
      * The original spacing is wide because every character, including a bare
@@ -127,23 +124,32 @@ object Hp01Font {
     // Hook control-point offset along each tangent.
     private const val HOOK_K = KAPPA * HOOK_R      // 4.004
 
-    // Centreline y of the three horizontal bars.
-    private const val Y_A = STROKE / 2f              // 4.25
-    private const val Y_G = 50.5f
-    private const val Y_D = CELL_HEIGHT - STROKE / 2f // 95.75
+    /**
+     * Where the middle bar sits, as a fraction of the way from a's centreline to
+     * d's. **This is the one the font uses.**
+     *
+     * Dead centre, so b and c are exactly equal.
+     *
+     * Neither measured alternative below is wrong, and the two disagree with each
+     * other in opposite directions - so there is no single authentic answer to
+     * inherit. Put on screen side by side at the same size, the difference between
+     * any of the three is barely visible; the stroke width dominates it completely.
+     * Given that, an exact half is the one that needs no explaining.
+     */
+    const val G_FRACTION = 0.5f
 
-    // Centreline x of the two vertical columns.
-    private const val X_LEFT = STROKE / 2f                    // 4.25
-    private const val X_RIGHT = CELL_WIDTH - STROKE / 2f      // 57.75
+    /**
+     * The HP-01 reconstruction's figure: g just below centre, upper counter
+     * slightly the larger. Photographs of real HP-01s do look that way.
+     */
+    const val G_FRACTION_HP01 = 0.5055f
 
-    // Segment b runs taller than f, and c lower than e.
-    private const val Y_B_TOP = 4.25f
-    private const val Y_C_BOTTOM = 95f
-    private const val Y_F_TOP = 11.5f
-    private const val Y_E_BOTTOM = 89f
-
-    // Where each horizontal bar's straight run ends and its hook begins.
-    private const val HOOK_START_X = X_LEFT + HOOK_R          // 11.5
+    /**
+     * Measured off HP's QDSP-6064 datasheet - the Woodstock module, a different
+     * part - where g sits above centre and c is the longer by 14%. Photographs of
+     * an HP-55 look that way too, so the two modules genuinely differ.
+     */
+    const val G_FRACTION_QDSP = 0.4673f
 
     // Dot centres: sheared in POSITION, drawn as true circles.
     private const val DOT_AXIS_X = CELL_WIDTH / 2f   // 31
@@ -170,23 +176,54 @@ object Hp01Font {
     private const val COMMA_TAIL_DROP = 19f
     private const val COMMA_TAIL_LEFT = 7f
 
-    private const val COMMA_TAIL_START_HALF = DOT_RADIUS   // meets the dot at full width
-    private const val COMMA_TAIL_END_HALF = STROKE / 2f    // ends at a segment's width
-
     private const val COMMA_TAIL_TIP_X = DOT_AXIS_X - COMMA_TAIL_LEFT
     private const val COMMA_TAIL_TIP_Y = DOT_LOWER_Y + COMMA_TAIL_DROP
 
-    // ---- Slant-dependent geometry -------------------------------------------
+    // ---- Geometry that depends on slant, stroke or bar position --------------
 
     /**
-     * Everything the shear touches, built for one slant.
+     * Everything those three touch, built for one combination of them.
      *
      * The shear is baked into the paths at construction rather than applied as a
      * transform at draw time, because a sheared cubic is still a cubic - so the
      * hooks stay exact instead of being re-approximated on every frame. The price
-     * is that changing the slant means rebuilding, which is what this class is for.
+     * is that changing any of the three means rebuilding, which is what this class
+     * is for.
+     *
+     * Stroke is in here because the cell's ink box is held at CELL_WIDTH x
+     * CELL_HEIGHT and the centrelines float inward by half a stroke. That keeps a
+     * digit the same overall size as the stroke changes, which is what a fair
+     * comparison needs - though it does mean stroke touches the coordinates. The
+     * design drawings in font_design/ take the opposite convention, fixing the
+     * centreline box, because there the stroke should touch nothing.
      */
-    private class Geometry(val slantDegrees: Float) {
+    private class Geometry(
+        val slantDegrees: Float,
+        val stroke: Float,
+        val gFraction: Float
+    ) {
+
+        // Centrelines, inset from the ink box by half a stroke.
+        val yA = stroke / 2f
+        val yD = CELL_HEIGHT - stroke / 2f
+        val yG = yA + gFraction * (yD - yA)
+
+        val xLeft = stroke / 2f
+        val xRight = CELL_WIDTH - stroke / 2f
+
+        val hookStartX = xLeft + HOOK_R
+
+        // b runs from a to g; c from g all the way to d. f and e run between g and
+        // wherever the hooks land, which is what makes b longer than f by exactly
+        // one hook radius, and c longer than e by the same.
+        val yBTop = yA
+        val yCBottom = yD
+        val yFTop = yA + HOOK_R
+        val yEBottom = yD - HOOK_R
+
+        val dotRadius = stroke
+        val commaTailStartHalf = stroke
+        val commaTailEndHalf = stroke / 2f
 
         val shear = tan(Math.toRadians(slantDegrees.toDouble())).toFloat()
 
@@ -210,31 +247,31 @@ object Hp01Font {
         val paths: Map<Seg, Path> = mapOf(
 
             Seg.A to path {
-                moveToCell(X_RIGHT, Y_A)
-                lineToCell(HOOK_START_X, Y_A)
+                moveToCell(xRight, yA)
+                lineToCell(hookStartX, yA)
                 cubicToCell(
-                    HOOK_START_X - HOOK_K, Y_A,
-                    X_LEFT, Y_A + HOOK_R - HOOK_K,
-                    X_LEFT, Y_A + HOOK_R
+                    hookStartX - HOOK_K, yA,
+                    xLeft, yA + HOOK_R - HOOK_K,
+                    xLeft, yA + HOOK_R
                 )
             },
 
             Seg.D to path {
-                moveToCell(X_RIGHT, Y_D)
-                lineToCell(HOOK_START_X, Y_D)
+                moveToCell(xRight, yD)
+                lineToCell(hookStartX, yD)
                 cubicToCell(
-                    HOOK_START_X - HOOK_K, Y_D,
-                    X_LEFT, Y_D - HOOK_R + HOOK_K,
-                    X_LEFT, Y_D - HOOK_R
+                    hookStartX - HOOK_K, yD,
+                    xLeft, yD - HOOK_R + HOOK_K,
+                    xLeft, yD - HOOK_R
                 )
             },
 
-            Seg.G to path { moveToCell(X_RIGHT, Y_G); lineToCell(X_LEFT, Y_G) },
+            Seg.G to path { moveToCell(xRight, yG); lineToCell(xLeft, yG) },
 
-            Seg.B to path { moveToCell(X_RIGHT, Y_B_TOP); lineToCell(X_RIGHT, Y_G) },
-            Seg.C to path { moveToCell(X_RIGHT, Y_G); lineToCell(X_RIGHT, Y_C_BOTTOM) },
-            Seg.F to path { moveToCell(X_LEFT, Y_F_TOP); lineToCell(X_LEFT, Y_G) },
-            Seg.E to path { moveToCell(X_LEFT, Y_G); lineToCell(X_LEFT, Y_E_BOTTOM) },
+            Seg.B to path { moveToCell(xRight, yBTop); lineToCell(xRight, yG) },
+            Seg.C to path { moveToCell(xRight, yG); lineToCell(xRight, yCBottom) },
+            Seg.F to path { moveToCell(xLeft, yFTop); lineToCell(xLeft, yG) },
+            Seg.E to path { moveToCell(xLeft, yG); lineToCell(xLeft, yEBottom) },
         )
 
         val dotUpperCentre = Offset(sx(DOT_AXIS_X, DOT_UPPER_Y), DOT_UPPER_Y)
@@ -253,20 +290,20 @@ object Hp01Font {
 
             path {
                 moveToCell(
-                    DOT_AXIS_X + acrossX * COMMA_TAIL_START_HALF,
-                    DOT_LOWER_Y + acrossY * COMMA_TAIL_START_HALF
+                    DOT_AXIS_X + acrossX * commaTailStartHalf,
+                    DOT_LOWER_Y + acrossY * commaTailStartHalf
                 )
                 lineToCell(
-                    COMMA_TAIL_TIP_X + acrossX * COMMA_TAIL_END_HALF,
-                    COMMA_TAIL_TIP_Y + acrossY * COMMA_TAIL_END_HALF
+                    COMMA_TAIL_TIP_X + acrossX * commaTailEndHalf,
+                    COMMA_TAIL_TIP_Y + acrossY * commaTailEndHalf
                 )
                 lineToCell(
-                    COMMA_TAIL_TIP_X - acrossX * COMMA_TAIL_END_HALF,
-                    COMMA_TAIL_TIP_Y - acrossY * COMMA_TAIL_END_HALF
+                    COMMA_TAIL_TIP_X - acrossX * commaTailEndHalf,
+                    COMMA_TAIL_TIP_Y - acrossY * commaTailEndHalf
                 )
                 lineToCell(
-                    DOT_AXIS_X - acrossX * COMMA_TAIL_START_HALF,
-                    DOT_LOWER_Y - acrossY * COMMA_TAIL_START_HALF
+                    DOT_AXIS_X - acrossX * commaTailStartHalf,
+                    DOT_LOWER_Y - acrossY * commaTailStartHalf
                 )
                 close()
             }
@@ -288,11 +325,12 @@ object Hp01Font {
      * Not synchronised. Compose draws on a single thread, and the worst a race
      * could do is build the same geometry twice.
      */
-    private var cachedGeometry = Geometry(SLANT_DEGREES)
+    private var cachedGeometry = Geometry(SLANT_DEGREES, STROKE, G_FRACTION)
 
-    private fun geometryFor(slantDegrees: Float): Geometry {
-        if (slantDegrees != cachedGeometry.slantDegrees) {
-            cachedGeometry = Geometry(slantDegrees)
+    private fun geometryFor(slantDegrees: Float, stroke: Float, gFraction: Float): Geometry {
+        val c = cachedGeometry
+        if (slantDegrees != c.slantDegrees || stroke != c.stroke || gFraction != c.gFraction) {
+            cachedGeometry = Geometry(slantDegrees, stroke, gFraction)
         }
         return cachedGeometry
     }
@@ -304,7 +342,8 @@ object Hp01Font {
      * what right-alignment measures against - so it has to follow the slant or
      * rows drift as the slant changes.
      */
-    fun shearedWidth(slantDegrees: Float) = geometryFor(slantDegrees).shearedWidth
+    fun shearedWidth(slantDegrees: Float) =
+        CELL_WIDTH + tan(Math.toRadians(slantDegrees.toDouble())).toFloat() * CELL_HEIGHT
 
     // ---- Character map ------------------------------------------------------
 
@@ -367,13 +406,15 @@ object Hp01Font {
         origin: Offset,
         cellHeight: Float,
         color: Color,
-        slantDegrees: Float
+        slantDegrees: Float,
+        stroke: Float,
+        gFraction: Float
     ) {
         val m = GLYPHS[ch] ?: return
         if (m == 0) return
 
         val k = cellHeight / CELL_HEIGHT
-        val g = geometryFor(slantDegrees)
+        val g = geometryFor(slantDegrees, stroke, gFraction)
 
         withTransform({
             translate(origin.x, origin.y)
@@ -383,18 +424,18 @@ object Hp01Font {
                 if (m and seg.bit == 0) continue
                 val cap =
                     if (seg.bit and CAP_ROUND_MASK != 0) StrokeCap.Round else StrokeCap.Butt
-                drawPath(p, color, style = Stroke(width = STROKE, cap = cap))
+                drawPath(p, color, style = Stroke(width = g.stroke, cap = cap))
             }
             if (m and Seg.DOT_UPPER.bit != 0) {
-                drawCircle(color, DOT_RADIUS, g.dotUpperCentre)
+                drawCircle(color, g.dotRadius, g.dotUpperCentre)
             }
             if (m and Seg.DOT_LOWER.bit != 0) {
-                drawCircle(color, DOT_RADIUS, g.dotLowerCentre)
+                drawCircle(color, g.dotRadius, g.dotLowerCentre)
             }
             if (m and Seg.COMMA_TAIL.bit != 0) {
                 // Filled, not stroked - the outline already carries the taper.
                 drawPath(g.commaTail, color)
-                drawCircle(color, COMMA_TAIL_END_HALF, g.commaTailTip)
+                drawCircle(color, g.commaTailEndHalf, g.commaTailTip)
             }
         }
     }
@@ -410,7 +451,9 @@ object Hp01Font {
         color: Color,
         advance: Float,
         punctuationAdvance: Float,
-        slantDegrees: Float
+        slantDegrees: Float,
+        stroke: Float,
+        gFraction: Float
     ) {
         val k = cellHeight / CELL_HEIGHT
         var x = origin.x
@@ -433,7 +476,7 @@ object Hp01Font {
             // shifting it left would just hang it off the end of the row.
             val shift = if (index > 0 && isNarrow(ch)) (step - advance) / 2f * k else 0f
 
-            drawHp01Glyph(ch, Offset(x + shift, origin.y), cellHeight, color, slantDegrees)
+            drawHp01Glyph(ch, Offset(x + shift, origin.y), cellHeight, color, slantDegrees, stroke, gFraction)
 
             x += step * k
         }
@@ -543,6 +586,10 @@ object Hp01Font {
  * through drawHp01Text; calling drawHp01Glyph directly for '.' ',' or ':' puts the
  * mark back on the cell axis.
  */
+
+
+
+
 
 
 

@@ -464,6 +464,14 @@ private fun ListenScreen(resumed: Boolean) {
         // across. A measuring instrument rather than a feature, so it hangs off this
         // test screen instead of taking a second launcher icon.
         Button(onClick = {
+            context.startActivity(Intent(context, FontTestActivity::class.java))
+        }) {
+            Text("font test", fontSize = TEXT_BUTTON_SMALL)
+        }
+
+        Gap(GAP_SMALL)
+
+        Button(onClick = {
             context.startActivity(Intent(context, DisplayTestActivity::class.java))
         }) {
             Text("display size test", fontSize = TEXT_BUTTON_SMALL)

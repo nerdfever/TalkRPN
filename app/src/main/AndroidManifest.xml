@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 
 <!--
     The manifest is the app's declaration to the operating system: what hardware it
@@ -124,5 +124,32 @@
             android:taskAffinity=""
             android:theme="@style/Theme.TalkRPN"
             android:exported="true" />
+
+        <!--
+            Four rows of digits at two bar positions and two stroke widths, for
+            judging both against each other on the real screen. Same reasoning as
+            DisplayTestActivity for exported="true": it exists to be launched from
+            adb during design, and shows nothing but fixed sample digits.
+        -->
+        <activity
+            android:name=".FontCompareActivity"
+            android:taskAffinity=""
+            android:theme="@style/Theme.TalkRPN"
+            android:exported="true" />
+
+        <!--
+            One TalkRpnFont cell, as large as the screen allows, for checking the
+            28-segment geometry before any glyph table exists. Steps through the
+            segments one at a time so a mislabelled or misplaced one is caught
+            before ninety-odd glyphs are drawn against it.
+
+            Same reasoning as the two above for exported="true".
+        -->
+        <activity
+            android:name=".FontTestActivity"
+            android:taskAffinity=""
+            android:theme="@style/Theme.TalkRPN"
+            android:exported="true" />
     </application>
 </manifest>
+

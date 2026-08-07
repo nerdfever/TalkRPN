@@ -857,7 +857,9 @@ private fun DrawScope.drawRegister(
             color = color,
             advance = advanceUnits,
             punctuationAdvance = Hp01Font.PUNCTUATION_ADVANCE,
-            slantDegrees = slantDegrees
+            slantDegrees = slantDegrees,
+            stroke = Hp01Font.STROKE,
+            gFraction = Hp01Font.G_FRACTION
         )
     }
 }
@@ -933,6 +935,7 @@ private fun pxToDp(px: Float, density: Float) = (px / density).dp
  * Rounding up costs a pixel of layout and removes the failure mode entirely.
  */
 private fun canvasHeightDp(px: Float, density: Float) = ((ceil(px) + 1f) / density).dp
+
 
 
 
