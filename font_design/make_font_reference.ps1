@@ -42,6 +42,11 @@ $GLYPH_H_UNITS = 155.0
 # Vertical space under each glyph for its character and segment listing.
 $LABEL_H = 40.0
 
+# The hex indices, as on the Litronix datasheet: low nibble 0-F across the top,
+# high nibble 2-7 down the left. The grid shrinks slightly to make room.
+$INDEX_W = 50.0
+$HEX_HEADER_H = 30.0
+
 # Glyphs whose masks are a best guess at an ambiguous chart.
 $LOW_CONFIDENCE = @("'", "f", "t")
 
@@ -309,7 +314,7 @@ $subFont = New-Object System.Drawing.Font "Segoe UI", 10
 $charFont = New-Object System.Drawing.Font "Consolas", 14, ([System.Drawing.FontStyle]::Bold)
 $segFont = New-Object System.Drawing.Font "Consolas", 6.5
 
-$cellW = ($LANDSCAPE_W - 2 * $MARGIN) / $COLUMNS
+$cellW = ($LANDSCAPE_W - 2 * $MARGIN - $INDEX_W) / $COLUMNS
 $k = $cellW / $GLYPH_W_UNITS
 $rowH = $GLYPH_H_UNITS * $k + $LABEL_H
 
@@ -324,6 +329,40 @@ $g.DrawString(
     "16 per row, code-point order 0x20-0x7E.  Stroke $STROKE, slant $SLANT_DEG deg.  Red = lit, grey = unlit, cyan = cell bounds and baseline.  Orange ? = low confidence: ' f t",
     $subFont, $GREY, ($MARGIN + 330), 18)
 
+# The datasheet furniture: a light grid, hex column labels 0-F along the top,
+# hex row labels 2-7 down the left gutter.
+$hexFont = New-Object System.Drawing.Font "Consolas", 13, ([System.Drawing.FontStyle]::Bold)
+$hexBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(60, 60, 60))
+$gridPen = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(215, 215, 215)), 1.0
+
+$gridTop = $MARGIN + $HEADER_H
+$gridLeft = $MARGIN
+$glyphTop = $gridTop + $HEX_HEADER_H
+$gridBottom = $glyphTop + 6 * $rowH
+$gridRight = $gridLeft + $INDEX_W + $COLUMNS * $cellW
+
+foreach ($c in 0..$COLUMNS) {
+    $x = $gridLeft + $INDEX_W + $c * $cellW
+    $g.DrawLine($gridPen, $x, $gridTop, $x, $gridBottom)
+}
+$g.DrawLine($gridPen, $gridLeft, $gridTop, $gridLeft, $gridBottom)
+
+foreach ($r in 0..6) {
+    $y = $glyphTop + $r * $rowH
+    $g.DrawLine($gridPen, $gridLeft, $y, $gridRight, $y)
+}
+$g.DrawLine($gridPen, $gridLeft, $gridTop, $gridRight, $gridTop)
+
+foreach ($c in 0..($COLUMNS - 1)) {
+    $g.DrawString(("{0:X}" -f $c), $hexFont, $hexBrush,
+        ($gridLeft + $INDEX_W + ($c + 0.5) * $cellW - 8), ($gridTop + 4))
+}
+
+foreach ($r in 0..5) {
+    $g.DrawString(("{0:X}" -f ($r + 2)), $hexFont, $hexBrush,
+        ($gridLeft + 16), ($glyphTop + $r * $rowH + $GLYPH_H_UNITS * $k / 2 - 10))
+}
+
 for ($i = 0; $i -lt $GLYPHS.Count; $i++) {
 
     $entry = $GLYPHS[$i]
@@ -331,8 +370,8 @@ for ($i = 0; $i -lt $GLYPHS.Count; $i++) {
     $col = $i % $COLUMNS
     $row = [Math]::Floor($i / $COLUMNS)
 
-    $ox = $MARGIN + $col * $cellW
-    $oy = $MARGIN + $HEADER_H + $row * $rowH + $STROKE * $k
+    $ox = $MARGIN + $INDEX_W + $col * $cellW
+    $oy = $glyphTop + $row * $rowH + $STROKE * $k
 
     Draw-CellBounds $g $ox $oy $k
     Draw-Glyph $g $ALL_SEGMENTS $ox $oy $k $GHOST

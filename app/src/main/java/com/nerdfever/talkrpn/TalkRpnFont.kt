@@ -2,10 +2,13 @@
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
 import kotlin.math.cos
 import kotlin.math.sin
@@ -448,18 +451,33 @@ object TalkRpnFont {
             // The comma's tail is a bar like any other, so it joins the union.
             if (mask and Seg.COMMA.bit != 0L) lit.addPath(COMMA_TAIL)
 
-            if (!lit.isEmpty) {
+            // Drawn through an explicitly configured Paint so that antialiasing
+            // is a stated property, not an assumed default. The aim is a real
+            // segmented LED, not a pixel display: every edge soft, including
+            // where a diagonal crosses a stair-step boundary.
+            //
+            // Round caps everywhere: with segments meeting flush, a butt cap
+            // leaves a notch wherever a diagonal meets a bar at an angle.
+            drawIntoCanvas { canvas ->
 
-                // Round caps everywhere: with segments meeting flush, a butt cap
-                // leaves a notch wherever a diagonal meets a bar at an angle.
-                drawPath(lit, color, style = Stroke(width = strokeWidth, cap = StrokeCap.Round))
-            }
+                val paint = Paint().apply {
+                    isAntiAlias = true
+                    this.color = color
+                    style = PaintingStyle.Stroke
+                    this.strokeWidth = strokeWidth
+                    strokeCap = StrokeCap.Round
+                    strokeJoin = StrokeJoin.Round
+                }
 
-            // Dots are filled, not stroked, and never overlap a bar, so they are
-            // safe to draw separately.
-            for ((seg, centre) in DOT_CENTRES) {
-                if (mask and seg.bit == 0L) continue
-                drawCircle(color, strokeWidth, centre)
+                if (!lit.isEmpty) canvas.drawPath(lit, paint)
+
+                // Dots are filled, not stroked, and never overlap a bar.
+                paint.style = PaintingStyle.Fill
+
+                for ((seg, centre) in DOT_CENTRES) {
+                    if (mask and seg.bit == 0L) continue
+                    canvas.drawCircle(centre, strokeWidth, paint)
+                }
             }
         }
     }
