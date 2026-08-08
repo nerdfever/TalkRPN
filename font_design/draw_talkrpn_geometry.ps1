@@ -56,7 +56,7 @@ $DP_Y   = 119.08
 $SCALE    = 5.2
 $ORIGIN_X = 330.0
 $ORIGIN_Y = 190.0
-$CANVAS_W = 1240
+$CANVAS_W = 1330
 
 # Height depends on what is on the sheet. The listing runs to about fifty lines
 # at 15 px each; the drawing ends near y = 1460.
@@ -135,6 +135,8 @@ $SEGMENTS = @(
 
     @{ N = "P";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_TOP;   X2 = $X_MID;       Y2 = $Y_MID;      LabelDX =   6; LabelDY =  -8 }
     @{ N = "Q";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_MID;   X2 = $X_MID;       Y2 = $Y_BASE;     LabelDX =   6; LabelDY =  -8 }
+
+    @{ N = "COL2_TAIL"; Kind = "Line"; X1 = $X_MID; Y1 = $COL2_Y; X2 = 21.585; Y2 = 101.36; LabelT = 0.4; LabelDX = 14; LabelDY = 8 }
 
     @{ N = "M";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_BASE;  X2 = $X_MID;       Y2 = $Y_DESC;     LabelDX =   8; LabelDY =  -8 }
     @{ N = "N";  Kind = "Line"; X1 = $X_N_LEFT;     Y1 = $Y_DESC;  X2 = $X_MID;       Y2 = $Y_DESC;     LabelDX =  -6; LabelDY =   6 }
@@ -317,6 +319,7 @@ $bmp.Save($OUT, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 
 Write-Output "wrote $OUT  ($CANVAS_W x $CANVAS_H)"
+
 
 
 

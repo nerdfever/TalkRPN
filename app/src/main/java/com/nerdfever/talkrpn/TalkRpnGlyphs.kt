@@ -302,7 +302,7 @@ object TalkRpnGlyphs {
         '&' to (TOP_LEFT or m(Seg.A3, Seg.P, Seg.H, Seg.G1) or LL_SHORT or
             m(Seg.D3, Seg.D1, Seg.D2) or LR or m(Seg.K)),
 
-        '@' to (TOP or UR or LR or BOT or m(Seg.E1, Seg.G1, Seg.Q)),
+        '@' to (TOP or UR or LR or BOT_HOOK or m(Seg.E1, Seg.G1, Seg.Q)),
 
         '`' to m(Seg.H),
 
@@ -327,6 +327,7 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
 
