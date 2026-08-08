@@ -114,7 +114,7 @@ object TalkRpnGlyphs {
         //
         // Full width, right vertical B/C, square corners throughout.
 
-        'A' to (TOP or UL or UR or MID or LL or LR),
+        'A' to (TOP_HOOK or UL_SHORT or UR or MID or LL or LR),
         'B' to (TOP or UR or LR or BOT or m(Seg.G2) or STEM),
         'C' to (TOP_HOOK or UL_SHORT or LL_SHORT or BOT_HOOK),
         'D' to (TOP or UR or LR or BOT or STEM),
@@ -130,7 +130,7 @@ object TalkRpnGlyphs {
         'N' to (UL or m(Seg.H) or UR or m(Seg.K) or LL or LR),
         'O' to (TOP_HOOK or UL_SHORT or UR or LL_SHORT or LR or BOT_HOOK),
         'P' to (TOP or UL or UR or MID or LL),
-        'Q' to (TOP or UL or UR or LL_SHORT or BOT_HOOK or LR or m(Seg.K)),
+        'Q' to (TOP_HOOK or UL_SHORT or UR or LL_SHORT or BOT_HOOK or LR or m(Seg.K)),
         'R' to (TOP or UL or UR or MID or LL or m(Seg.K)),
         'S' to (TOP_HOOK or UL_SHORT or MID or LR or BOT),
         'T' to (TOP or STEM),
@@ -189,7 +189,11 @@ object TalkRpnGlyphs {
         'm' to (MID or LL or LR or m(Seg.Q)),
         'n' to (LL or m(Seg.J, Seg.Q)),
         'o' to (LL_SHORT or m(Seg.G1, Seg.D3, Seg.D1, Seg.Q)),
-        'p' to (LR or m(Seg.G2, Seg.D2, Seg.Q, Seg.M)),
+                // Moved to the left half, where every other lowercase bowl lives. The cost
+        // is handedness: the descender can only hang from the centre column, so
+        // p, g and q now share one bowl and differ only by tail - g flicks left
+        // (segment N), q flicks right (segment O), p hangs plain.
+        'p' to (LL_SHORT or m(Seg.G1, Seg.D3, Seg.D1, Seg.Q, Seg.M)),
 
         // g and q share a bowl and differ only in which way the tail curls:
         // g curls left (N), q curls right (O).
@@ -250,7 +254,9 @@ object TalkRpnGlyphs {
         '=' to m(Seg.G1, Seg.D4, Seg.D1),
 
         '_' to BOT,
-        '|' to STEM,
+        // Full height with the descender, per the DL-3422 - and no longer
+        // identical to 1, which is P/Q alone. (l remains identical to 1.)
+        '|' to (STEM or m(Seg.M)),
 
         // Upper centre stroke over the colon's lower dot.
         '!' to m(Seg.P, Seg.COL2),
@@ -273,10 +279,16 @@ object TalkRpnGlyphs {
         // piece. A mismatched pair had already been tried and looked broken.
         '(' to m(Seg.A1, Seg.A3, Seg.F1, Seg.E1, Seg.D3, Seg.D1),
         ')' to m(Seg.A5, Seg.D5),
-        '[' to (TOP_LEFT or UL or LL or BOT_LEFT),
-        ']' to (m(Seg.A2) or UR or LR or m(Seg.D2)),
-        '{' to m(Seg.A2, Seg.P, Seg.G1, Seg.Q, Seg.D2),
-        '}' to m(Seg.A1, Seg.P, Seg.G2, Seg.Q, Seg.D1),
+
+        // Brackets and braces run the full cell, descender included, as on the
+        // DL-3422. Only the centre column reaches the descender zone (segment
+        // M), so all four live on the centre spine with their bars pointing the
+        // way they open - which also keeps square-tall [ apart from curved (.
+        // Braces differ from brackets by the mid tick alone.
+        '[' to m(Seg.A2, Seg.P, Seg.Q, Seg.M, Seg.O),
+        ']' to m(Seg.A1, Seg.P, Seg.Q, Seg.M, Seg.N),
+        '{' to m(Seg.A2, Seg.P, Seg.G1, Seg.Q, Seg.M, Seg.O),
+        '}' to m(Seg.A1, Seg.P, Seg.G2, Seg.Q, Seg.M, Seg.N),
 
         '<' to m(Seg.I, Seg.K),
         '>' to m(Seg.H, Seg.L),
@@ -299,13 +311,13 @@ object TalkRpnGlyphs {
                 (m(Seg.G2) or LR or m(Seg.D2, Seg.Q))
             ),
 
-        // A3 lit alongside A4 - the one glyph where both corner pieces are on.
-        // At the foot it is D3 alone: no D4 and no E2, so nothing competes with
-        // the hook.
-        '&' to (TOP_LEFT or m(Seg.A3, Seg.P, Seg.H, Seg.G1) or LL_SHORT or
+        // Hooked at both left corners, nothing competing with either arc. This
+        // briefly ran A3 and A4 together - the only glyph ever to light both
+        // corner pieces - until the corner review settled on the hook alone.
+        '&' to (TOP_LEFT_HOOK or m(Seg.P, Seg.H, Seg.G1) or LL_SHORT or
             m(Seg.D3, Seg.D1, Seg.D2) or LR or m(Seg.K)),
 
-        '@' to (TOP or UR or LR or BOT_HOOK or m(Seg.E1, Seg.G1, Seg.Q)),
+        '@' to (TOP_HOOK or UR or LR or BOT_HOOK or m(Seg.E1, Seg.G1, Seg.Q)),
 
         '`' to m(Seg.H),
 
@@ -330,6 +342,9 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
+
+
 
 
 

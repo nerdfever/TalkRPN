@@ -708,9 +708,10 @@ Litronix's published set and then corrected glyph by glyph against it.
 
 Divergences from the DL-3422, all deliberate:
 
-- **Digits 2 3 5 7 8 9 take the HP-01's hooked corners**, and `4` its short left
-  side. `A3`/`A4` and `D3`/`D4` are alternative corner pieces, never both lit —
-  except `&`, which uses both.
+- **Most of the set takes the HP-01's hooked corners** — digits `0 2 3 5 7 8 9`,
+  letters `A C G O Q S`, the lowercase bowls, `( & @` — and `4` its short left
+  side. `A3`/`A4` and `D3`/`D4` are alternative corner pieces, never both lit.
+  (`&` briefly lit both, until the corner review settled on the hook alone.)
 - **When a corner is hooked, the column stub goes dark.** `F2` with `A3`, `E2`
   with `D3` — otherwise the column spikes past the arc.
 - **All digits are half-width**, on `P`/`Q` rather than `B`/`C`. This is what

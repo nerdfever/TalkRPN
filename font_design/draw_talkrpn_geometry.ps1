@@ -307,7 +307,7 @@ $lines += "  N and O are inset {0:F2} and {1:F2} from the columns - symmetric to
 $lines += ""
 $lines += "THE THREE LEFT-COLUMN ENDINGS"
 $lines += "  square   A4 + F2      most letters"
-$lines += "  hooked   A3 + F1      0 2 3 5 7 8 9, C G O S, ( and &   (F2 dark)"
+$lines += "  hooked   A3 + F1      0 2 3 5 7 8 9, A C G O Q S, ( & and @   (F2 dark)"
 $lines += "  short    F1 alone     digit 4, no A at all - left side sits {0:F2} lower than the right" -f $HOOK_R
 $lines += ""
 $lines += "WHY THE LETTER V IS DRAWN SIDEWAYS"
@@ -329,6 +329,7 @@ $bmp.Save($OUT, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 
 Write-Output "wrote $OUT  ($CANVAS_W x $CANVAS_H)"
+
 
 
 
