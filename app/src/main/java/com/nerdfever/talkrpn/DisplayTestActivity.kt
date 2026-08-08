@@ -97,34 +97,33 @@ private const val HEIGHT_FRACTION_MIN = 0.03f
 private const val HEIGHT_FRACTION_MAX = 0.25f
 
 /**
- * THE UNIT for both pitches below: segment D to segment A is 100.
+ * THE UNIT for both pitches below: segment E to segment B/C - the cell width -
+ * is 1.
  *
  * TalkRpnFont's header defines it; this is the same unit, used horizontally and
- * vertically alike, so a pitch and a vpitch are directly comparable numbers.
+ * vertically alike, so a pitch and a vpitch are directly comparable numbers. It
+ * also makes the pitch read itself: the cell is 1 wide, so pitch minus 1 is the
+ * clearance between neighbours.
  *
  * The font actually being drawn does not have to agree, and Hp01Font does not:
- * its own cell height is the OUTER ink box, whose D-to-A span is only 91.5.
- * Hp01Font.CAP_SPAN states that and [unitsToFont] converts, so the figures below
- * mean the same thing whichever font ends up on the screen.
- */
-private const val CAP_UNITS = 100f
-
-/**
- * PITCH - horizontal cell-to-cell distance, in D-to-A units.
+ * its coordinates are the OUTER ink box, whose E-to-B/C span is 53.5 of its own
+ * 62. Hp01Font.UNIT_SPAN states that and [fontUnitsPerUnit] converts, so the
+ * figures below mean the same thing whichever font ends up on the screen.
  *
- * 142.08 is the HP-01's own 130 expressed in these units, and it is very airy: a
- * cell is 67.8 units wide, so more than half the pitch is empty. Two neighbours
- * only stop overlapping while pitch exceeds cell width plus one stroke, about 77
- * units; the slant makes it look tight some way before that without the ink ever
- * actually meeting.
+ * PITCH - horizontal cell-to-cell distance, in cell widths.
+ *
+ * 2.43 is the HP-01's own 130 expressed this way, and it is very airy: well over
+ * half the pitch is empty. Two neighbours only stop overlapping while the pitch
+ * exceeds 1 plus one stroke, about 1.16; the slant makes it look tight some way
+ * before that without the ink ever actually meeting.
  *
  * Height no longer moves when this changes. It used to, because the cell was sized
  * to make a fixed cell count fill the row exactly - so a tighter pitch bought taller
  * digits. Convenient, but it meant neither control did one thing.
  */
-private const val INITIAL_PITCH_UNITS = 142.08f
-private const val PITCH_UNITS_MIN = 60f
-private const val PITCH_UNITS_MAX = 230f
+private const val INITIAL_PITCH_UNITS = 2.42991f
+private const val PITCH_UNITS_MIN = 1.0f
+private const val PITCH_UNITS_MAX = 4.0f
 
 /**
  * VPITCH - vertical row-to-row distance, BASELINE TO BASELINE, in the same units.
@@ -138,15 +137,19 @@ private const val PITCH_UNITS_MAX = 230f
  * rows ended up unequally spaced baseline to baseline. Making the SPACING uniform
  * instead means the gaps now differ, which is the way round that reads evenly.
  *
- * 115 suits the seven-segment font, which has no descenders at all. TalkRpnFont
- * does, and its ink is 153 units tall, so expect to want about 160 once the
- * display draws letters.
+ * 1.97 suits the seven-segment font, which has no descenders at all. TalkRpnFont
+ * does, and its ink is 2.62 tall, so expect to want about 2.75 once the display
+ * draws letters.
  */
-private const val INITIAL_VPITCH_UNITS = 115f
-private const val VPITCH_UNITS_MAX = 260f
+private const val INITIAL_VPITCH_UNITS = 1.97f
+private const val VPITCH_UNITS_MAX = 4.5f
 
-/** Both pitches step by this, additively - they are lengths, not proportions. */
-private const val PITCH_STEP_UNITS = 2f
+/**
+ * Both pitches step by this, additively - they are lengths, not proportions.
+ * A fortieth of a cell width, which is fine enough to tune with and coarse
+ * enough that a press is always visible at a readable size.
+ */
+private const val PITCH_STEP_UNITS = 0.025f
 
 /** Every proportional adjustment moves by this much per press. */
 private const val ADJUST_STEP_FRACTION = 0.05f
@@ -396,11 +399,12 @@ private fun DisplayTestScreen() {
     // is the wrong size: units -> the drawing font's own coordinates, and units
     // -> device pixels at the X row's size.
 
-    // The drawing font's cell units per D-to-A unit. Not 1: Hp01Font measures its
-    // cell to the outside of the ink, so its 100 spans only 91.5 of ours.
-    val fontUnitsPerUnit = Hp01Font.CAP_SPAN / CAP_UNITS
+    // The drawing font's own coordinates per display unit. 53.5 for Hp01Font,
+    // which measures its cell to the outside of the ink; it would be 1 if this
+    // screen drew with TalkRpnFont, which defines the unit.
+    val fontUnitsPerUnit = Hp01Font.UNIT_SPAN
 
-    // Pixels per D-to-A unit, always at the X row's size - that is the reference
+    // Pixels per display unit, always at the X row's size - that is the reference
     // the vpitch is quoted in, so a smaller row must not redefine it.
     val unitPx = xCellHeightPx / Hp01Font.CELL_HEIGHT * fontUnitsPerUnit
 
@@ -583,7 +587,7 @@ private fun DisplayTestScreen() {
                     // Cell clearance in D-to-A units, so it can be compared with
                     // the pitch directly: it is what is left of the pitch once the
                     // cell has taken its share.
-                    text = "%.1f mm  %d cells  clear %.0f".format(
+                    text = "%.1f mm  %d cells  clear %.2f".format(
                         xCellHeightPx / pixelsPerMm,
                         cellsAcross,
                         pitchUnits - Hp01Font.CELL_WIDTH / fontUnitsPerUnit
@@ -598,7 +602,7 @@ private fun DisplayTestScreen() {
                     // Both pitches in D-to-A units, so they read against each other
                     // and against the font's own numbers. Height stays a screen
                     // fraction: it is the one quantity that has to be physical.
-                    text = "p%.0f v%.0f h%.1f%% s%.1f".format(
+                    text = "p%.2f v%.2f h%.1f%% s%.1f".format(
                         pitchUnits,
                         vpitchUnits,
                         heightFraction * 100f,

@@ -58,26 +58,27 @@ object Hp01Font {
 
     // ---- Cell metrics, in cell units (cell height == 100) -------------------
     //
-    // CAREFUL: this font's 100 is the OUTER ink height - the top edge of segment
-    // A to the bottom edge of segment D - so it carries a STROKE/2 at each end.
-    // TalkRpnFont's 100 is the CENTRELINE span, D to A. They are different units
-    // and a length copied between the two fonts unchanged will be wrong by 9%.
+    // CAREFUL: these are OUTER ink dimensions - edge of segment to edge of
+    // segment - so they carry a STROKE/2 at each end. TalkRpnFont's coordinates
+    // are CENTRELINES, and its unit is the E-to-B/C span rather than the cell
+    // box. A length copied between the two fonts unchanged will be wrong.
     //
-    // Anything that lays out either font should work in D-to-A units and scale
-    // by CAP_SPAN, which is what states the difference rather than hiding it.
+    // Anything that lays out either font should work in E-to-B/C units and scale
+    // by UNIT_SPAN, which states the difference rather than hiding it.
 
     const val CELL_HEIGHT = 100f
     const val CELL_WIDTH = 62f
     const val STROKE = 8.5f
 
     /**
-     * How many of this font's cell units span segment D to segment A.
+     * How many of this font's cell units span segment E to segment B/C - the
+     * display's unit of length.
      *
-     * 100 outer minus a half-stroke at each end. The mirror of
-     * TalkRpnFont.CAP_SPAN, which is a plain 100 because that font defines the
-     * unit; here the two differ and the layout has to know it.
+     * The 62-wide box less a half-stroke at each side, which is the HP-01's own
+     * 53.5. The mirror of TalkRpnFont.UNIT_SPAN, which is a plain 1 because that
+     * font defines the unit; here the two differ and the layout has to know it.
      */
-    const val CAP_SPAN = CELL_HEIGHT - STROKE          // 91.5
+    const val UNIT_SPAN = CELL_WIDTH - STROKE          // 53.5
 
     /**
      * Default slant, in degrees from vertical.

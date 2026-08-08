@@ -706,29 +706,45 @@ in ascending order of how much they depart from the original font.
 `TalkRpnGlyphs.kt` maps all 95 printable ASCII characters onto it, derived from
 Litronix's published set and then corrected glyph by glyph against it.
 
-### Units: segment D to segment A is 100
+### Units: segment E to segment B/C is 1
 
-One unit, used for everything, horizontally and vertically alike. It is the
-centreline of the bottom bar to the centreline of the top bar — where the ink's
-*middle* is, not where its edge is. Pitch, vpitch, stroke, cell width, the
+One unit, used for everything, horizontally and vertically alike. It is the left
+column's centreline to the right column's — the cell width, measured where the
+ink's *middle* is, not where its edge is. Pitch, vpitch, stroke, cap height, the
 decimal point's offset: all in that unit, all directly comparable.
 
-| | units |
-|---|---|
-| D-to-A (the definition) | 100 |
-| cell width | 58.47 |
-| full height including descenders | 144 |
-| ink height, top of `A` to bottom of the descender bar | 153.3 |
-| `PITCH` — cell to cell, HP-01's own | 142.08 |
-| `VPITCH` — baseline to baseline | 160 |
-| stroke, HP-01's own | 9.29 |
+Every figure is the HP-01's own centreline geometry — a 53.5 × 91.5 box — divided
+through by **53.5**. Dividing by the width rather than the height is what makes
+it tidy: the scale factor that used to sit between the HP-01's numbers and ours
+cancels away entirely, and the horizontal grid falls on exact halves.
 
-Millimetres enter at exactly **one** place: whoever draws the font picks a cap
-height, and that fixes everything else. So the display's *shape* is fully
-specified by the numbers above and only its *size* depends on hardware. That was
-not true before — row spacing used to be a fraction of the screen diameter while
-pitch was a multiplier on the advance, two incompatible units that could not be
-compared and did not transfer together.
+| | units | from |
+|---|---|---|
+| cell width (the definition) | 1 | 53.5 / 53.5 |
+| centre axis | 0.5 exactly | 26.75 / 53.5 |
+| cap height, D to A | 1.71028 | 91.5 / 53.5 |
+| hook radius | 0.13551 | 7.25 / 53.5 |
+| stroke, HP-01's own | 0.15888 | 8.5 / 53.5 |
+| `PITCH` — cell to cell, HP-01's own | 2.42991 | 130 / 53.5 |
+| full height including descenders | 2.46280 | cap × 1.44 |
+| ink height, top of `A` to bottom of the descender bar | 2.62168 | + one stroke |
+| `VPITCH` — baseline to baseline | 2.75 | chosen |
+
+The payoff in reading it: since the cell is exactly 1 wide, **pitch minus 1 *is*
+the clearance** between neighbouring cells, and the ink meets at pitch = 1 +
+stroke. No arithmetic needed to see whether a pitch is viable.
+
+Because the source figures are a reconstruction quoted to the nearest quarter —
+about half a percent — the constants are written in code as the division rather
+than as decimals. No digit is claimed that the source does not support, and the
+provenance stays visible.
+
+Millimetres enter at exactly **one** place: whoever draws the font picks a size,
+and that fixes everything else. So the display's *shape* is fully specified by
+the numbers above and only its *size* depends on hardware. That was not true
+before — row spacing used to be a fraction of the screen diameter while pitch was
+a multiplier on the advance, two incompatible units that could not be compared
+and did not transfer together.
 
 `vpitch` is baseline-to-baseline rather than gap-between-rows, so it keeps
 meaning the same thing when adjacent rows are different sizes — which they are,
@@ -737,21 +753,21 @@ puts the baselines at unequal distances, and the baselines are what the eye
 reads. Making the pitch uniform means the gaps now differ, which is the way round
 that looks even.
 
-**`Hp01Font` does not share the unit.** Its `CELL_HEIGHT = 100` is the *outer*
-ink box, so its D-to-A span is only 91.5 — a length copied between the two fonts
-unchanged is wrong by 9%. Both fonts now declare `CAP_SPAN`, and layout code
+**`Hp01Font` does not share the unit.** Its coordinates are the *outer* ink box,
+so its E-to-B/C span is 53.5 of its own 62 — a length copied between the two
+fonts unchanged is wrong. Both fonts now declare `UNIT_SPAN`, and layout code
 scales by it rather than assuming.
 
 Two floors fall out of this, both from ink rather than taste:
 
-- **pitch ≥ 67.8** — cell width plus one stroke, below which neighbours overlap
-  outright. The slant makes it *look* tight well before that, because one cell's
-  top-right passes close to the next cell's bottom-left, but those sit at
-  different heights and never actually touch. All caps read well from about 85
-  to 105.
-- **vpitch ≥ 153.3** — the ink height, below which descenders reach the row
+- **pitch ≥ 1.15888** — cell width plus one stroke, below which neighbours
+  overlap outright. The slant makes it *look* tight well before that, because
+  one cell's top-right passes close to the next cell's bottom-left, but those
+  sit at different heights and never actually touch. All caps read well from
+  about 1.45 to 1.80.
+- **vpitch ≥ 2.62168** — the ink height, below which descenders reach the row
   beneath. A digits-only display could go far tighter; a seven-segment font has
-  no descenders at all, which is why `DisplayTestActivity` still sits at 115.
+  no descenders at all, which is why `DisplayTestActivity` still sits at 1.97.
 
 Divergences from the DL-3422, all deliberate:
 
@@ -775,10 +791,10 @@ Divergences from the DL-3422, all deliberate:
 | **`I` and `L` to the corners** | Both stop short of the cell corner; extending them would close the diagonals against the columns. |
 | ~~Semicolon~~ | **Done.** `COL2_TAIL`, the 31st element: the comma's tail hung off the lower colon dot, so a semicolon is a colon whose lower dot grew a tail. One bit left in the `Int`. |
 | ~~Comma taper~~ | **Decided: keep the constant-width tail.** More period-correct — though the real LED calculators drew no commas at all. |
-| **Segment `M` (the descender stem) is too tall** | Not the letter M. It drops 44 units against a 50-unit x-height, so `g q y j` tails plunge nearly as deep as their bowls are tall. Fix = raise the descender bar: `TOTAL_HEIGHT`, N/O's y, and M's endpoint, one decision. |
+| **Segment `M` (the descender stem) is too tall** | Not the letter M. `DESCENDER_FRACTION` is 0.44 of the cap height, against an x-height of half of it, so `g q y j` tails plunge nearly as deep as their bowls are tall. Now one number: lower `DESCENDER_FRACTION` and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all follow. |
 | **`P`/`Q` shift** | Both may want to move left a little; `B` and `D` are what show it. |
-| **Decimal-point position** | *Half done.* The dot belongs to the **gap** between cells, not to a cell, so a fixed `DP_X = 86.64` is only right at pitch 142.08 — tighten the pitch and the gap shrinks underneath a dot that has not moved. `DP_GAP_FRACTION` and `dpXAt(pitch)` now express it pitch-independently, and the specimen renderer uses them. **Still to do:** `TalkRpnFont` bakes `DP_X` into its paths at object-init, so `draw()` has to take a pitch before the font itself follows suit. |
-| **Stroke width** | The HP-01's 9.29 is too heavy for 26 bars. Around 5.5 reads well; not yet fixed. |
+| **Decimal-point position** | *Half done.* The dot belongs to the **gap** between cells, not to a cell, so a fixed `DP_X = 1.48` is only right at pitch 2.43 — tighten the pitch and the gap shrinks underneath a dot that has not moved. `DP_GAP_FRACTION` and `dpXAt(pitch)` now express it pitch-independently, and the specimen renderer uses them. **Still to do:** `TalkRpnFont` bakes `DP_X` into its paths at object-init, so `draw()` has to take a pitch before the font itself follows suit. |
+| **Stroke width** | The HP-01's 0.15888 is too heavy for 26 bars. Around 0.09 reads well; not yet fixed. Dave wants to chase the bubble-LED look here — a very thin stroke at high brightness with diffuse scatter around it — which argues for going thinner still. |
 | **`l` and `\|` are identical** | Both are `P Q`. Fine or not, but it should be a decision rather than an accident. |
 | ~~Parens vs brackets~~ | **Done.** Both parens are now properly curved: `(` is the left column with both corners hooked; `)` got `A5` and `D5`, each half of the right parenthesis as one bundled element (bar stub + arc + column stub — the right side has no shortened bars for a bare arc to join). This crossed the `Int` ceiling deliberately: 33 elements, the mask is now a `Long`. What was rejected earlier was a *mismatched* pair, not curvature. |
 | **Not yet wired in** | `DisplayTestActivity` still renders with `Hp01Font`. The calculator display needs moving onto `TalkRpnFont`. |

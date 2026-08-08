@@ -15,11 +15,55 @@
 
 $OUT = "$PSScriptRoot\talkrpn_font_reference.pdf"
 
-# ---- geometry, in cell units (must match TalkRpnFont.kt) -------------------
+# ---- geometry, in cell widths (must match TalkRpnFont.kt) -------------------
+#
+# THE UNIT: segment E to segment B/C is 1. Every length below is in that unit,
+# horizontally and vertically alike, and it comes from the HP-01's own centreline
+# figures divided by its 53.5 cell width - which is why the horizontal grid falls
+# on exact halves.
 
-$STROKE = 5.5        # the review weight; the nominal 9.29 is too heavy at this bar count
+$HP01_CELL_WIDTH = 53.5
+
+$CELL_WIDTH = 1.0                        # by definition
+$CELL_HEIGHT = 91.5 / $HP01_CELL_WIDTH   # 1.71028, segment D to segment A
+$DESCENDER_FRACTION = 0.44
+$TOTAL_HEIGHT = $CELL_HEIGHT * (1.0 + $DESCENDER_FRACTION)   # 2.46280
+
+$STROKE = 0.09       # the review weight; the nominal 0.159 is too heavy at this bar count
 $SLANT_DEG = 7.5
-$TOTAL_HEIGHT = 144.0
+
+$HOOK_R = 7.25 / $HP01_CELL_WIDTH        # 0.13551
+
+# The grid every segment endpoint hangs from.
+$XL = 0.0
+$XM = $CELL_WIDTH / 2.0                  # 0.5 exactly
+$XR = $CELL_WIDTH                        # 1 exactly
+
+$YT = 0.0
+$YM = $CELL_HEIGHT / 2.0                 # 0.85514
+$YB = $CELL_HEIGHT                       # 1.71028
+$YD = $TOTAL_HEIGHT                      # 2.46280
+
+$Y_F_TOP = $HOOK_R                       # where the top hook lands on the column
+$Y_E_BOT = $YB - $HOOK_R                 # where the bottom hook leaves it
+$X_HOOK_END_R = $XR - $HOOK_R            # the parenthesis arcs' turning point
+
+# The descender bar, inset symmetrically from both columns.
+$X_DESC_INSET = 0.064
+$XN = $X_DESC_INSET
+$XO = $CELL_WIDTH - $X_DESC_INSET
+
+# Dots.
+$COL1_Y = 18.75 / $HP01_CELL_WIDTH       # 0.35047
+$COL2_Y = 73.75 / $HP01_CELL_WIDTH       # 1.37851
+
+$PITCH = 130.0 / $HP01_CELL_WIDTH        # 2.42991, the HP-01's own
+$DP_GAP_FRACTION = 0.3369
+$DP_X = $CELL_WIDTH + $DP_GAP_FRACTION * ($PITCH - $CELL_WIDTH)   # 1.48174
+$DP_Y = $CELL_HEIGHT * (1.0 + 0.1908)    # 2.03660
+
+$COMMA_TAIL_DROP = 19.0 / $HP01_CELL_WIDTH   # 0.35514
+$COMMA_TAIL_LEFT = 7.0 / $HP01_CELL_WIDTH    # 0.13084
 
 # ---- page setup -------------------------------------------------------------
 
@@ -34,12 +78,13 @@ $HEADER_H = 60.0
 # The traditional chart: 16 columns, code-point order, 0x20 to 0x7E.
 $COLUMNS = 16
 
-# One glyph box in cell units: wide enough for the sheared cell plus the decimal
+# One glyph box in cell widths: wide enough for the sheared cell plus the decimal
 # point hanging off to the right, tall enough for the descender.
-$GLYPH_W_UNITS = 97.0
-$GLYPH_H_UNITS = 155.0
+$GLYPH_W_UNITS = 1.66
+$GLYPH_H_UNITS = 2.65
 
-# Vertical space under each glyph for its character and segment listing.
+# Vertical space under each glyph for its character and segment listing. Pixels,
+# not units - it holds text set in a system font, which has no cell to scale to.
 $LABEL_H = 40.0
 
 # The hex indices, as on the Litronix datasheet: low nibble 0-F across the top,
@@ -53,27 +98,27 @@ $LOW_CONFIDENCE = @("'", "f", "t")
 # ---- segment geometry (must match TalkRpnFont.kt) ---------------------------
 
 $SEG_LINES = @{
-    "A1" = @(29.235, 0, 7.92, 0);      "A2" = @(29.235, 0, 58.47, 0)
-    "A4" = @(7.92, 0, 0, 0)
-    "B"  = @(58.47, 0, 58.47, 50);     "C"  = @(58.47, 50, 58.47, 100)
-    "D1" = @(29.235, 100, 7.92, 100);  "D2" = @(29.235, 100, 58.47, 100)
-    "D4" = @(7.92, 100, 0, 100)
-    "F2" = @(0, 0, 0, 7.92);           "F1" = @(0, 7.92, 0, 50)
-    "E1" = @(0, 50, 0, 92.08);         "E2" = @(0, 92.08, 0, 100)
-    "G1" = @(0, 50, 29.235, 50);       "G2" = @(29.235, 50, 58.47, 50)
-    "H"  = @(0, 0, 29.235, 50);        "I"  = @(58.47, 0, 29.235, 50)
-    "J"  = @(0, 50, 29.235, 100);      "L"  = @(29.235, 50, 0, 100)
-    "K"  = @(29.235, 50, 58.47, 100)
-    "P"  = @(29.235, 0, 29.235, 50);   "Q"  = @(29.235, 50, 29.235, 100)
-    "COL2_TAIL" = @(29.235, 80.60, 21.585, 101.36)
-    "M"  = @(29.235, 100, 29.235, 144)
-    "N"  = @(3.74, 144, 29.235, 144);  "O"  = @(29.235, 144, 54.72, 144)
+    "A1" = @($XM, $YT, $HOOK_R, $YT);        "A2" = @($XM, $YT, $XR, $YT)
+    "A4" = @($HOOK_R, $YT, $XL, $YT)
+    "B"  = @($XR, $YT, $XR, $YM);            "C"  = @($XR, $YM, $XR, $YB)
+    "D1" = @($XM, $YB, $HOOK_R, $YB);        "D2" = @($XM, $YB, $XR, $YB)
+    "D4" = @($HOOK_R, $YB, $XL, $YB)
+    "F2" = @($XL, $YT, $XL, $Y_F_TOP);       "F1" = @($XL, $Y_F_TOP, $XL, $YM)
+    "E1" = @($XL, $YM, $XL, $Y_E_BOT);       "E2" = @($XL, $Y_E_BOT, $XL, $YB)
+    "G1" = @($XL, $YM, $XM, $YM);            "G2" = @($XM, $YM, $XR, $YM)
+    "H"  = @($XL, $YT, $XM, $YM);            "I"  = @($XR, $YT, $XM, $YM)
+    "J"  = @($XL, $YM, $XM, $YB);            "L"  = @($XM, $YM, $XL, $YB)
+    "K"  = @($XM, $YM, $XR, $YB)
+    "P"  = @($XM, $YT, $XM, $YM);            "Q"  = @($XM, $YM, $XM, $YB)
+    "COL2_TAIL" = @($XM, $COL2_Y, ($XM - $COMMA_TAIL_LEFT), ($COL2_Y + $COMMA_TAIL_DROP))
+    "M"  = @($XM, $YB, $XM, $YD)
+    "N"  = @($XN, $YD, $XM, $YD);            "O"  = @($XM, $YD, $XO, $YD)
 }
 
 # Arcs: centre x, centre y, radius, from-degrees, to-degrees.
 $SEG_ARCS = @{
-    "A3" = @(7.92, 7.92, 7.92, 270, 180)
-    "D3" = @(7.92, 92.08, 7.92, 90, 180)
+    "A3" = @($HOOK_R, $Y_F_TOP, $HOOK_R, 270, 180)
+    "D3" = @($HOOK_R, $Y_E_BOT, $HOOK_R, 90, 180)
 }
 
 # RPAR, the whole right parenthesis as one polyline: bar stub, arc, column,
@@ -88,16 +133,16 @@ function New-ArcPoints($cx, $cy, $r, $fromDeg, $toDeg) {
 }
 
 $SEG_POLYS = @{
-    "RPAR" = @(, @(29.235, 0.0)) + (New-ArcPoints 50.55 7.92 7.92 270 360) +
-             (New-ArcPoints 50.55 92.08 7.92 0 90) + @(, @(29.235, 100.0))
+    "RPAR" = @(, @($XM, $YT)) + (New-ArcPoints $X_HOOK_END_R $Y_F_TOP $HOOK_R 270 360) +
+             (New-ArcPoints $X_HOOK_END_R $Y_E_BOT $HOOK_R 0 90) + @(, @($XM, $YB))
 }
 
 # Dots: centre x, centre y. The comma is its dot plus the tail below.
 $SEG_DOTS = @{
-    "COL1" = @(29.235, 20.49); "COL2" = @(29.235, 80.60)
-    "DP" = @(86.64, 119.08);   "COMMA" = @(86.64, 119.08)
+    "COL1" = @($XM, $COL1_Y);  "COL2" = @($XM, $COL2_Y)
+    "DP" = @($DP_X, $DP_Y);    "COMMA" = @($DP_X, $DP_Y)
 }
-$COMMA_TAIL = @(86.64, 119.08, 78.99, 139.84)
+$COMMA_TAIL = @($DP_X, $DP_Y, ($DP_X - $COMMA_TAIL_LEFT), ($DP_Y + $COMMA_TAIL_DROP))
 
 $ALL_SEGMENTS = @($SEG_LINES.Keys) + @($SEG_ARCS.Keys) + @($SEG_POLYS.Keys) + @($SEG_DOTS.Keys)
 
@@ -236,10 +281,10 @@ function Draw-CellBounds($g, $ox, $oy, $k) {
     }
 
     $corners = @(
-        (BP 0 0), (BP 58.47 0), (BP 58.47 $TOTAL_HEIGHT), (BP 0 $TOTAL_HEIGHT)
+        (BP $XL $YT), (BP $XR $YT), (BP $XR $YD), (BP $XL $YD)
     )
     $g.DrawPolygon($pen, [System.Drawing.PointF[]]$corners)
-    $g.DrawLine($pen, (BP 0 100), (BP 58.47 100))
+    $g.DrawLine($pen, (BP $XL $YB), (BP $XR $YB))
 
     $pen.Dispose()
 }

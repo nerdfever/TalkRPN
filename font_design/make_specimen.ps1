@@ -20,22 +20,15 @@ Invoke-Expression (($refLines[0..($cut - 1)]) -join "`n")
 $MAP = New-Object 'System.Collections.Generic.Dictionary[char, object]'
 foreach ($e in $GLYPHS) { $MAP[[char]$e.C] = $e.S }
 
-# ---- geometry that this renderer needs (mirrors TalkRpnFont.kt) --------------
+# ---- what this renderer adds to the borrowed geometry ------------------------
 #
-# EVERY length here is in D-to-A units: segment D to segment A is 100, and that
+# EVERY length here is in cell widths: segment E to segment B/C is 1, and that
 # same unit measures pitch and vpitch, horizontally and vertically alike. The one
 # exception is $SCALE, which is the px-per-unit conversion, and it says so.
-
-# The HP-01's authentic - and very airy - horizontal pitch. Each line below picks
-# its own; this is only the reference.
-$PITCH_DESIGN = 142.08
-
-# Width of the cell itself. The difference between this and the pitch is the gap
-# the decimal point has to live in.
-$CELL_WIDTH = 58.47
-
-# Where TalkRpnFont puts the decimal point / comma dot, at the design pitch.
-$DP_X_DESIGN = 86.64
+#
+# $CELL_WIDTH, $PITCH, $DP_X and $DP_GAP_FRACTION all come from the borrowed
+# tables above - this file no longer restates them, so there is one mirror rather
+# than two.
 
 # A space is half a pitch wide, which is a display-layer decision rather than a
 # font one: full-width spaces read as chasms in running text.
@@ -43,21 +36,8 @@ $SPACE_PITCH_FRACTION = 0.5
 
 # Vertical pitch: baseline to baseline between specimen lines. Generous here
 # because each line carries a label and wants air around it - the display itself
-# will run much tighter.
-$VPITCH = 205.0
-
-# ---- where the decimal point actually goes -----------------------------------
-
-# The dot does not belong to the cell it follows - it sits in the GAP between
-# that cell and the next. TalkRpnFont pins it at x = 86.64, which is 28.17 past
-# the right column, and that is only correct at the full advance of 142.08.
-# Tighten the pitch and the gap shrinks underneath a dot that does not move, so
-# it walks into the following glyph.
-#
-# Place it by proportion instead: hold it at the same fraction of the gap at
-# every pitch. At the design pitch this reproduces the HP-01 position exactly, so
-# the fix costs nothing where the design was already right.
-$DP_GAP_FRACTION = ($DP_X_DESIGN - $CELL_WIDTH) / ($PITCH_DESIGN - $CELL_WIDTH)
+# will run nearer the 2.62 floor.
+$VPITCH = 3.5
 
 # ---- what to render ----------------------------------------------------------
 
@@ -65,34 +45,34 @@ $DP_GAP_FRACTION = ($DP_X_DESIGN - $CELL_WIDTH) / ($PITCH_DESIGN - $CELL_WIDTH)
 # between lines is the pitch itself.
 $PITCH_SAMPLE = "QUICK BROWN FOX 0123456789 42.9565"
 
-# In D-to-A units. Bracketed close around 85-107, which is where caps look right,
-# with the design pitch and a deliberately-too-tight 80 as anchors at either end.
-# The cell is 58.47 wide, so the figure minus 58.47 is the clearance between
-# neighbours: 80 leaves 21.5, and the ink only meets at 67.8.
-$PITCHES = @(142.08, 120, 110, 105, 100, 95, 90, 85, 80)
+# In cell widths. Bracketed close around 1.45-1.85, which is where caps look
+# right, with the HP-01's own 2.43 and a deliberately-too-tight 1.35 as anchors.
+# The cell is exactly 1 wide, so the figure minus 1 IS the clearance between
+# neighbours: 1.35 leaves 0.35, and the ink only meets at 1.16.
+$PITCHES = @(2.43, 2.05, 1.90, 1.80, 1.70, 1.65, 1.55, 1.45, 1.35)
 
 $LINES = @()
 foreach ($p in $PITCHES) {
-    $LINES += @{ T = $PITCH_SAMPLE; P = $p; Label = ("{0:F0}" -f $p) }
+    $LINES += @{ T = $PITCH_SAMPLE; P = $p; Label = ("{0:F2}" -f $p) }
 }
 
 # Then running text, calculator state and code, at the pitches in contention.
-$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; P = 107; Label = "TEXT 107" }
-$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; P = 92;  Label = "TEXT 92" }
-$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; P = 85;  Label = "TEXT 85" }
-$LINES += @{ T = "988 ENTER 23 DIVIDE = 42.9565 (DEG) [SI] LASTX"; P = 100; Label = "RPN 100" }
-$LINES += @{ T = "X: 1,234,567.89  Y: -6.02E23  Z: 0.0  T: 3.14159"; P = 100; Label = "STACK 100" }
-$LINES += @{ T = "FOR (I = 0; I < 10; I++) { X[I] = A*B + C/D; }"; P = 100; Label = "CODE 100" }
-$LINES += @{ T = 'PRINTF("%6.2F\N", &VALS[J] | MASK ^ 0X7E);'; P = 100; Label = "CODE 100" }
+$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; P = 1.83; Label = "TEXT 1.83" }
+$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; P = 1.57; Label = "TEXT 1.57" }
+$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; P = 1.45; Label = "TEXT 1.45" }
+$LINES += @{ T = "988 ENTER 23 DIVIDE = 42.9565 (DEG) [SI] LASTX"; P = 1.71; Label = "RPN 1.71" }
+$LINES += @{ T = "X: 1,234,567.89  Y: -6.02E23  Z: 0.0  T: 3.14159"; P = 1.71; Label = "STACK 1.71" }
+$LINES += @{ T = "FOR (I = 0; I < 10; I++) { X[I] = A*B + C/D; }"; P = 1.71; Label = "CODE 1.71" }
+$LINES += @{ T = 'PRINTF("%6.2F\N", &VALS[J] | MASK ^ 0X7E);'; P = 1.71; Label = "CODE 1.71" }
 
 # One lower-case line kept for contrast - it is why we settled on caps.
-$LINES += @{ T = "the quick brown fox jumps over the lazy dog"; P = 100; Label = "lower 100" }
+$LINES += @{ T = "the quick brown fox jumps over the lazy dog"; P = 1.71; Label = "lower 1.71" }
 
 # ---- page ---------------------------------------------------------------------
 
 # The ONLY place a physical length enters: how big a unit is drawn. Everything
 # else on this page is in units and follows from it.
-$SCALE = 0.62                # px per D-to-A unit
+$SCALE = 36.25               # px per cell width
 
 $MARGIN = 40.0
 $LABEL_W = 110.0
@@ -194,7 +174,7 @@ foreach ($l in $LINES) {
     # How far the decimal point has to move left at this pitch to stay the same
     # fraction of the way across a gap that has shrunk. Zero at the design pitch.
     $gapUnits = $l.P - $CELL_WIDTH
-    $dpShift = ($CELL_WIDTH + $DP_GAP_FRACTION * $gapUnits - $DP_X_DESIGN) * $SCALE
+    $dpShift = ($CELL_WIDTH + $DP_GAP_FRACTION * $gapUnits - $DP_X) * $SCALE
 
     $x = $MARGIN + $LABEL_W
     $prevX = $null

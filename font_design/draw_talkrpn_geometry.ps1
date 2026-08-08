@@ -20,19 +20,26 @@ param(
 
 $OUT = "$PSScriptRoot\$OutputName"
 
-# ---- geometry, in cell units (must match TalkRpnFont.kt) -------------------
+# ---- geometry, in cell widths (must match TalkRpnFont.kt) -------------------
+#
+# THE UNIT: segment E to segment B/C is 1. Every figure below is the HP-01's own
+# centreline geometry divided by its 53.5 cell width, which is why the horizontal
+# grid lands on exact halves.
 
-$CELL_HEIGHT  = 100.0
-$CELL_WIDTH   = 58.47
-$TOTAL_HEIGHT = 144.0
-$STROKE       = 9.29
+$HP01_CELL_WIDTH = 53.5
+
+$CELL_WIDTH   = 1.0
+$CELL_HEIGHT  = 91.5 / $HP01_CELL_WIDTH        # 1.71028
+$DESCENDER_FRACTION = 0.44
+$TOTAL_HEIGHT = $CELL_HEIGHT * (1.0 + $DESCENDER_FRACTION)   # 2.46280
+$STROKE       = 8.5 / $HP01_CELL_WIDTH         # 0.15888
 $SLANT_DEG    = 7.5
-$HOOK_R       = 7.92
-$ADVANCE      = 142.08
+$HOOK_R       = 7.25 / $HP01_CELL_WIDTH        # 0.13551
+$PITCH        = 130.0 / $HP01_CELL_WIDTH       # 2.42991
 
 $X_LEFT  = 0.0
-$X_MID   = $CELL_WIDTH / 2.0
-$X_RIGHT = $CELL_WIDTH
+$X_MID   = $CELL_WIDTH / 2.0                   # 0.5 exactly
+$X_RIGHT = $CELL_WIDTH                         # 1 exactly
 
 $Y_TOP  = 0.0
 $Y_MID  = $CELL_HEIGHT / 2.0
@@ -42,20 +49,28 @@ $Y_DESC = $TOTAL_HEIGHT
 $Y_F_TOP      = $HOOK_R
 $Y_E_BOTTOM   = $Y_BASE - $HOOK_R
 $X_HOOK_START = $HOOK_R
+$X_HOOK_END_R = $X_RIGHT - $HOOK_R
 
-$X_N_LEFT  = 3.74
-$X_O_RIGHT = 54.72
+$X_DESC_INSET = 0.064
+$X_N_LEFT  = $X_DESC_INSET
+$X_O_RIGHT = $CELL_WIDTH - $X_DESC_INSET
 
-$COL1_Y = 20.49
-$COL2_Y = 80.60
-$DP_X   = 86.64
-$DP_Y   = 119.08
-$COMMA_TAIL_TIP_X = 78.99
-$COMMA_TAIL_TIP_Y = 139.84
+$COL1_Y = 18.75 / $HP01_CELL_WIDTH             # 0.35047
+$COL2_Y = 73.75 / $HP01_CELL_WIDTH             # 1.37851
+
+$DP_GAP_FRACTION = 0.3369
+$DP_X   = $CELL_WIDTH + $DP_GAP_FRACTION * ($PITCH - $CELL_WIDTH)   # 1.48174
+$DP_Y   = $CELL_HEIGHT * (1.0 + 0.1908)        # 2.03660
+
+$COMMA_TAIL_DROP = 19.0 / $HP01_CELL_WIDTH     # 0.35514
+$COMMA_TAIL_LEFT = 7.0 / $HP01_CELL_WIDTH      # 0.13084
+$COMMA_TAIL_TIP_X = $DP_X - $COMMA_TAIL_LEFT
+$COMMA_TAIL_TIP_Y = $DP_Y + $COMMA_TAIL_DROP
 
 # ---- page ------------------------------------------------------------------
 
-$SCALE    = 5.2
+# Px per cell width. Was 5.2 when a unit was a hundredth of the cap height.
+$SCALE    = 304.0
 $ORIGIN_X = 330.0
 $ORIGIN_Y = 190.0
 $CANVAS_W = 1330
@@ -138,20 +153,21 @@ $SEGMENTS = @(
     @{ N = "P";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_TOP;   X2 = $X_MID;       Y2 = $Y_MID;      LabelDX =   6; LabelDY =  -8 }
     @{ N = "Q";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_MID;   X2 = $X_MID;       Y2 = $Y_BASE;     LabelDX =   6; LabelDY =  -8 }
 
-    @{ N = "COL2_TAIL"; Kind = "Line"; X1 = $X_MID; Y1 = $COL2_Y; X2 = 21.585; Y2 = 101.36; LabelT = 0.4; LabelDX = 14; LabelDY = 8 }
+    @{ N = "COL2_TAIL"; Kind = "Line"; X1 = $X_MID; Y1 = $COL2_Y
+       X2 = ($X_MID - $COMMA_TAIL_LEFT); Y2 = ($COL2_Y + $COMMA_TAIL_DROP); LabelT = 0.4; LabelDX = 14; LabelDY = 8 }
 
     @{ N = "M";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_BASE;  X2 = $X_MID;       Y2 = $Y_DESC;     LabelDX =   8; LabelDY =  -8 }
     @{ N = "N";  Kind = "Line"; X1 = $X_N_LEFT;     Y1 = $Y_DESC;  X2 = $X_MID;       Y2 = $Y_DESC;     LabelDX =  -6; LabelDY =   6 }
     @{ N = "O";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_DESC;  X2 = $X_O_RIGHT;   Y2 = $Y_DESC;     LabelDX =  -6; LabelDY =   6 }
 
-    @{ N = "RPAR"; Kind = "Poly"; Alt = $true; LabelX = 60.5; LabelY = 46.0
-       Pts = @(, @(29.235, 0.0)) + @(0..16 | ForEach-Object {
+    @{ N = "RPAR"; Kind = "Poly"; Alt = $true; LabelX = 1.035; LabelY = 0.787
+       Pts = @(, @($X_MID, $Y_TOP)) + @(0..16 | ForEach-Object {
            $t = (270 + 90 * $_ / 16.0) * [Math]::PI / 180.0
-           , @((50.55 + 7.92 * [Math]::Cos($t)), (7.92 + 7.92 * [Math]::Sin($t)))
+           , @(($X_HOOK_END_R + $HOOK_R * [Math]::Cos($t)), ($Y_F_TOP + $HOOK_R * [Math]::Sin($t)))
        }) + @(0..16 | ForEach-Object {
            $t = (90 * $_ / 16.0) * [Math]::PI / 180.0
-           , @((50.55 + 7.92 * [Math]::Cos($t)), (92.08 + 7.92 * [Math]::Sin($t)))
-       }) + @(, @(29.235, 100.0)) }
+           , @(($X_HOOK_END_R + $HOOK_R * [Math]::Cos($t)), ($Y_E_BOTTOM + $HOOK_R * [Math]::Sin($t)))
+       }) + @(, @($X_MID, $Y_BASE)) }
 
     @{ N = "COL1";  Kind = "Dot"; X1 = $X_MID; Y1 = $COL1_Y; LabelDX = 10; LabelDY = -9 }
     @{ N = "COL2";  Kind = "Dot"; X1 = $X_MID; Y1 = $COL2_Y; LabelDX = 10; LabelDY = -9 }
@@ -220,25 +236,45 @@ function Dim($x1, $y1, $x2, $y2, $text, $tdx, $tdy) {
     $g.DrawString($text, $noteFont, $dimBrush, (($a.X + $b.X) / 2 + $tdx), (($a.Y + $b.Y) / 2 + $tdy))
 }
 
+# How far the first dimension line stands off the cell, and how far apart the
+# stacked ones are. In cell widths, like everything else on the drawing.
+$DIM_GAP  = 0.205
+$DIM_STEP = 0.24
+
+# Every label's number is formatted FROM the value it points at, so a dimension
+# can never end up quoting a figure the drawing no longer uses.
+function DimLabel($value, $what) { "{0:F3}  {1}" -f $value, $what }
+
 # Verticals, stacked out to the right of the cell.
-Dim ($X_RIGHT + 12) $Y_TOP ($X_RIGHT + 12) $Y_MID  "50.00" 6 -8
-Dim ($X_RIGHT + 26) $Y_TOP ($X_RIGHT + 26) $Y_BASE "100.00  baseline" 6 -8
-Dim ($X_RIGHT + 40) $Y_TOP ($X_RIGHT + 40) $Y_DESC "144.00  descender" 6 -8
-Dim ($X_RIGHT + 54) $Y_TOP ($X_RIGHT + 54) $COL1_Y "20.49  COL1" 6 -8
-Dim ($X_RIGHT + 68) $Y_TOP ($X_RIGHT + 68) $COL2_Y "80.60  COL2" 6 -8
+$vx = $X_RIGHT + $DIM_GAP
+Dim $vx $Y_TOP $vx $Y_MID  (DimLabel $Y_MID "") 6 -8
+$vx += $DIM_STEP
+Dim $vx $Y_TOP $vx $Y_BASE (DimLabel $Y_BASE "baseline") 6 -8
+$vx += $DIM_STEP
+Dim $vx $Y_TOP $vx $Y_DESC (DimLabel $Y_DESC "descender") 6 -8
+$vx += $DIM_STEP
+Dim $vx $Y_TOP $vx $COL1_Y (DimLabel $COL1_Y "COL1") 6 -8
+$vx += $DIM_STEP
+Dim $vx $Y_TOP $vx $COL2_Y (DimLabel $COL2_Y "COL2") 6 -8
 
 # Horizontals, stacked below.
-Dim $X_LEFT ($Y_DESC + 14) $X_RIGHT ($Y_DESC + 14) "58.47  cell width" -40 6
-Dim $X_LEFT ($Y_DESC + 28) $X_MID   ($Y_DESC + 28) "29.235  centre axis" -50 6
-Dim $X_LEFT ($Y_DESC + 42) $X_HOOK_START ($Y_DESC + 42) "7.92  hook R" -30 6
-Dim $X_LEFT ($Y_DESC + 56) $X_N_LEFT ($Y_DESC + 56) "3.74  N left" -20 6
-Dim $X_LEFT ($Y_DESC + 70) $X_O_RIGHT ($Y_DESC + 70) "54.72  O right" -40 6
-Dim $X_LEFT ($Y_DESC + 84) $DP_X ($Y_DESC + 84) "86.64  DP axis" -40 6
+$hy = $Y_DESC + $DIM_STEP
+Dim $X_LEFT $hy $X_RIGHT $hy (DimLabel $X_RIGHT "cell width") -40 6
+$hy += $DIM_STEP
+Dim $X_LEFT $hy $X_MID $hy (DimLabel $X_MID "centre axis") -50 6
+$hy += $DIM_STEP
+Dim $X_LEFT $hy $X_HOOK_START $hy (DimLabel $HOOK_R "hook R") -30 6
+$hy += $DIM_STEP
+Dim $X_LEFT $hy $X_N_LEFT $hy (DimLabel $X_N_LEFT "N left") -20 6
+$hy += $DIM_STEP
+Dim $X_LEFT $hy $X_O_RIGHT $hy (DimLabel $X_O_RIGHT "O right") -40 6
+$hy += $DIM_STEP
+Dim $X_LEFT $hy $DP_X $hy (DimLabel $DP_X "DP axis") -40 6
 
 # Guides from the cell out to the dimension stacks.
 foreach ($y in @($Y_MID, $Y_BASE, $Y_DESC, $COL1_Y, $COL2_Y)) {
     $a = P $X_LEFT $y
-    $b = P ($X_RIGHT + 70) $y
+    $b = P ($X_RIGHT + $DIM_GAP + 4 * $DIM_STEP) $y
     $g.DrawLine($guidePen, $a, $b)
 }
 }
@@ -248,7 +284,7 @@ $g.DrawString("TalkRPN cell - centreline skeleton", $titleFont, $black, 24, 22)
 
 $header = @(
     "No stroke width, no slant. Origin is the top-left centreline corner; x right, y down.",
-    "Units are the HP-01's centreline box (53.5 x 91.5) scaled by 100/91.5 = 1.0929, so cap height is exactly 100.",
+    "THE UNIT: segment E to segment B/C is 1. The HP-01's centreline box (53.5 x 91.5) divided by 53.5, so the centre axis is exactly 0.5.",
     "28 bars + COL1 + COL2 + DP + COMMA = 32 elements; mask is a Long.  Blue: A3/D3 are ALTERNATIVES to A4/D4; RPAR is the whole right paren.",
     "Segments meet flush - no gaps, unlike the DL-3422. TalkRpnFont.kt is the source of truth."
 )
@@ -261,7 +297,9 @@ foreach ($line in $header) {
 
 # ---- printed listing -------------------------------------------------------
 
-$textTop = if ($Section -eq "listing") { 140 } else { $ORIGIN_Y + ($Y_DESC + 100) * $SCALE }
+# The listing starts a cap height below the drawing's descender bar - enough to
+# clear the horizontal dimension stack.
+$textTop = if ($Section -eq "listing") { 140 } else { $ORIGIN_Y + ($Y_DESC + $CELL_HEIGHT) * $SCALE }
 
 $lines = @()
 $lines += "SEGMENT CENTRELINES              from                 to"
@@ -269,43 +307,45 @@ $lines += "SEGMENT CENTRELINES              from                 to"
 foreach ($s in $SEGMENTS) {
     switch ($s.Kind) {
         "Line" {
-            $lines += ("  {0,-5} {1,-10} {2,8:F2},{3,8:F2}  ->  {4,8:F2},{5,8:F2}" -f `
+            $lines += ("  {0,-5} {1,-10} {2,8:F3},{3,8:F3}  ->  {4,8:F3},{5,8:F3}" -f `
                 $s.N, "line", $s.X1, $s.Y1, $s.X2, $s.Y2)
         }
         "Arc" {
             $a0 = $s.From * [Math]::PI / 180.0
             $a1 = $s.To * [Math]::PI / 180.0
-            $lines += ("  {0,-5} {1,-10} {2,8:F2},{3,8:F2}  ->  {4,8:F2},{5,8:F2}   arc R{6:F2} centre {7:F2},{8:F2}" -f `
+            $lines += ("  {0,-5} {1,-10} {2,8:F3},{3,8:F3}  ->  {4,8:F3},{5,8:F3}   arc R{6:F3} centre {7:F3},{8:F3}" -f `
                 $s.N, "arc", ($s.CX + $s.R * [Math]::Cos($a0)), ($s.CY + $s.R * [Math]::Sin($a0)), `
                 ($s.CX + $s.R * [Math]::Cos($a1)), ($s.CY + $s.R * [Math]::Sin($a1)), $s.R, $s.CX, $s.CY)
         }
     }
 }
 
-$lines += "  RPAR  compound     29.24, 0.00 -> arc -> 58.47, 7.92..92.08 -> arc -> 29.24, 100.00   the whole right paren"
+$lines += "  RPAR  compound     {0:F3},{1:F3} -> arc -> {2:F3}, {3:F3}..{4:F3} -> arc -> {0:F3},{5:F3}   the whole right paren" -f `
+    $X_MID, $Y_TOP, $X_RIGHT, $Y_F_TOP, $Y_E_BOTTOM, $Y_BASE
 $lines += ""
-$lines += "DOT CENTRES     COL1    {0:F2}, {1:F2}      upper colon dot; also dots i and j" -f $X_MID, $COL1_Y
-$lines += "                COL2    {0:F2}, {1:F2}      lower colon dot, colon only" -f $X_MID, $COL2_Y
-$lines += "                DP      {0:F2}, {1:F2}     decimal point, outside the cell to the right" -f $DP_X, $DP_Y
-$lines += "                COMMA   {0:F2}, {1:F2}     same centre, plus a tail down and left" -f $DP_X, $DP_Y
-$lines += "                radius = STROKE = {0:F2}, so diameter {1:F2}" -f $STROKE, (2 * $STROKE)
+$lines += "DOT CENTRES     COL1    {0:F3}, {1:F3}      upper colon dot; also dots i and j" -f $X_MID, $COL1_Y
+$lines += "                COL2    {0:F3}, {1:F3}      lower colon dot, colon only" -f $X_MID, $COL2_Y
+$lines += "                DP      {0:F3}, {1:F3}     decimal point, outside the cell to the right" -f $DP_X, $DP_Y
+$lines += "                COMMA   {0:F3}, {1:F3}     same centre, plus a tail down and left" -f $DP_X, $DP_Y
+$lines += "                radius = STROKE = {0:F3}, so diameter {1:F3}" -f $STROKE, (2 * $STROKE)
 $lines += ""
-$lines += "CENTRELINE BOX  {0:F2} wide x {1:F2} tall    aspect {2:F3}" -f $CELL_WIDTH, $CELL_HEIGHT, ($CELL_WIDTH / $CELL_HEIGHT)
-$lines += "                {0:F2} tall including the descender" -f $TOTAL_HEIGHT
-$lines += "ADVANCE         {0:F2}   origin to origin" -f $ADVANCE
+$lines += "CENTRELINE BOX  {0:F3} wide x {1:F3} tall    aspect {2:F3}" -f $CELL_WIDTH, $CELL_HEIGHT, ($CELL_WIDTH / $CELL_HEIGHT)
+$lines += "                {0:F3} tall including the descender" -f $TOTAL_HEIGHT
+$lines += "PITCH           {0:F3}   origin to origin; minus 1 IS the clearance between cells" -f $PITCH
+$lines += "VPITCH          floor is {0:F3}, the ink height - below that descenders reach the next row" -f ($TOTAL_HEIGHT + $STROKE)
 $lines += "SLANT           {0:F1} degrees, applied at render" -f $SLANT_DEG
 $lines += ""
 $lines += "RELATIONSHIPS"
-$lines += "  hook radius = hook start x = {0:F2}, so each arc is tangent to both bar and column" -f $HOOK_R
-$lines += "  F1 top = {0:F2} = where A3 lands.  E1 bottom = {1:F2} = where D3 lands." -f $Y_F_TOP, $Y_E_BOTTOM
+$lines += "  hook radius = hook start x = {0:F3}, so each arc is tangent to both bar and column" -f $HOOK_R
+$lines += "  F1 top = {0:F3} = where A3 lands.  E1 bottom = {1:F3} = where D3 lands." -f $Y_F_TOP, $Y_E_BOTTOM
 $lines += "  F2 and E2 are the stubs that carry the left column out to the corner when it is square."
-$lines += "  B = C = {0:F2}: the right column is undivided at the corners, which is what makes a 4 lopsided." -f $Y_MID
-$lines += "  N and O are inset {0:F2} and {1:F2} from the columns - symmetric to within measurement." -f $X_N_LEFT, ($CELL_WIDTH - $X_O_RIGHT)
+$lines += "  B = C = {0:F3}: the right column is undivided at the corners, which is what makes a 4 lopsided." -f $Y_MID
+$lines += "  N and O are both inset {0:F3} from the columns - one constant, applied to both sides." -f $X_DESC_INSET
 $lines += ""
 $lines += "THE THREE LEFT-COLUMN ENDINGS"
 $lines += "  square   A4 + F2      most letters"
 $lines += "  hooked   A3 + F1      0 2 3 5 7 8 9, A C G O Q S, ( & and @   (F2 dark)"
-$lines += "  short    F1 alone     digit 4, no A at all - left side sits {0:F2} lower than the right" -f $HOOK_R
+$lines += "  short    F1 alone     digit 4, no A at all - left side sits {0:F3} lower than the right" -f $HOOK_R
 $lines += ""
 $lines += "WHY THE LETTER V IS DRAWN SIDEWAYS"
 $lines += "  A textbook V is two arms meeting at the bottom centre. The left arm exists - segment J"
