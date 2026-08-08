@@ -129,10 +129,10 @@ $SEGMENTS = @(
     @{ N = "G1"; Kind = "Line"; X1 = $X_LEFT;       Y1 = $Y_MID;  X2 = $X_MID;        Y2 = $Y_MID;      LabelDX =  -6; LabelDY = -20 }
     @{ N = "G2"; Kind = "Line"; X1 = $X_MID;        Y1 = $Y_MID;  X2 = $X_RIGHT;      Y2 = $Y_MID;      LabelDX =  -6; LabelDY = -20 }
 
-    @{ N = "H";  Kind = "Line"; X1 = $X_LEFT;       Y1 = $Y_F_TOP; X2 = $X_MID;       Y2 = $Y_MID;      LabelDX =   4; LabelDY = -18 }
+    @{ N = "H";  Kind = "Line"; X1 = $X_LEFT;       Y1 = $Y_TOP;   X2 = $X_MID;       Y2 = $Y_MID;      LabelDX =   4; LabelDY = -18 }
     @{ N = "I";  Kind = "Line"; X1 = $X_RIGHT;      Y1 = $Y_TOP;   X2 = $X_MID;       Y2 = $Y_MID;      LabelDX =   6; LabelDY = -18 }
     @{ N = "J";  Kind = "Line"; X1 = $X_LEFT;       Y1 = $Y_MID;   X2 = $X_MID;       Y2 = $Y_BASE;     LabelT = 0.25; LabelDX = -30; LabelDY =  -6 }
-    @{ N = "L";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_MID;   X2 = $X_LEFT;      Y2 = $Y_E_BOTTOM; LabelT = 0.25; LabelDX =  14; LabelDY =  -6 }
+    @{ N = "L";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_MID;   X2 = $X_LEFT;      Y2 = $Y_BASE; LabelT = 0.25; LabelDX =  14; LabelDY =  -6 }
     @{ N = "K";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_MID;   X2 = $X_RIGHT;     Y2 = $Y_BASE;     LabelDX =   6; LabelDY =  -4 }
 
     @{ N = "P";  Kind = "Line"; X1 = $X_MID;        Y1 = $Y_TOP;   X2 = $X_MID;       Y2 = $Y_MID;      LabelDX =   6; LabelDY =  -8 }
@@ -329,6 +329,7 @@ $bmp.Save($OUT, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 
 Write-Output "wrote $OUT  ($CANVAS_W x $CANVAS_H)"
+
 
 
 

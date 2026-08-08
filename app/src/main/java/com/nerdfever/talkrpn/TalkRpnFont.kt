@@ -331,10 +331,17 @@ object TalkRpnFont {
 
         // Diagonals. H+K make one through-line, I+L the other; J is the extra,
         // with no mirror on the right because no ASCII glyph needs one.
-        Seg.H to line(X_LEFT, Y_F_TOP, X_MID, Y_MID),
+        //
+        // H and L run to the EXACT corners (changed 2026-08-08). They used to
+        // stop at the hook landings, (0, 7.92) and (0, 92.08), which suited the
+        // glyphs that join a diagonal to an arc - but it left every slash short
+        // of its corner. The full slash and backslash are corner-to-corner now,
+        // and the glyphs that used the old junctions (& a e) went back to square
+        // corners instead.
+        Seg.H to line(X_LEFT, Y_TOP, X_MID, Y_MID),
         Seg.I to line(X_RIGHT, Y_TOP, X_MID, Y_MID),
         Seg.K to line(X_MID, Y_MID, X_RIGHT, Y_BASE),
-        Seg.L to line(X_MID, Y_MID, X_LEFT, Y_E_BOTTOM),
+        Seg.L to line(X_MID, Y_MID, X_LEFT, Y_BASE),
         Seg.J to line(X_LEFT, Y_MID, X_MID, Y_BASE),
 
         // Centre column.
@@ -482,4 +489,5 @@ object TalkRpnFont {
         }
     }
 }
+
 

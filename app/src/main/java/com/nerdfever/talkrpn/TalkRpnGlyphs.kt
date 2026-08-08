@@ -148,9 +148,8 @@ object TalkRpnGlyphs {
 
         'X' to m(Seg.H, Seg.I, Seg.L, Seg.K),
         'Y' to m(Seg.H, Seg.I, Seg.Q),
-        // E2 bridges L's landing at (0, 92.08) down to the square foot, the same
-        // way lower-case z does it.
-        'Z' to (TOP or m(Seg.I, Seg.L, Seg.E2) or BOT),
+        // No E2 bridge needed since segment L reaches the corner itself.
+        'Z' to (TOP or m(Seg.I, Seg.L) or BOT),
 
         // ---- Lower case -----------------------------------------------------
         //
@@ -158,15 +157,19 @@ object TalkRpnGlyphs {
         // bottom); ascenders use the upper half and descenders use M/N/O below
         // the baseline. Narrow bowls close with Q, exactly like the digits.
 
-        // L, not J: L runs the same way as the slash in '/', which is I into L.
-        'a' to m(Seg.G1, Seg.Q, Seg.D3, Seg.D1, Seg.L),
+        // Segment L, not segment J: it runs the way the slash in '/' does. D4
+        // rather than D3 since the corner move - segment L lands on the exact
+        // corner, which is where the square bar ends and the arc does not.
+        'a' to m(Seg.G1, Seg.Q, Seg.D4, Seg.D1, Seg.L),
 
         // b c d e all round their bottom-left corner: D3 in place of E2, so the
         // bowl curls into the foot instead of meeting it square.
         'b' to (UL or LL_SHORT or m(Seg.G1, Seg.D3, Seg.D1, Seg.Q)),
         'c' to (LL_SHORT or m(Seg.G1, Seg.D3, Seg.D1)),
         'd' to (LL_SHORT or m(Seg.G1, Seg.D3, Seg.D1) or STEM),
-        'e' to (LL_SHORT or m(Seg.G1, Seg.D3, Seg.D1, Seg.L)),
+        // Square foot like a, and E2 lit again: with no arc landing to stop at,
+        // the left column runs to the corner where segment L and D4 meet.
+        'e' to (LL or m(Seg.G1, Seg.D4, Seg.D1, Seg.L)),
 
         // LOW CONFIDENCE: flag right (A2), full crossbar, centre stem.
         'f' to (m(Seg.A2) or STEM or MID),
@@ -216,8 +219,9 @@ object TalkRpnGlyphs {
         // and E2 goes dark with it or it would spike past the arc.
         'u' to (LL_SHORT or m(Seg.D3, Seg.D1, Seg.Q)),
 
-        // Lower-left leg plus the rising diagonal - they meet at the bottom.
-        'v' to m(Seg.E1, Seg.L),
+        // Lower-left leg plus the rising diagonal. E2 lit since the corner move:
+        // the two meet at the corner itself now, so the leg must reach it.
+        'v' to (LL or m(Seg.L)),
 
         // L and K peak at the centre, columns outside - the lower-case mirror
         // of what makes M.
@@ -228,9 +232,7 @@ object TalkRpnGlyphs {
 
         'y' to (LL or m(Seg.D4, Seg.D1, Seg.Q, Seg.M, Seg.N)),
 
-        // D4 with E2 bridging up to where L lands at (0, 92.08), so the corner
-        // closes square rather than curling.
-        'z' to m(Seg.G1, Seg.L, Seg.E2, Seg.D4, Seg.D1),
+        'z' to m(Seg.G1, Seg.L, Seg.D4, Seg.D1),
 
         // ---- Punctuation and symbols ----------------------------------------
 
@@ -311,10 +313,10 @@ object TalkRpnGlyphs {
                 (m(Seg.G2) or LR or m(Seg.D2, Seg.Q))
             ),
 
-        // Hooked at both left corners, nothing competing with either arc. This
-        // briefly ran A3 and A4 together - the only glyph ever to light both
-        // corner pieces - until the corner review settled on the hook alone.
-        '&' to (TOP_LEFT_HOOK or m(Seg.P, Seg.H, Seg.G1) or LL_SHORT or
+        // Square top corner (A4): segment H runs to the exact corner now, so the
+        // diagonal springs from where the square bar ends. The hooked corner was
+        // tried twice here and lost both times - first alongside A4, then alone.
+        '&' to (TOP_LEFT or m(Seg.P, Seg.H, Seg.G1) or LL_SHORT or
             m(Seg.D3, Seg.D1, Seg.D2) or LR or m(Seg.K)),
 
         '@' to (TOP_HOOK or UR or LR or BOT_HOOK or m(Seg.E1, Seg.G1, Seg.Q)),
@@ -342,6 +344,7 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
 
