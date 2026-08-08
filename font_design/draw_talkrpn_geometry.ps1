@@ -50,6 +50,8 @@ $COL1_Y = 20.49
 $COL2_Y = 80.60
 $DP_X   = 86.64
 $DP_Y   = 119.08
+$COMMA_TAIL_TIP_X = 78.99
+$COMMA_TAIL_TIP_Y = 139.84
 
 # ---- page ------------------------------------------------------------------
 
@@ -202,6 +204,11 @@ foreach ($s in $SEGMENTS) {
             $c = P $s.X1 $s.Y1
             $g.FillEllipse($redBrush, ($c.X - 4), ($c.Y - 4), 8, 8)
             $g.DrawString($s.N, $noteFont, $greyBrush, ($c.X + $s.LabelDX), ($c.Y + $s.LabelDY))
+
+            # The comma is a dot PLUS its tail; show the tail too.
+            if ($s.N -eq "COMMA") {
+                $g.DrawLine($centrePen, $c, (P $COMMA_TAIL_TIP_X $COMMA_TAIL_TIP_Y))
+            }
         }
     }
 }
@@ -319,6 +326,7 @@ $bmp.Save($OUT, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 
 Write-Output "wrote $OUT  ($CANVAS_W x $CANVAS_H)"
+
 
 
 
