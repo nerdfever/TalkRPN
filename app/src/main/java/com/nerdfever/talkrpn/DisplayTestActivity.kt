@@ -97,29 +97,56 @@ private const val HEIGHT_FRACTION_MIN = 0.03f
 private const val HEIGHT_FRACTION_MAX = 0.25f
 
 /**
- * Cell pitch, as a multiple of the HP-01's own advance of 130 cell units.
+ * THE UNIT for both pitches below: segment D to segment A is 100.
  *
- * The reconstructed pitch is very wide - 130 units against a 62-unit cell, so the
- * gap between digits exceeds the digits themselves. Clearance between neighbours is
- * (130 x factor) - 62, which reaches zero at 0.477; around 0.55 the gap equals one
- * stroke width, which is about as tight as stays readable.
+ * TalkRpnFont's header defines it; this is the same unit, used horizontally and
+ * vertically alike, so a pitch and a vpitch are directly comparable numbers.
+ *
+ * The font actually being drawn does not have to agree, and Hp01Font does not:
+ * its own cell height is the OUTER ink box, whose D-to-A span is only 91.5.
+ * Hp01Font.CAP_SPAN states that and [unitsToFont] converts, so the figures below
+ * mean the same thing whichever font ends up on the screen.
+ */
+private const val CAP_UNITS = 100f
+
+/**
+ * PITCH - horizontal cell-to-cell distance, in D-to-A units.
+ *
+ * 142.08 is the HP-01's own 130 expressed in these units, and it is very airy: a
+ * cell is 67.8 units wide, so more than half the pitch is empty. Two neighbours
+ * only stop overlapping while pitch exceeds cell width plus one stroke, about 77
+ * units; the slant makes it look tight some way before that without the ink ever
+ * actually meeting.
  *
  * Height no longer moves when this changes. It used to, because the cell was sized
  * to make a fixed cell count fill the row exactly - so a tighter pitch bought taller
  * digits. Convenient, but it meant neither control did one thing.
  */
-private const val INITIAL_PITCH_FACTOR = 1.0f
-private const val PITCH_FACTOR_MIN = 0.40f
-private const val PITCH_FACTOR_MAX = 1.60f
+private const val INITIAL_PITCH_UNITS = 142.08f
+private const val PITCH_UNITS_MIN = 60f
+private const val PITCH_UNITS_MAX = 230f
 
 /**
- * Vertical space between register rows, as a fraction of the screen's diameter.
- * Same reasoning as the digit height: a screen fraction transfers to the watch,
- * a millimetre figure tuned on the emulator would not.
+ * VPITCH - vertical row-to-row distance, BASELINE TO BASELINE, in the same units.
+ *
+ * Baseline to baseline rather than gap-between-rows, so that it keeps meaning the
+ * same thing when adjacent rows are different sizes - which they are here, since
+ * every row but X is scaled by [SMALL_ROW_SCALE]. Measured always in the X row's
+ * units, so a smaller row does not bring smaller units with it.
+ *
+ * Note this is a real change from the old fixed gap: with a uniform gap, unequal
+ * rows ended up unequally spaced baseline to baseline. Making the SPACING uniform
+ * instead means the gaps now differ, which is the way round that reads evenly.
+ *
+ * 115 suits the seven-segment font, which has no descenders at all. TalkRpnFont
+ * does, and its ink is 153 units tall, so expect to want about 160 once the
+ * display draws letters.
  */
-private const val INITIAL_ROW_GAP_FRACTION = 0.013f
-private const val ROW_GAP_FRACTION_MIN = 0.0f
-private const val ROW_GAP_FRACTION_MAX = 0.10f
+private const val INITIAL_VPITCH_UNITS = 115f
+private const val VPITCH_UNITS_MAX = 260f
+
+/** Both pitches step by this, additively - they are lengths, not proportions. */
+private const val PITCH_STEP_UNITS = 2f
 
 /** Every proportional adjustment moves by this much per press. */
 private const val ADJUST_STEP_FRACTION = 0.05f
@@ -137,21 +164,19 @@ private const val SLANT_DEGREES_MIN = -6f
 private const val SLANT_DEGREES_MAX = 24f
 
 /**
- * The row gap steps by whole pixels, not by a percentage.
+ * A press must never move the layout by less than one pixel.
  *
- * It is the smallest quantity on the panel - about six pixels - and Compose lays
- * out in whole pixels, so a 5% step of 0.3 px spent two to four clicks crossing
- * each pixel boundary. Most presses did nothing visible, which reads as a control
- * that is broken or laggy rather than one working below the display's resolution.
+ * Learned the hard way when the row gap was a percentage: at about six pixels, a
+ * 5% step was 0.3 px, so two to four clicks were spent crossing each pixel
+ * boundary and most presses did nothing visible. That reads as a control which is
+ * broken or laggy rather than one working below the display's resolution.
  *
- * A pixel step guarantees every press moves the layout exactly once. It also
- * removes the percentage step's other problem here: five percent of nothing is
- * nothing, so a proportional control could never climb back out of a zero gap.
- *
- * The value is still stored as a fraction of the screen, so it transfers to the
- * watch; only the step is in pixels.
+ * Units are the right thing to STORE - they transfer to the watch, where a pixel
+ * figure tuned on the emulator would not - but the wrong thing to step by blindly,
+ * because a unit is smaller than a pixel at these sizes. So the step is whichever
+ * is larger: the nominal step above, or one pixel's worth of units.
  */
-private const val ROW_GAP_STEP_PX = 1f
+private const val MIN_STEP_PX = 1f
 
 /**
  * The lit-segment colour.
@@ -348,16 +373,13 @@ private fun DisplayTestScreen() {
     val insetPx = BEZEL_INSET.value * metrics.density
 
     // The two independent adjustments. Neither moves the other.
-    var pitchFactor by remember { mutableStateOf(INITIAL_PITCH_FACTOR) }
+    var pitchUnits by remember { mutableStateOf(INITIAL_PITCH_UNITS) }
     var heightFraction by remember { mutableStateOf(INITIAL_HEIGHT_FRACTION) }
 
-    var rowGapFraction by remember { mutableStateOf(INITIAL_ROW_GAP_FRACTION) }
+    var vpitchUnits by remember { mutableStateOf(INITIAL_VPITCH_UNITS) }
     var slantDegrees by remember { mutableStateOf(Hp01Font.SLANT_DEGREES) }
     var sampleIndex by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(false) }
-
-    val advanceUnits = Hp01Font.ADVANCE * pitchFactor
-    val rowGap = pxToDp(rowGapFraction * screenPx, metrics.density)
 
     // Width available to a register row, captured during layout rather than inside
     // a Canvas: writing state during the draw phase schedules another draw, which
@@ -367,6 +389,46 @@ private fun DisplayTestScreen() {
     // Height is now set directly, not inferred from a cell count.
     val xCellHeightPx = heightFraction * screenPx
     val smallCellHeightPx = xCellHeightPx * SMALL_ROW_SCALE
+
+    // ---- Out of D-to-A units and into the two things that draw ---------------
+    //
+    // Two conversions, and only two, so there is one place to look when a length
+    // is the wrong size: units -> the drawing font's own coordinates, and units
+    // -> device pixels at the X row's size.
+
+    // The drawing font's cell units per D-to-A unit. Not 1: Hp01Font measures its
+    // cell to the outside of the ink, so its 100 spans only 91.5 of ours.
+    val fontUnitsPerUnit = Hp01Font.CAP_SPAN / CAP_UNITS
+
+    // Pixels per D-to-A unit, always at the X row's size - that is the reference
+    // the vpitch is quoted in, so a smaller row must not redefine it.
+    val unitPx = xCellHeightPx / Hp01Font.CELL_HEIGHT * fontUnitsPerUnit
+
+    val advanceUnits = pitchUnits * fontUnitsPerUnit
+    val vpitchPx = vpitchUnits * unitPx
+
+    // ---- Row spacing, derived from vpitch ------------------------------------
+    //
+    // A Column stacks canvases and separates them with gaps, but vpitch is stated
+    // baseline to baseline - so each gap is vpitch minus the ink already lying
+    // between those two baselines: the tail of the row above, plus the whole of
+    // the row below down to its own baseline.
+    //
+    // Three junctions, because X is a different size from its neighbours. This is
+    // the part a single shared gap got wrong: equal gaps between unequal rows put
+    // the baselines at unequal distances, which is what the eye actually reads.
+
+    val gapSmallToSmallPx = rowGapPx(vpitchPx, smallCellHeightPx, smallCellHeightPx)
+    val gapSmallToXPx = rowGapPx(vpitchPx, smallCellHeightPx, xCellHeightPx)
+    val gapXToSmallPx = rowGapPx(vpitchPx, xCellHeightPx, smallCellHeightPx)
+
+    // The tightest vpitch that still leaves every gap non-negative. Binding case
+    // is a small row above X, since that is where the row below is tallest.
+    val minVpitchUnits = minVpitchPx(smallCellHeightPx, xCellHeightPx) / unitPx
+
+    // One press must move the layout at least one pixel; below that the control
+    // looks broken rather than fine-grained.
+    val pitchStepUnits = maxOf(PITCH_STEP_UNITS, MIN_STEP_PX / unitPx)
 
     // With both free, the cell count becomes the *result* rather than the input -
     // which is the more useful reading anyway, since the question was how many
@@ -413,12 +475,19 @@ private fun DisplayTestScreen() {
             verticalArrangement = Arrangement.Center
         ) {
 
-            for (name in UPPER_REGISTERS) {
+            for ((index, name) in UPPER_REGISTERS.withIndex()) {
+
                 RegisterRow(
                     name, samples[name].orEmpty(), smallCellHeightPx, advanceUnits,
                     LED_RED, metrics.density, screenPx, insetPx, slantDegrees
                 )
-                Spacer(Modifier.height(rowGap))
+
+                // The last of these sits above X, which is taller, so it needs a
+                // smaller gap to land on the same baseline-to-baseline distance.
+                val gapPx =
+                    if (index == UPPER_REGISTERS.lastIndex) gapSmallToXPx else gapSmallToSmallPx
+
+                Spacer(Modifier.height(pxToDp(gapPx.coerceAtLeast(0f), metrics.density)))
             }
 
             // X carries no label: it is the largest row, it spans the full width,
@@ -452,14 +521,20 @@ private fun DisplayTestScreen() {
                 )
             }
 
-            Spacer(Modifier.height(rowGap))
+            // X down to the first of the lower registers: the row below is now the
+            // smaller one, so this gap is the wider of the three.
+            Spacer(Modifier.height(pxToDp(gapXToSmallPx.coerceAtLeast(0f), metrics.density)))
 
             for (name in LOWER_REGISTERS) {
+
                 RegisterRow(
                     name, samples[name].orEmpty(), smallCellHeightPx, advanceUnits,
                     LED_RED, metrics.density, screenPx, insetPx, slantDegrees
                 )
-                Spacer(Modifier.height(rowGap))
+
+                // The trailing one has no row beneath it - it is just the padding
+                // ahead of the annunciators, and matching the others keeps it even.
+                Spacer(Modifier.height(pxToDp(gapSmallToSmallPx.coerceAtLeast(0f), metrics.density)))
             }
 
             Spacer(Modifier.height(ANNUNCIATOR_GAP))
@@ -505,10 +580,13 @@ private fun DisplayTestScreen() {
                 // Values live here rather than on the buttons: at this size a
                 // button is only wide enough for its name.
                 Text(
-                    text = "%.1f mm  %d cells  gap %.0f".format(
+                    // Cell clearance in D-to-A units, so it can be compared with
+                    // the pitch directly: it is what is left of the pitch once the
+                    // cell has taken its share.
+                    text = "%.1f mm  %d cells  clear %.0f".format(
                         xCellHeightPx / pixelsPerMm,
                         cellsAcross,
-                        Hp01Font.ADVANCE * pitchFactor - Hp01Font.CELL_WIDTH
+                        pitchUnits - Hp01Font.CELL_WIDTH / fontUnitsPerUnit
                     ),
                     color = LABEL,
                     fontSize = TEXT_READOUT,
@@ -517,12 +595,13 @@ private fun DisplayTestScreen() {
                 )
 
                 Text(
-                    // Row gap in pixels, since pixels are what it moves in and what
-                    // was confusing when it appeared not to move at all.
-                    text = "p%.2f h%.1f%% r%.0fpx s%.1f".format(
-                        pitchFactor,
+                    // Both pitches in D-to-A units, so they read against each other
+                    // and against the font's own numbers. Height stays a screen
+                    // fraction: it is the one quantity that has to be physical.
+                    text = "p%.0f v%.0f h%.1f%% s%.1f".format(
+                        pitchUnits,
+                        vpitchUnits,
                         heightFraction * 100f,
-                        rowGapFraction * screenPx,
                         slantDegrees
                     ),
                     color = LABEL,
@@ -537,12 +616,12 @@ private fun DisplayTestScreen() {
 
                     SplitButton("pitch", Modifier.weight(1f),
                         onIncrease = {
-                            pitchFactor = (pitchFactor * (1f + ADJUST_STEP_FRACTION))
-                                .coerceAtMost(PITCH_FACTOR_MAX)
+                            pitchUnits = (pitchUnits + pitchStepUnits)
+                                .coerceAtMost(PITCH_UNITS_MAX)
                         },
                         onDecrease = {
-                            pitchFactor = (pitchFactor / (1f + ADJUST_STEP_FRACTION))
-                                .coerceAtLeast(PITCH_FACTOR_MIN)
+                            pitchUnits = (pitchUnits - pitchStepUnits)
+                                .coerceAtLeast(PITCH_UNITS_MIN)
                         }
                     )
 
@@ -566,14 +645,16 @@ private fun DisplayTestScreen() {
 
                 Row(modifier = Modifier.fillMaxWidth()) {
 
-                    SplitButton("spacing", Modifier.weight(1f),
+                    SplitButton("vpitch", Modifier.weight(1f),
                         onIncrease = {
-                            rowGapFraction = ((rowGapFraction * screenPx + ROW_GAP_STEP_PX) / screenPx)
-                                .coerceAtMost(ROW_GAP_FRACTION_MAX)
+                            vpitchUnits = (vpitchUnits + pitchStepUnits)
+                                .coerceAtMost(VPITCH_UNITS_MAX)
                         },
                         onDecrease = {
-                            rowGapFraction = ((rowGapFraction * screenPx - ROW_GAP_STEP_PX) / screenPx)
-                                .coerceAtLeast(ROW_GAP_FRACTION_MIN)
+                            // Stops where the rows would start to touch, rather
+                            // than at a guessed constant.
+                            vpitchUnits = (vpitchUnits - pitchStepUnits)
+                                .coerceAtLeast(minVpitchUnits)
                         }
                     )
 
@@ -921,6 +1002,37 @@ private fun groupDigits(value: String): String {
 
 /** Device pixels to Dp. Compose lays out in Dp; the font works in pixels. */
 private fun pxToDp(px: Float, density: Float) = (px / density).dp
+
+/**
+ * How far a row's baseline sits above the bottom edge of its own canvas.
+ *
+ * The canvas is exactly the cell height, and Hp01Font measures its cell to the
+ * OUTSIDE of the ink, so the baseline - segment D's centreline - is half a stroke
+ * up from the bottom. Scales with the row, hence the argument.
+ */
+private fun baselineToBottomPx(cellHeightPx: Float) =
+    cellHeightPx * (Hp01Font.STROKE / 2f) / Hp01Font.CELL_HEIGHT
+
+/**
+ * The Column gap that leaves two stacked rows exactly [vpitchPx] apart, baseline
+ * to baseline. Depends on both rows, because they may be different sizes.
+ */
+private fun rowGapPx(vpitchPx: Float, abovePx: Float, belowPx: Float) =
+    vpitchPx - baselineToBottomPx(abovePx) - (belowPx - baselineToBottomPx(belowPx))
+
+/**
+ * The tightest vpitch that keeps every gap in the column at zero or more - that
+ * is, the point at which rows start to touch.
+ *
+ * Checked across all three junctions rather than assumed, since which one binds
+ * depends on [SMALL_ROW_SCALE]. It is the small-above-X junction as things stand,
+ * because that is where the row below is tallest.
+ */
+private fun minVpitchPx(smallPx: Float, xPx: Float) = maxOf(
+    baselineToBottomPx(smallPx) + smallPx - baselineToBottomPx(smallPx),
+    baselineToBottomPx(smallPx) + xPx - baselineToBottomPx(xPx),
+    baselineToBottomPx(xPx) + smallPx - baselineToBottomPx(smallPx)
+)
 
 /**
  * Dp for a Canvas that must be at least [px] tall.

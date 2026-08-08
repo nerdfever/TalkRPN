@@ -28,8 +28,19 @@ import kotlin.math.tan
  * time, so a segment is a zero-width hairline until it is drawn. Origin is the
  * top-left centreline corner; x runs right, y runs down.
  *
+ * THE UNIT: segment D to segment A is exactly 100. That is the centreline of the
+ * bottom bar to the centreline of the top bar - the cap height, measured where
+ * the ink's middle is, not where its edge is. Every length in this font and in
+ * everything that lays it out - pitch, vpitch, stroke, the lot - is in that one
+ * unit, horizontally and vertically alike. There is no second unit anywhere, and
+ * nothing here is in pixels, dp or millimetres.
+ *
+ * Millimetres enter at exactly one place: whoever draws the font picks a cap
+ * height, and that fixes the scale for everything else. So the display's shape
+ * is fully specified by the numbers here, and only its SIZE depends on hardware.
+ *
  * The units are the HP-01's own centreline geometry - a 53.5 x 91.5 box -
- * rescaled so the cap height is exactly 100:
+ * rescaled so that D-to-A span is exactly 100:
  *
  *     K = 100 / 91.5 = 1.0929
  *     53.5 * K = 58.47   the cell width
@@ -86,8 +97,21 @@ object TalkRpnFont {
 
     // ---- Cell metrics, in cell units ----------------------------------------
 
-    /** Top centreline to baseline centreline. */
+    /**
+     * Segment D to segment A, centreline to centreline. This is the unit's
+     * definition, so it is 100 by construction and must never be anything else.
+     */
     const val CELL_HEIGHT = 100f
+
+    /**
+     * How many cell units span segment D to segment A.
+     *
+     * Trivially 100 here, because this font defines the unit. It exists so that
+     * layout code can be written against any font's D-to-A span rather than
+     * against its cell height - the two are NOT the same in Hp01Font, whose
+     * coordinates are ink-box based and whose D-to-A span is only 91.5.
+     */
+    const val CAP_SPAN = CELL_HEIGHT
 
     /** Left column to right column, centre to centre. */
     const val CELL_WIDTH = 58.47f
@@ -105,13 +129,37 @@ object TalkRpnFont {
     const val DOT_RADIUS = STROKE
 
     /**
-     * Distance between successive cell origins.
+     * PITCH - horizontal distance between successive cell origins, in cell units.
      *
-     * The HP-01's own 130, rescaled. It is very wide, because on the real
-     * instrument every character occupied a full digit position. Expect to
-     * tighten this - but see the note on DP_X below before going far.
+     * The HP-01's own 130, rescaled by K. It is very wide, because on the real
+     * instrument every character occupied a full digit position: a 58.47 cell on
+     * a 142.08 pitch leaves an 83.61 gap, so the space between digits exceeded
+     * the digits. Expect to tighten it - all caps read well from about 85 to 105.
+     *
+     * The floor is set by ink, not by taste. Two neighbours clear each other
+     * while pitch - CELL_WIDTH >= STROKE, which is 67.76; below that the same
+     * row of two cells overlaps outright. The slant makes it LOOK tight well
+     * before then, because one cell's top-right passes close to the next cell's
+     * bottom-left, but those are at different heights and never actually touch.
      */
-    const val ADVANCE = 142.08f
+    const val PITCH = 142.08f
+
+    /**
+     * VPITCH - vertical distance between successive rows, baseline to baseline,
+     * in the same cell units as [PITCH].
+     *
+     * Baseline to baseline - segment D of one row to segment D of the next -
+     * rather than gap-between-rows, so that it means the same thing when two
+     * adjacent rows are different sizes. It is always measured in the units of
+     * the REFERENCE row, so a half-size row does not carry half-size units.
+     *
+     * The floor here is the descender. Ink runs from STROKE/2 above segment A to
+     * STROKE/2 below the descender bar, which is 153.29 units tall, so anything
+     * under that overlaps the row beneath. 160 leaves a little air. A display
+     * showing digits only could go far tighter - a 7-segment font has no
+     * descenders at all - but this font has them and letters will use them.
+     */
+    const val VPITCH = 160f
 
     /** Radius of the two hooks, measured on their centreline. */
     const val HOOK_R = 7.92f
@@ -154,16 +202,33 @@ object TalkRpnFont {
     private const val COL2_Y = 80.60f
 
     /**
-     * The decimal point and comma sit outside the cell, to the right.
+     * The decimal point and comma sit outside the cell, in the gap to its right.
      *
-     * Taken from an HP datasheet and expected to move. Note the constraint: this
-     * x is 28.17 past the right column, so it lands in the gap between cells. It
-     * only stays clear of the next glyph while ADVANCE exceeds roughly
-     * DP_X + DOT_RADIUS. At the authentic 142.08 there is room to spare; tighten
-     * the pitch far and the decimal point will collide.
+     * Taken from an HP datasheet, at the authentic pitch of 142.08. Note what
+     * that means: the dot does not belong to its cell, it belongs to the GAP, so
+     * a fixed x is only right at one pitch. Tighten the pitch and the gap shrinks
+     * underneath a dot that has not moved, until it is standing inside the next
+     * character.
+     *
+     * [DP_GAP_FRACTION] is the pitch-independent way to say the same thing, and
+     * [dpXAt] applies it. The constant below is what that yields at PITCH.
      */
     private const val DP_X = 86.64f
     private const val DP_Y = 119.08f
+
+    /**
+     * Where the decimal point sits across the gap between two cells, as a
+     * fraction of that gap. Derived from DP_X at the design pitch, so [dpXAt]
+     * reproduces the HP-01's placement exactly there and stays sensible either
+     * side of it.
+     */
+    const val DP_GAP_FRACTION = (DP_X - CELL_WIDTH) / (PITCH - CELL_WIDTH)
+
+    /**
+     * The decimal point's x at a given pitch. Callers rendering at anything other
+     * than [PITCH] should shift the DP and COMMA elements by dpXAt(pitch) - DP_X.
+     */
+    fun dpXAt(pitch: Float) = CELL_WIDTH + DP_GAP_FRACTION * (pitch - CELL_WIDTH)
 
     /** The comma's tail, relative to its dot. Carried over from the HP-01 font. */
     private const val COMMA_TAIL_DROP = 20.76f         // 19 * K

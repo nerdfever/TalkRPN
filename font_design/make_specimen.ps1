@@ -21,21 +21,30 @@ $MAP = New-Object 'System.Collections.Generic.Dictionary[char, object]'
 foreach ($e in $GLYPHS) { $MAP[[char]$e.C] = $e.S }
 
 # ---- geometry that this renderer needs (mirrors TalkRpnFont.kt) --------------
+#
+# EVERY length here is in D-to-A units: segment D to segment A is 100, and that
+# same unit measures pitch and vpitch, horizontally and vertically alike. The one
+# exception is $SCALE, which is the px-per-unit conversion, and it says so.
 
-# Cell pitch in cell units, at the HP-01's authentic - and very airy - spacing.
-# Every line below scales this by its own factor.
-$ADVANCE = 142.08
+# The HP-01's authentic - and very airy - horizontal pitch. Each line below picks
+# its own; this is only the reference.
+$PITCH_DESIGN = 142.08
 
-# Width of the cell itself. The difference between this and the advance is the
-# gap the decimal point has to live in.
+# Width of the cell itself. The difference between this and the pitch is the gap
+# the decimal point has to live in.
 $CELL_WIDTH = 58.47
 
-# Where TalkRpnFont puts the decimal point / comma dot.
+# Where TalkRpnFont puts the decimal point / comma dot, at the design pitch.
 $DP_X_DESIGN = 86.64
 
-# A space is half a cell wide, which is a display-layer decision rather than a
-# font one: full-cell spaces read as chasms in running text.
-$SPACE_FACTOR = 0.5
+# A space is half a pitch wide, which is a display-layer decision rather than a
+# font one: full-width spaces read as chasms in running text.
+$SPACE_PITCH_FRACTION = 0.5
+
+# Vertical pitch: baseline to baseline between specimen lines. Generous here
+# because each line carries a label and wants air around it - the display itself
+# will run much tighter.
+$VPITCH = 205.0
 
 # ---- where the decimal point actually goes -----------------------------------
 
@@ -46,9 +55,9 @@ $SPACE_FACTOR = 0.5
 # it walks into the following glyph.
 #
 # Place it by proportion instead: hold it at the same fraction of the gap at
-# every pitch. At factor 1.00 this reproduces the design position exactly, so
+# every pitch. At the design pitch this reproduces the HP-01 position exactly, so
 # the fix costs nothing where the design was already right.
-$DP_GAP_FRACTION = ($DP_X_DESIGN - $CELL_WIDTH) / ($ADVANCE - $CELL_WIDTH)
+$DP_GAP_FRACTION = ($DP_X_DESIGN - $CELL_WIDTH) / ($PITCH_DESIGN - $CELL_WIDTH)
 
 # ---- what to render ----------------------------------------------------------
 
@@ -56,33 +65,37 @@ $DP_GAP_FRACTION = ($DP_X_DESIGN - $CELL_WIDTH) / ($ADVANCE - $CELL_WIDTH)
 # between lines is the pitch itself.
 $PITCH_SAMPLE = "QUICK BROWN FOX 0123456789 42.9565"
 
-# Bracketed close around 0.60-0.75, which is where caps look right, with 1.00
-# and 0.50 kept as anchors at either end.
-$PITCHES = @(1.00, 0.85, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50)
+# In D-to-A units. Bracketed close around 85-107, which is where caps look right,
+# with the design pitch and a deliberately-too-tight 80 as anchors at either end.
+# The cell is 58.47 wide, so the figure minus 58.47 is the clearance between
+# neighbours: 80 leaves 21.5, and the ink only meets at 67.8.
+$PITCHES = @(142.08, 120, 110, 105, 100, 95, 90, 85, 80)
 
 $LINES = @()
 foreach ($p in $PITCHES) {
-    $LINES += @{ T = $PITCH_SAMPLE; F = $p; Label = ("{0:F2}" -f $p) }
+    $LINES += @{ T = $PITCH_SAMPLE; P = $p; Label = ("{0:F0}" -f $p) }
 }
 
 # Then running text, calculator state and code, at the pitches in contention.
-$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; F = 0.75; Label = "TEXT .75" }
-$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; F = 0.65; Label = "TEXT .65" }
-$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; F = 0.60; Label = "TEXT .60" }
-$LINES += @{ T = "988 ENTER 23 DIVIDE = 42.9565 (DEG) [SI] LASTX"; F = 0.70; Label = "RPN .70" }
-$LINES += @{ T = "X: 1,234,567.89  Y: -6.02E23  Z: 0.0  T: 3.14159"; F = 0.70; Label = "STACK .70" }
-$LINES += @{ T = "FOR (I = 0; I < 10; I++) { X[I] = A*B + C/D; }"; F = 0.70; Label = "CODE .70" }
-$LINES += @{ T = 'PRINTF("%6.2F\N", &VALS[J] | MASK ^ 0X7E);'; F = 0.70; Label = "CODE .70" }
+$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; P = 107; Label = "TEXT 107" }
+$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; P = 92;  Label = "TEXT 92" }
+$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; P = 85;  Label = "TEXT 85" }
+$LINES += @{ T = "988 ENTER 23 DIVIDE = 42.9565 (DEG) [SI] LASTX"; P = 100; Label = "RPN 100" }
+$LINES += @{ T = "X: 1,234,567.89  Y: -6.02E23  Z: 0.0  T: 3.14159"; P = 100; Label = "STACK 100" }
+$LINES += @{ T = "FOR (I = 0; I < 10; I++) { X[I] = A*B + C/D; }"; P = 100; Label = "CODE 100" }
+$LINES += @{ T = 'PRINTF("%6.2F\N", &VALS[J] | MASK ^ 0X7E);'; P = 100; Label = "CODE 100" }
 
 # One lower-case line kept for contrast - it is why we settled on caps.
-$LINES += @{ T = "the quick brown fox jumps over the lazy dog"; F = 0.70; Label = "lower .70" }
+$LINES += @{ T = "the quick brown fox jumps over the lazy dog"; P = 100; Label = "lower 100" }
 
 # ---- page ---------------------------------------------------------------------
 
-$SCALE = 0.62                # px per cell unit
+# The ONLY place a physical length enters: how big a unit is drawn. Everything
+# else on this page is in units and follows from it.
+$SCALE = 0.62                # px per D-to-A unit
+
 $MARGIN = 40.0
 $LABEL_W = 110.0
-$LINE_GAP = 26.0
 
 # ---- render -------------------------------------------------------------------
 
@@ -95,12 +108,15 @@ $labelBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::From
 # Width from the longest line at its own pitch.
 $maxUnits = 0.0
 foreach ($l in $LINES) {
-    $u = $l.T.Length * $ADVANCE * $l.F + 100
+    $u = $l.T.Length * $l.P + $CELL_WIDTH
     if ($u -gt $maxUnits) { $maxUnits = $u }
 }
 $W = [int]($maxUnits * $SCALE + 2 * $MARGIN + $LABEL_W)
-$lineUnits = ($TOTAL_HEIGHT + $STROKE * 2)
-$H = [int]($LINES.Count * ($lineUnits * $SCALE + $LINE_GAP) + 2 * $MARGIN)
+
+# Height: the baselines are one vpitch apart, and the last line still needs room
+# for its descenders and half a stroke of ink beyond them.
+$inkHeight = $TOTAL_HEIGHT + $STROKE
+$H = [int]((($LINES.Count - 1) * $VPITCH + $inkHeight) * $SCALE + 2 * $MARGIN)
 
 $bmp = New-Object System.Drawing.Bitmap $W, $H
 $g = [System.Drawing.Graphics]::FromImage($bmp)
@@ -167,14 +183,17 @@ function Draw-Cell($names, $ox, $oy, $k) {
 $SHEAR = [Math]::Tan($SLANT_DEG * [Math]::PI / 180.0)
 $SHEAR_OFFSET = $SHEAR * $TOTAL_HEIGHT
 
-$y = $MARGIN
+# Segment A of the first line, allowing half a stroke so the top ink is not
+# clipped. Every later line is one vpitch further down.
+$y = $MARGIN + ($STROKE / 2.0) * $SCALE
+
 foreach ($l in $LINES) {
 
-    $adv = $ADVANCE * $l.F * $SCALE
+    $adv = $l.P * $SCALE
 
     # How far the decimal point has to move left at this pitch to stay the same
-    # fraction of the way across a gap that has shrunk. Zero at factor 1.00.
-    $gapUnits = $ADVANCE * $l.F - $CELL_WIDTH
+    # fraction of the way across a gap that has shrunk. Zero at the design pitch.
+    $gapUnits = $l.P - $CELL_WIDTH
     $dpShift = ($CELL_WIDTH + $DP_GAP_FRACTION * $gapUnits - $DP_X_DESIGN) * $SCALE
 
     $x = $MARGIN + $LABEL_W
@@ -184,7 +203,7 @@ foreach ($l in $LINES) {
 
         # A space breaks the run: nothing for a following dot to attach to.
         if ($ch -eq ' ') {
-            $x += $adv * $SPACE_FACTOR
+            $x += $adv * $SPACE_PITCH_FRACTION
             $prevX = $null
             continue
         }
@@ -220,11 +239,12 @@ foreach ($l in $LINES) {
         $x += $adv
     }
 
+    # Label sits beside the cap height, not beside the descenders.
     if ($l.Label) {
         $g.DrawString($l.Label, $labelFont, $labelBrush, $MARGIN, ($y + 30))
     }
 
-    $y += $lineUnits * $SCALE + $LINE_GAP
+    $y += $VPITCH * $SCALE
 }
 
 $g.Dispose()

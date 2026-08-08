@@ -57,10 +57,27 @@ import kotlin.math.tan
 object Hp01Font {
 
     // ---- Cell metrics, in cell units (cell height == 100) -------------------
+    //
+    // CAREFUL: this font's 100 is the OUTER ink height - the top edge of segment
+    // A to the bottom edge of segment D - so it carries a STROKE/2 at each end.
+    // TalkRpnFont's 100 is the CENTRELINE span, D to A. They are different units
+    // and a length copied between the two fonts unchanged will be wrong by 9%.
+    //
+    // Anything that lays out either font should work in D-to-A units and scale
+    // by CAP_SPAN, which is what states the difference rather than hiding it.
 
     const val CELL_HEIGHT = 100f
     const val CELL_WIDTH = 62f
     const val STROKE = 8.5f
+
+    /**
+     * How many of this font's cell units span segment D to segment A.
+     *
+     * 100 outer minus a half-stroke at each end. The mirror of
+     * TalkRpnFont.CAP_SPAN, which is a plain 100 because that font defines the
+     * unit; here the two differ and the layout has to know it.
+     */
+    const val CAP_SPAN = CELL_HEIGHT - STROKE          // 91.5
 
     /**
      * Default slant, in degrees from vertical.
