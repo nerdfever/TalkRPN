@@ -277,10 +277,9 @@ object TalkRpnGlyphs {
         // '(' is the left column with both corners hooked: round where '[' is
         // square, which is the real typographic difference between them. ')'
         // could not mirror it with what existed - the right side has no hooks -
-        // so A5 and D5 were added, each half of the right parenthesis in one
-        // piece. A mismatched pair had already been tried and looked broken.
+        // so RPAR was added - the whole right parenthesis as one element. A mismatched pair had already been tried and looked broken.
         '(' to m(Seg.A1, Seg.A3, Seg.F1, Seg.E1, Seg.D3, Seg.D1),
-        ')' to m(Seg.A5, Seg.D5),
+        ')' to m(Seg.RPAR),
 
         // Brackets and braces run the full cell, descender included, as on the
         // DL-3422. Only the centre column reaches the descender zone (segment
@@ -345,6 +344,7 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
 

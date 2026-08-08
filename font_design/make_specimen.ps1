@@ -27,15 +27,19 @@ foreach ($e in $GLYPHS) { $MAP[[char]$e.C] = $e.S }
 $ADVANCE = 142.08
 $PITCH_FACTOR = 0.75
 
+# A space is half a cell wide, which is a display-layer decision rather than a
+# font one: full-cell spaces read as chasms in running text.
+$SPACE_FACTOR = 0.5
+
 $LINES = @(
-    @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; F = $PITCH_FACTOR }
-    @{ T = "the quick brown fox jumps over the lazy dog"; F = $PITCH_FACTOR }
-    @{ T = "The Quick Brown Fox Jumps Over The Lazy Dog"; F = $PITCH_FACTOR }
-    @{ T = "Pack my box with five dozen liquor jugs; 0123456789"; F = $PITCH_FACTOR }
-    @{ T = "988 ENTER 23 DIVIDE = 42.9565 (DEG) [SI]"; F = $PITCH_FACTOR }
-    @{ T = "for (i = 0; i < 10; i++) { x[i] = a*b + c/d; }"; F = $PITCH_FACTOR }
-    @{ T = 'printf("%6.2f\n", &vals[j] | mask ^ 0x7e);'; F = $PITCH_FACTOR }
-    @{ T = "3.14159265 -1.5e-6 6.02e23"; F = 1.0 }
+    @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG 0123456789"; F = 0.75 }
+    @{ T = "The Quick Brown Fox Jumps Over The Lazy Dog 0123456789"; F = 0.60 }
+    @{ T = "the quick brown fox jumps over the lazy dog 0123456789"; F = 0.50 }
+    @{ T = "988 ENTER 23 DIVIDE = 42.9565 (DEG) [SI] LASTX"; F = 0.60 }
+    @{ T = "for (i = 0; i < 10; i++) { x[i] = a*b + c/d; }"; F = 0.60 }
+    @{ T = 'printf("%6.2f\n", &vals[j] | mask ^ 0x7e);'; F = 0.50 }
+    @{ T = "3.14159265 -1.5e-6 6.02e23 42.9565"; F = 0.60 }
+    @{ T = "3.14159265 -1.5e-6 6.02e23 42.9565"; F = 0.50 }
 )
 
 $SCALE = 0.62                # px per cell unit
@@ -132,6 +136,7 @@ foreach ($l in $LINES) {
 
     foreach ($ch in $l.T.ToCharArray()) {
 
+        if ($ch -eq ' ') { $x += $adv * $SPACE_FACTOR; $prevX = $null; continue }
         if (-not $MAP.ContainsKey($ch)) { $x += $adv; continue }
 
         # The decimal point and comma live IN the preceding character's cell -
@@ -154,4 +159,5 @@ $g.Dispose()
 $bmp.Save($OUT_SPECIMEN, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 Write-Output "wrote $OUT_SPECIMEN  ($W x $H)"
+
 

@@ -76,8 +76,8 @@ $SEG_ARCS = @{
     "D3" = @(7.92, 92.08, 7.92, 90, 180)
 }
 
-# A5 and D5, the right-hand parenthesis halves: bar stub, corner arc, column
-# stub, as one polyline each. Sampled here; the Kotlin uses exact Beziers.
+# RPAR, the whole right parenthesis as one polyline: bar stub, arc, column,
+# arc, bar stub. Sampled here; the Kotlin uses exact Beziers.
 function New-ArcPoints($cx, $cy, $r, $fromDeg, $toDeg) {
     $pts = @()
     for ($i = 0; $i -le 16; $i++) {
@@ -88,8 +88,8 @@ function New-ArcPoints($cx, $cy, $r, $fromDeg, $toDeg) {
 }
 
 $SEG_POLYS = @{
-    "A5" = @(, @(29.235, 0.0)) + (New-ArcPoints 50.55 7.92 7.92 270 360) + @(, @(58.47, 50.0))
-    "D5" = @(, @(58.47, 50.0)) + (New-ArcPoints 50.55 92.08 7.92 0 90) + @(, @(29.235, 100.0))
+    "RPAR" = @(, @(29.235, 0.0)) + (New-ArcPoints 50.55 7.92 7.92 270 360) +
+             (New-ArcPoints 50.55 92.08 7.92 0 90) + @(, @(29.235, 100.0))
 }
 
 # Dots: centre x, centre y. The comma is its dot plus the tail below.
@@ -121,7 +121,7 @@ $GLYPHS = @(
     @{ C = '&';  S = $TOP_LEFT + @("P", "H", "G1", "E1") + @("D3", "D1", "D2") + @("C", "K") }
     @{ C = "'";  S = @("I") }
     @{ C = '(';  S = @("A1", "A3", "F1", "E1", "D3", "D1") }
-    @{ C = ')';  S = @("A5", "D5") }
+    @{ C = ')';  S = @("RPAR") }
     @{ C = '*';  S = @("H", "I", "L", "K", "P", "Q", "G1", "G2") }
     @{ C = '+';  S = $MID + $STEM }
     @{ C = ',';  S = @("COMMA") }
@@ -512,6 +512,7 @@ catch [System.IO.IOException] {
 finally {
     $pdfStream.Dispose()
 }
+
 
 
 

@@ -185,26 +185,27 @@ object TalkRpnFont {
     // ---- Segment identity ---------------------------------------------------
 
     /**
-     * 33 elements, so the mask is a Long. It was an Int until the parentheses:
-     * A5 and D5 were elements 32 and 33, and crossing that line was a deliberate
-     * decision (see DESIGN.md), not drift.
+     * 32 elements. The mask is a Long: 32 would exactly fill an Int with no
+     * headroom, so it stays wide.
      *
-     * A5 and D5 are the right-hand parenthesis halves. Each bundles a bar stub,
-     * the corner arc and a column stub into ONE element, because the right side
-     * has no shortened bars or columns for a bare arc to join - A2, B, C and D2
-     * all run square into the corner. Splitting them properly would cost six
-     * elements; bundling costs two, and loses nothing while ')' is the only
-     * user.
+     * RPAR is the whole right parenthesis as ONE element - bar stub, corner
+     * arc, column, corner arc, bar stub, drawn as a single continuous figure.
+     * It began life as two halves (A5 and D5), but nothing ever lit one without
+     * the other, so they merged. It is bespoke because the right side has no
+     * shortened bars or columns for bare arcs to join - A2, B, C and D2 all run
+     * square into the corner, and splitting them properly would cost six
+     * elements where this costs one.
      */
     enum class Seg {
-        A1, A2, A3, A4, A5,
+        A1, A2, A3, A4,
         B, C,
-        D1, D2, D3, D4, D5,
+        D1, D2, D3, D4,
         E1, E2, F1, F2,
         G1, G2,
         H, I, J, K, L,
         M, N, O,
         P, Q,
+        RPAR,
         COL1, COL2, COL2_TAIL, DP, COMMA;
 
         val bit: Long get() = 1L shl ordinal
@@ -348,10 +349,9 @@ object TalkRpnFont {
         Seg.P to line(X_MID, Y_TOP, X_MID, Y_MID),
         Seg.Q to line(X_MID, Y_MID, X_MID, Y_BASE),
 
-        // The right-hand parenthesis halves: bar stub from the centre, corner
-        // arc, column stub to the middle. One continuous figure each, so the
-        // curve joins its straights without seams.
-        Seg.A5 to path {
+        // The right parenthesis, whole: bar stub, corner arc, column, corner
+        // arc, bar stub - one continuous figure, so every join is seamless.
+        Seg.RPAR to path {
             moveToCell(X_MID, Y_TOP)
             lineToCell(X_HOOK_END_R, Y_TOP)
             cubicToCell(
@@ -359,10 +359,6 @@ object TalkRpnFont {
                 X_RIGHT, Y_F_TOP - HOOK_K,
                 X_RIGHT, Y_F_TOP
             )
-            lineToCell(X_RIGHT, Y_MID)
-        },
-        Seg.D5 to path {
-            moveToCell(X_RIGHT, Y_MID)
             lineToCell(X_RIGHT, Y_E_BOTTOM)
             cubicToCell(
                 X_RIGHT, Y_E_BOTTOM + HOOK_K,
@@ -489,5 +485,6 @@ object TalkRpnFont {
         }
     }
 }
+
 
 
