@@ -10,9 +10,9 @@ import com.nerdfever.talkrpn.TalkRpnFont.Seg
  *
  *  - Digits 2 3 5 7 9 take the HP-01's hooked corners (A3/D3), and 4 takes the
  *    HP-01's short left side.
- *  - ALL DIGITS use P/Q as their right vertical instead of B/C, so a digit is a
- *    half-width character. This differs from the HP-01 and is deliberate: it is
- *    what keeps 5 and S distinguishable at a glance. Letters use the full width.
+ *  - Digits are FULL WIDTH, on B/C, as on the HP-01. A half-width form on P/Q
+ *    was tried for a day and reverted: the original proportions won, at the
+ *    price of 0 sharing a mask with O and 1 with l.
  *  - The decimal point and comma live in the character cell (DP / COMMA
  *    elements) rather than consuming a cell of their own.
  *
@@ -95,20 +95,24 @@ object TalkRpnGlyphs {
 
         // ---- Digits ---------------------------------------------------------
         //
-        // Half-width: right vertical is P/Q, bars are the left halves only.
+        // FULL WIDTH, as on the HP-01: right vertical is B/C, bars run the whole
+        // cell. They were half-width on P/Q for a day, to hold 5 and S apart -
+        // reverted 2026-08-08 in favour of the original proportions, accepting
+        // that 0 and O now share a mask, as do 1 and l.
+        //
         // Hooked corners on 0 2 3 5 7 8 9; short left side on 4; 6 stays square.
 
-        '0' to (TOP_LEFT_HOOK or UL_SHORT or LL_SHORT or BOT_LEFT_HOOK or STEM),
-        '1' to STEM,
-        '2' to (TOP_LEFT_HOOK or m(Seg.P, Seg.G1) or LL_SHORT or BOT_LEFT_HOOK),
-        '3' to (TOP_LEFT_HOOK or m(Seg.P, Seg.G1, Seg.Q) or BOT_LEFT_HOOK),
-        '4' to (UL_SHORT or m(Seg.G1) or STEM),
-        '5' to (TOP_LEFT_HOOK or UL_SHORT or m(Seg.G1, Seg.Q) or BOT_LEFT_HOOK),
-        '6' to (TOP_LEFT or UL or m(Seg.G1) or LL or m(Seg.Q) or BOT_LEFT),
-        '7' to (TOP_LEFT_HOOK or STEM),
+        '0' to (TOP_HOOK or UL_SHORT or UR or LL_SHORT or LR or BOT_HOOK),
+        '1' to (UR or LR),
+        '2' to (TOP_HOOK or UR or MID or LL_SHORT or BOT_HOOK),
+        '3' to (TOP_HOOK or UR or MID or LR or BOT_HOOK),
+        '4' to (UL_SHORT or MID or UR or LR),
+        '5' to (TOP_HOOK or UL_SHORT or MID or LR or BOT_HOOK),
+        '6' to (TOP or UL or MID or LL or LR or BOT),
+        '7' to (TOP_HOOK or UR or LR),
         // Hooked at both corners, so F2 and E2 go dark - same rule as 2 3 5 9.
-        '8' to (TOP_LEFT_HOOK or UL_SHORT or m(Seg.G1) or LL_SHORT or STEM or BOT_LEFT_HOOK),
-        '9' to (TOP_LEFT_HOOK or UL_SHORT or m(Seg.G1) or STEM or BOT_LEFT_HOOK),
+        '8' to (TOP_HOOK or UL_SHORT or UR or MID or LL_SHORT or LR or BOT_HOOK),
+        '9' to (TOP_HOOK or UL_SHORT or UR or MID or LR or BOT_HOOK),
 
         // ---- Upper case -----------------------------------------------------
         //
@@ -344,6 +348,7 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
 

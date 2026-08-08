@@ -104,9 +104,9 @@ $ALL_SEGMENTS = @($SEG_LINES.Keys) + @($SEG_ARCS.Keys) + @($SEG_POLYS.Keys) + @(
 # ---- the glyph table (mirrors TalkRpnGlyphs.kt) ------------------------------
 
 # Shorthand, matching the Kotlin combinations.
-$TOP = @("A4", "A1", "A2")
+$TOP = @("A4", "A1", "A2");  $TOP_HOOK = @("A3", "A1", "A2")
 $TOP_LEFT = @("A4", "A1");   $TOP_LEFT_HOOK = @("A3", "A1")
-$BOT = @("D4", "D1", "D2")
+$BOT = @("D4", "D1", "D2");  $BOT_HOOK = @("D3", "D1", "D2")
 $BOT_LEFT = @("D4", "D1");   $BOT_LEFT_HOOK = @("D3", "D1")
 $UL = @("F2", "F1");         $LL = @("E1", "E2")
 $MID = @("G1", "G2");        $STEM = @("P", "Q")
@@ -128,16 +128,16 @@ $GLYPHS = @(
     @{ C = '-';  S = $MID }
     @{ C = '.';  S = @("DP") }
     @{ C = '/';  S = @("I", "L") }
-    @{ C = '0';  S = $TOP_LEFT_HOOK + @("F1", "E1") + $BOT_LEFT_HOOK + $STEM }
-    @{ C = '1';  S = $STEM }
-    @{ C = '2';  S = $TOP_LEFT_HOOK + @("P", "G1", "E1") + $BOT_LEFT_HOOK }
-    @{ C = '3';  S = $TOP_LEFT_HOOK + @("P", "G1", "Q") + $BOT_LEFT_HOOK }
-    @{ C = '4';  S = @("F1", "G1") + $STEM }
-    @{ C = '5';  S = $TOP_LEFT_HOOK + @("F1", "G1", "Q") + $BOT_LEFT_HOOK }
-    @{ C = '6';  S = $TOP_LEFT + $UL + @("G1") + $LL + @("Q") + $BOT_LEFT }
-    @{ C = '7';  S = $TOP_LEFT_HOOK + $STEM }
-    @{ C = '8';  S = $TOP_LEFT_HOOK + @("F1", "G1", "E1") + $STEM + $BOT_LEFT_HOOK }
-    @{ C = '9';  S = $TOP_LEFT_HOOK + @("F1", "G1") + $STEM + $BOT_LEFT_HOOK }
+    @{ C = '0';  S = $TOP_HOOK + @("F1", "B", "E1", "C") + $BOT_HOOK }
+    @{ C = '1';  S = @("B", "C") }
+    @{ C = '2';  S = $TOP_HOOK + @("B") + $MID + @("E1") + $BOT_HOOK }
+    @{ C = '3';  S = $TOP_HOOK + @("B") + $MID + @("C") + $BOT_HOOK }
+    @{ C = '4';  S = @("F1") + $MID + @("B", "C") }
+    @{ C = '5';  S = $TOP_HOOK + @("F1") + $MID + @("C") + $BOT_HOOK }
+    @{ C = '6';  S = $TOP + $UL + $MID + $LL + @("C") + $BOT }
+    @{ C = '7';  S = $TOP_HOOK + @("B", "C") }
+    @{ C = '8';  S = $TOP_HOOK + @("F1", "B") + $MID + @("E1", "C") + $BOT_HOOK }
+    @{ C = '9';  S = $TOP_HOOK + @("F1", "B") + $MID + @("C") + $BOT_HOOK }
     @{ C = ':';  S = @("COL1", "COL2") }
     @{ C = ';';  S = @("COL1", "COL2", "COL2_TAIL") }
     @{ C = '<';  S = @("I", "K") }
@@ -512,6 +512,7 @@ catch [System.IO.IOException] {
 finally {
     $pdfStream.Dispose()
 }
+
 
 
 

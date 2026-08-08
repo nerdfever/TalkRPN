@@ -31,19 +31,26 @@ $PITCH_FACTOR = 0.75
 # font one: full-cell spaces read as chasms in running text.
 $SPACE_FACTOR = 0.5
 
-$LINES = @(
-    @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG 0123456789"; F = 0.75 }
-    @{ T = "The Quick Brown Fox Jumps Over The Lazy Dog 0123456789"; F = 0.60 }
-    @{ T = "the quick brown fox jumps over the lazy dog 0123456789"; F = 0.50 }
-    @{ T = "988 ENTER 23 DIVIDE = 42.9565 (DEG) [SI] LASTX"; F = 0.60 }
-    @{ T = "for (i = 0; i < 10; i++) { x[i] = a*b + c/d; }"; F = 0.60 }
-    @{ T = 'printf("%6.2f\n", &vals[j] | mask ^ 0x7e);'; F = 0.50 }
-    @{ T = "3.14159265 -1.5e-6 6.02e23 42.9565"; F = 0.60 }
-    @{ T = "3.14159265 -1.5e-6 6.02e23 42.9565"; F = 0.50 }
-)
+# The pitch bracket: ONE string at every pitch, so the only thing varying
+# between lines is the pitch itself.
+$PITCH_SAMPLE = "Quick brown fox 0123456789 42.9565"
+$PITCHES = @(1.00, 0.85, 0.75, 0.65, 0.60, 0.55, 0.50, 0.45)
+
+$LINES = @()
+foreach ($p in $PITCHES) {
+    $LINES += @{ T = $PITCH_SAMPLE; F = $p; Label = ("{0:F2}" -f $p) }
+}
+
+# Then the running-text and code samples at a middling pitch.
+$LINES += @{ T = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"; F = 0.60; Label = "caps" }
+$LINES += @{ T = "the quick brown fox jumps over the lazy dog"; F = 0.60; Label = "lower" }
+$LINES += @{ T = "988 ENTER 23 DIVIDE = 42.9565 (DEG) [SI] LASTX"; F = 0.60; Label = "rpn" }
+$LINES += @{ T = "for (i = 0; i < 10; i++) { x[i] = a*b + c/d; }"; F = 0.60; Label = "code" }
+$LINES += @{ T = 'printf("%6.2f\n", &vals[j] | mask ^ 0x7e);'; F = 0.60; Label = "code" }
 
 $SCALE = 0.62                # px per cell unit
 $MARGIN = 40.0
+$LABEL_W = 70.0
 $LINE_GAP = 26.0
 $CAPTION_H = 0.0
 
@@ -52,6 +59,8 @@ $CAPTION_H = 0.0
 Add-Type -AssemblyName System.Drawing
 
 $LIT = [System.Drawing.Color]::FromArgb(232, 24, 16)
+$labelFont = New-Object System.Drawing.Font "Consolas", 13
+$labelBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(130, 130, 130))
 
 # Width from the longest line at its own pitch.
 $maxUnits = 0.0
@@ -59,7 +68,7 @@ foreach ($l in $LINES) {
     $u = $l.T.Length * $ADVANCE * $l.F + 100
     if ($u -gt $maxUnits) { $maxUnits = $u }
 }
-$W = [int]($maxUnits * $SCALE + 2 * $MARGIN)
+$W = [int]($maxUnits * $SCALE + 2 * $MARGIN + $LABEL_W)
 $lineUnits = ($TOTAL_HEIGHT + $STROKE * 2)
 $H = [int]($LINES.Count * ($lineUnits * $SCALE + $LINE_GAP) + 2 * $MARGIN)
 
@@ -131,7 +140,7 @@ $y = $MARGIN
 foreach ($l in $LINES) {
 
     $adv = $ADVANCE * $l.F * $SCALE
-    $x = $MARGIN
+    $x = $MARGIN + $LABEL_W
     $prevX = $null
 
     foreach ($ch in $l.T.ToCharArray()) {
@@ -152,6 +161,10 @@ foreach ($l in $LINES) {
         $x += $adv
     }
 
+    if ($l.Label) {
+        $g.DrawString($l.Label, $labelFont, $labelBrush, $MARGIN, ($y + 30))
+    }
+
     $y += $lineUnits * $SCALE + $LINE_GAP
 }
 
@@ -159,5 +172,6 @@ $g.Dispose()
 $bmp.Save($OUT_SPECIMEN, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 Write-Output "wrote $OUT_SPECIMEN  ($W x $H)"
+
 
 
