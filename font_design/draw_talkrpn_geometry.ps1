@@ -310,11 +310,12 @@ $lines += "  square   A4 + F2      most letters"
 $lines += "  hooked   A3 + F1      0 2 3 5 7 8 9, C G O S, ( and &   (F2 dark)"
 $lines += "  short    F1 alone     digit 4, no A at all - left side sits {0:F2} lower than the right" -f $HOOK_R
 $lines += ""
-$lines += "WHY V IS DRAWN SIDEWAYS"
-$lines += "  A textbook V is two arms meeting at the bottom centre. The left arm exists - J runs from"
-$lines += "  the left column at the middle down to the bottom centre - but there is no mirrored arm on"
-$lines += "  the right. So V is the left column plus the full slash (I into L), which is also how the"
-$lines += "  DL-3422 drew it. Adding the mirror diagonal would allow a textbook V and a pointier W."
+$lines += "WHY THE LETTER V IS DRAWN SIDEWAYS"
+$lines += "  A textbook V is two arms meeting at the bottom centre. The left arm exists - segment J"
+$lines += "  runs from the left column at the middle down to the bottom centre - but no mirrored"
+$lines += "  segment exists on the right. So the letter V is the left column plus the full slash"
+$lines += "  (segment I into segment L), as on the DL-3422. A mirror of segment J would allow a"
+$lines += "  textbook V and a pointier W."
 
 if ($Section -ne "diagram") {
 $y = $textTop
@@ -328,6 +329,7 @@ $bmp.Save($OUT, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 
 Write-Output "wrote $OUT  ($CANVAS_W x $CANVAS_H)"
+
 
 
 

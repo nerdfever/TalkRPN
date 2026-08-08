@@ -26,12 +26,15 @@ import com.nerdfever.talkrpn.TalkRpnFont.Seg
  * the watch and correct by segment name.
  *
  * ---------------------------------------------------------------------------
- * Why J exists
+ * Why segment J exists
  * ---------------------------------------------------------------------------
- * J (the second lower-left diagonal, crossing L) is what draws the lower-case
- * x - the two of them ARE the x. It also serves e and s. There is no mirror
- * diagonal in the lower right; V and v are drawn vertical-plus-slash instead,
- * which is how the DL-3422 does it.
+ * Segment J (the second lower-left diagonal, crossing segment L) is what draws
+ * the letter x - the two of them ARE the x. It also serves the letters e and s.
+ * There is no mirror diagonal in the lower right; the letters V and v are drawn
+ * vertical-plus-slash instead, which is how the DL-3422 does it.
+ *
+ * Convention, per Dave: in prose, "segment J" for segments, bare letters for
+ * glyphs. A bare J is ambiguous.
  */
 
 object TalkRpnGlyphs {
