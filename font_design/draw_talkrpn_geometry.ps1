@@ -62,7 +62,7 @@ $CANVAS_W = 1240
 # at 15 px each; the drawing ends near y = 1460.
 $DRAWING_BOTTOM = 1500
 $LISTING_LINE_H = 15
-$LISTING_LINES = 52
+$LISTING_LINES = 72
 
 $CANVAS_H = switch ($Section) {
     "diagram" { $DRAWING_BOTTOM }
@@ -298,7 +298,7 @@ $lines += "  N and O are inset {0:F2} and {1:F2} from the columns - symmetric to
 $lines += ""
 $lines += "THE THREE LEFT-COLUMN ENDINGS"
 $lines += "  square   A4 + F2      most letters"
-$lines += "  hooked   A3 + F1      digits 2 3 5 7 9   (F2 dark)"
+$lines += "  hooked   A3 + F1      0 2 3 5 7 8 9, C G O, ( and &   (F2 dark)"
 $lines += "  short    F1 alone     digit 4, no A at all - left side sits {0:F2} lower than the right" -f $HOOK_R
 $lines += ""
 $lines += "KNOWN GAP"
@@ -317,6 +317,7 @@ $bmp.Save($OUT, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 
 Write-Output "wrote $OUT  ($CANVAS_W x $CANVAS_H)"
+
 
 
 

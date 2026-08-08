@@ -1,4 +1,4 @@
-# Build talkrpn_font_reference.pdf:
+﻿# Build talkrpn_font_reference.pdf:
 #
 #   page 1  geometry diagram (portrait)
 #   page 2  centreline listing (portrait)
@@ -128,7 +128,7 @@ $GLYPHS = @(
     @{ C = '-';  S = $MID }
     @{ C = '.';  S = @("DP") }
     @{ C = '/';  S = @("I", "L") }
-    @{ C = '0';  S = $TOP_LEFT + $UL + $LL + $BOT_LEFT + $STEM }
+    @{ C = '0';  S = $TOP_LEFT_HOOK + @("F1", "E1") + $BOT_LEFT_HOOK + $STEM }
     @{ C = '1';  S = $STEM }
     @{ C = '2';  S = $TOP_LEFT_HOOK + @("P", "G1", "E1") + $BOT_LEFT_HOOK }
     @{ C = '3';  S = $TOP_LEFT_HOOK + @("P", "G1", "Q") + $BOT_LEFT_HOOK }
@@ -147,21 +147,21 @@ $GLYPHS = @(
     @{ C = '@';  S = $TOP + @("B", "C") + $BOT + @("E1", "G1", "Q") }
     @{ C = 'A';  S = $TOP + $UL + @("B") + $MID + $LL + @("C") }
     @{ C = 'B';  S = $TOP + @("B", "C") + $BOT + @("G2") + $STEM }
-    @{ C = 'C';  S = $TOP + $UL + $LL + $BOT }
+    @{ C = 'C';  S = @("A3", "A1", "A2", "F1", "E1", "D3", "D1", "D2") }
     @{ C = 'D';  S = $TOP + @("B", "C") + $BOT + $STEM }
     @{ C = 'E';  S = $TOP + $UL + @("G1") + $LL + $BOT }
     @{ C = 'F';  S = $TOP + $UL + @("G1") + $LL }
-    @{ C = 'G';  S = $TOP + $UL + $LL + $BOT + @("C", "G2") }
+    @{ C = 'G';  S = @("A3", "A1", "A2", "F1", "E1", "D3", "D1", "D2", "C", "G2") }
     @{ C = 'H';  S = $UL + @("B") + $MID + $LL + @("C") }
     @{ C = 'I';  S = $TOP + $STEM + $BOT }
-    @{ C = 'J';  S = @("B", "C") + $LL + $BOT }
+    @{ C = 'J';  S = @("B", "C", "E1", "D3", "D1", "D2") }
     @{ C = 'K';  S = $UL + $LL + @("G1", "I", "K") }
     @{ C = 'L';  S = $UL + $LL + $BOT }
     @{ C = 'M';  S = $UL + @("H", "I", "B") + $LL + @("C") }
     @{ C = 'N';  S = $UL + @("H", "B", "K") + $LL + @("C") }
-    @{ C = 'O';  S = $TOP + $UL + @("B") + $LL + @("C") + $BOT }
+    @{ C = 'O';  S = @("A3", "A1", "A2", "F1", "B", "E1", "C", "D3", "D1", "D2") }
     @{ C = 'P';  S = $TOP + $UL + @("B") + $MID + $LL }
-    @{ C = 'Q';  S = $TOP + $UL + @("B") + $LL + @("C") + $BOT + @("K") }
+    @{ C = 'Q';  S = $TOP + $UL + @("B", "E1", "C", "D3", "D1", "D2", "K") }
     @{ C = 'R';  S = $TOP + $UL + @("B") + $MID + $LL + @("K") }
     @{ C = 'S';  S = $TOP + $UL + $MID + @("C") + $BOT }
     @{ C = 'T';  S = $TOP + $STEM }
@@ -512,3 +512,4 @@ catch [System.IO.IOException] {
 finally {
     $pdfStream.Dispose()
 }
+

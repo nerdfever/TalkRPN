@@ -93,9 +93,9 @@ object TalkRpnGlyphs {
         // ---- Digits ---------------------------------------------------------
         //
         // Half-width: right vertical is P/Q, bars are the left halves only.
-        // Hooked corners on 2 3 5 7 9; short left side on 4.
+        // Hooked corners on 0 2 3 5 7 8 9; short left side on 4; 6 stays square.
 
-        '0' to (TOP_LEFT or UL or LL or BOT_LEFT or STEM),
+        '0' to (TOP_LEFT_HOOK or UL_SHORT or LL_SHORT or BOT_LEFT_HOOK or STEM),
         '1' to STEM,
         '2' to (TOP_LEFT_HOOK or m(Seg.P, Seg.G1) or LL_SHORT or BOT_LEFT_HOOK),
         '3' to (TOP_LEFT_HOOK or m(Seg.P, Seg.G1, Seg.Q) or BOT_LEFT_HOOK),
@@ -113,21 +113,21 @@ object TalkRpnGlyphs {
 
         'A' to (TOP or UL or UR or MID or LL or LR),
         'B' to (TOP or UR or LR or BOT or m(Seg.G2) or STEM),
-        'C' to (TOP or UL or LL or BOT),
+        'C' to (TOP_HOOK or UL_SHORT or LL_SHORT or BOT_HOOK),
         'D' to (TOP or UR or LR or BOT or STEM),
         'E' to (TOP or UL or m(Seg.G1) or LL or BOT),
         'F' to (TOP or UL or m(Seg.G1) or LL),
-        'G' to (TOP or UL or LL or BOT or LR or m(Seg.G2)),
+        'G' to (TOP_HOOK or UL_SHORT or LL_SHORT or BOT_HOOK or LR or m(Seg.G2)),
         'H' to (UL or UR or MID or LL or LR),
         'I' to (TOP or STEM or BOT),
-        'J' to (UR or LR or LL or BOT),
+        'J' to (UR or LR or LL_SHORT or BOT_HOOK),
         'K' to (UL or LL or m(Seg.G1) or m(Seg.I) or m(Seg.K)),
         'L' to (UL or LL or BOT),
         'M' to (UL or m(Seg.H) or m(Seg.I) or UR or LL or LR),
         'N' to (UL or m(Seg.H) or UR or m(Seg.K) or LL or LR),
-        'O' to (TOP or UL or UR or LL or LR or BOT),
+        'O' to (TOP_HOOK or UL_SHORT or UR or LL_SHORT or LR or BOT_HOOK),
         'P' to (TOP or UL or UR or MID or LL),
-        'Q' to (TOP or UL or UR or LL or LR or BOT or m(Seg.K)),
+        'Q' to (TOP or UL or UR or LL_SHORT or BOT_HOOK or LR or m(Seg.K)),
         'R' to (TOP or UL or UR or MID or LL or m(Seg.K)),
         'S' to (TOP or UL or MID or LR or BOT),
         'T' to (TOP or STEM),
@@ -327,5 +327,6 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
