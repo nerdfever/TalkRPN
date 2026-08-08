@@ -306,7 +306,7 @@ object TalkRpnGlyphs {
 
         // Two closed boxes on the diagonal with the through-slash between them.
         '%' to (
-            (TOP_LEFT or UL or m(Seg.G1, Seg.P)) or
+            (TOP_LEFT_HOOK or UL_SHORT or m(Seg.G1, Seg.P)) or
                 m(Seg.I, Seg.L) or
                 (m(Seg.G2) or LR or m(Seg.D2, Seg.Q))
             ),
@@ -342,6 +342,7 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
 
