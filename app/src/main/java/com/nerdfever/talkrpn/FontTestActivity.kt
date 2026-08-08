@@ -137,6 +137,12 @@ private val TEXT_GLYPH_LABEL = 10.sp
 // this screen exists to show. These are deliberately small and fiddly to hit:
 // it is an instrument, and the font matters more than the buttons do.
 
+/**
+ * Overlay scrim behind the controls: 20% opaque black, so the glyphs stay
+ * readable straight through the panel.
+ */
+private val CONTROL_PANEL_BACKGROUND = Color(0x33000000)
+
 private val CONTROL_GAP = 2.dp
 private val CONTROL_PANEL_PAD_TOP = 3.dp
 
@@ -211,7 +217,7 @@ private fun FontTestScreen() {
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .background(Color(0xE0000000))
+                .background(CONTROL_PANEL_BACKGROUND)
                 .padding(
                     start = SIDE_MARGIN,
                     end = SIDE_MARGIN,
@@ -575,6 +581,7 @@ private fun CompactControl(label: String, modifier: Modifier = Modifier, onClick
         Text(label, color = LABEL, fontSize = TEXT_BUTTON)
     }
 }
+
 
 
 
