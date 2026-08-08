@@ -129,7 +129,7 @@ object TalkRpnGlyphs {
         'P' to (TOP or UL or UR or MID or LL),
         'Q' to (TOP or UL or UR or LL_SHORT or BOT_HOOK or LR or m(Seg.K)),
         'R' to (TOP or UL or UR or MID or LL or m(Seg.K)),
-        'S' to (TOP or UL or MID or LR or BOT),
+        'S' to (TOP_HOOK or UL_SHORT or MID or LR or BOT),
         'T' to (TOP or STEM),
         // D3 rather than D4, so the bottom-left corner rounds. E2 goes dark with
         // it, per the standing hook rule - left lit it would spike past the arc
@@ -327,6 +327,7 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
 

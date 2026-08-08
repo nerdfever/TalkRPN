@@ -307,12 +307,14 @@ $lines += "  N and O are inset {0:F2} and {1:F2} from the columns - symmetric to
 $lines += ""
 $lines += "THE THREE LEFT-COLUMN ENDINGS"
 $lines += "  square   A4 + F2      most letters"
-$lines += "  hooked   A3 + F1      0 2 3 5 7 8 9, C G O, ( and &   (F2 dark)"
+$lines += "  hooked   A3 + F1      0 2 3 5 7 8 9, C G O S, ( and &   (F2 dark)"
 $lines += "  short    F1 alone     digit 4, no A at all - left side sits {0:F2} lower than the right" -f $HOOK_R
 $lines += ""
-$lines += "KNOWN GAP"
-$lines += "  J is a lower-left backslash with no mirror in the lower right, so a textbook V - arms"
-$lines += "  descending to the bottom centre from both sides - cannot be drawn. A 27th bar would fix it."
+$lines += "WHY V IS DRAWN SIDEWAYS"
+$lines += "  A textbook V is two arms meeting at the bottom centre. The left arm exists - J runs from"
+$lines += "  the left column at the middle down to the bottom centre - but there is no mirrored arm on"
+$lines += "  the right. So V is the left column plus the full slash (I into L), which is also how the"
+$lines += "  DL-3422 drew it. Adding the mirror diagonal would allow a textbook V and a pointier W."
 
 if ($Section -ne "diagram") {
 $y = $textTop
@@ -326,6 +328,7 @@ $bmp.Save($OUT, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
 
 Write-Output "wrote $OUT  ($CANVAS_W x $CANVAS_H)"
+
 
 
 
