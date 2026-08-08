@@ -302,7 +302,7 @@ object TalkRpnGlyphs {
         '#' to (TOP or MID or m(Seg.N, Seg.O) or STEM or m(Seg.M)),
 
         // An S with the centre column through it, carried into the descender.
-        '$' to (TOP or UL or MID or LR or BOT or STEM or m(Seg.M)),
+        '$' to (TOP_HOOK or UL_SHORT or MID or LR or BOT or STEM or m(Seg.M)),
 
         // Two closed boxes on the diagonal with the through-slash between them.
         '%' to (
@@ -342,6 +342,7 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
 

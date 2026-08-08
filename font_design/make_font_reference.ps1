@@ -116,7 +116,7 @@ $GLYPHS = @(
     @{ C = '!';  S = @("P", "COL2") }
     @{ C = '"';  S = $UL + @("P") }
     @{ C = '#';  S = $TOP + $MID + @("N", "O") + $STEM + @("M") }
-    @{ C = '$';  S = $TOP + $UL + $MID + @("C") + $BOT + $STEM + @("M") }
+    @{ C = '$';  S = @("A3", "A1", "A2", "F1") + $MID + @("C") + $BOT + $STEM + @("M") }
     @{ C = '%';  S = $TOP_LEFT + $UL + @("G1", "P") + @("I", "L") + @("G2", "C", "D2", "Q") }
     @{ C = '&';  S = @("A3", "A1", "P", "H", "G1", "E1") + @("D3", "D1", "D2") + @("C", "K") }
     @{ C = "'";  S = @("I") }
@@ -512,6 +512,7 @@ catch [System.IO.IOException] {
 finally {
     $pdfStream.Dispose()
 }
+
 
 
 
