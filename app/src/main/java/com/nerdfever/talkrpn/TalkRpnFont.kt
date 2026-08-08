@@ -39,19 +39,19 @@ import kotlin.math.tan
  * and that fixes the scale for everything else. So the display's shape is fully
  * specified by the numbers here, and only its SIZE depends on hardware.
  *
- * The unit is the HP-01's own centreline geometry - a 53.5 x 91.5 box - divided
- * through by 53.5. Dividing by the width rather than the height is what makes
- * this tidy: the horizontal grid comes out exact, and the scale factor that used
- * to sit between the HP-01's numbers and ours cancels away entirely.
+ * The geometry was drawn on a working grid where the cap height was 100 - the
+ * HP-01's centreline box, a 53.5 x 91.5, scaled by 100/91.5. Every figure here
+ * is its value on that grid divided by 58.47, the cell width there. That is a
+ * pure rescale, so no vertex has moved and the glyphs are the reviewed ones.
  *
- *     53.5 / 53.5 = 1       the cell width, by definition
- *     26.75 / 53.5 = 0.5    the centre axis, exactly
- *     91.5 / 53.5 = 1.71028 the cap height
- *     18.75 / 53.5 = 0.35047 the upper colon dot
- *     73.75 / 53.5 = 1.37851 the lower colon dot
- *     7.25 / 53.5 = 0.13551 the hook radius
- *     8.5 / 53.5 = 0.15888  the stroke
- *     130 / 53.5 = 2.42991  the pitch
+ *     58.47 / 58.47 = 1        the cell width, by definition
+ *     29.235 / 58.47 = 0.5     the centre axis, exactly
+ *     100 / 58.47 = 1.71028    the cap height
+ *     20.49 / 58.47 = 0.35044  the upper colon dot
+ *     80.60 / 58.47 = 1.37848  the lower colon dot
+ *     7.92 / 58.47 = 0.13545   the hook radius
+ *     9.29 / 58.47 = 0.15888   the stroke
+ *     142.08 / 58.47 = 2.43031 the pitch
  *
  * The payoff for reading it: since the cell is 1 wide, pitch minus 1 IS the
  * clearance between neighbouring cells, and the ink meets at pitch = 1 + STROKE.
@@ -104,15 +104,17 @@ object TalkRpnFont {
     // ---- Cell metrics, in cell units ----------------------------------------
 
     /**
-     * The HP-01's own centreline cell width. Dividing every HP-01 figure by it is
-     * what defines this font's unit, so it appears exactly once, here.
+     * The cell width in the working grid this geometry was drawn on - the grid
+     * where the cap height was 100. Dividing by it is the whole of the unit
+     * change, so it appears exactly once, here.
      *
-     * Those figures are a reconstruction from photographs, quoted to the nearest
-     * quarter - about half a percent. Everything derived from them is written as
-     * the division rather than as a decimal, so no digit is claimed that the
-     * source does not support, and the provenance stays visible.
+     * Every figure below is its value on THAT grid over this. That is a pure
+     * rescale: not one vertex moves, and the glyphs that were reviewed and
+     * corrected one by one are the same glyphs. Deriving them afresh from the
+     * HP-01's own 53.5 would have been prettier by a few digits and would have
+     * shifted points by up to 0.04% - which is not a licence this file has.
      */
-    private const val HP01_CELL_WIDTH = 53.5f
+    private const val GRID_CELL_WIDTH = 58.47f
 
     /**
      * Segment E to segment B/C - the left column to the right column, centre to
@@ -132,19 +134,22 @@ object TalkRpnFont {
     const val UNIT_SPAN = CELL_WIDTH
 
     /** Segment D to segment A, centreline to centreline. */
-    const val CELL_HEIGHT = 91.5f / HP01_CELL_WIDTH        // 1.71028
+    const val CELL_HEIGHT = 100f / GRID_CELL_WIDTH         // 1.71028
 
     /**
      * How far the descender bar hangs below the baseline, as a fraction of the
      * cap height. This is the one number behind "segment M is too tall".
+     *
+     * Exactly 0.44 on the old grid too - 144 against 100 - so naming it moves
+     * nothing.
      */
     private const val DESCENDER_FRACTION = 0.44f
 
     /** Including the descender: segment A down to the N/O bar. */
     const val TOTAL_HEIGHT = CELL_HEIGHT * (1f + DESCENDER_FRACTION)   // 2.46280
 
-    /** Rendered stroke width. The HP-01's own 8.5. */
-    const val STROKE = 8.5f / HP01_CELL_WIDTH              // 0.15888
+    /** Rendered stroke width. */
+    const val STROKE = 9.29f / GRID_CELL_WIDTH             // 0.15888
 
     /** Rightward lean, in degrees. */
     const val SLANT_DEGREES = 7.5f
@@ -167,7 +172,7 @@ object TalkRpnFont {
      * one cell's top-right passes close to the next cell's bottom-left, but those
      * are at different heights and never actually touch.
      */
-    const val PITCH = 130f / HP01_CELL_WIDTH               // 2.42991
+    const val PITCH = 142.08f / GRID_CELL_WIDTH            // 2.43031
 
     /**
      * VPITCH - vertical distance between successive rows, baseline to baseline,
@@ -187,10 +192,10 @@ object TalkRpnFont {
     const val VPITCH = 2.75f
 
     /** Top of segment A's ink to the bottom of the descender bar's ink. */
-    const val INK_HEIGHT = TOTAL_HEIGHT + STROKE           // 2.62168
+    const val INK_HEIGHT = TOTAL_HEIGHT + STROKE           // 2.62169
 
-    /** Radius of the two hooks, measured on their centreline. The HP-01's 7.25. */
-    const val HOOK_R = 7.25f / HP01_CELL_WIDTH             // 0.13551
+    /** Radius of the two hooks, measured on their centreline. */
+    const val HOOK_R = 7.92f / GRID_CELL_WIDTH             // 0.13545
 
     // ---- The grid the segments hang from ------------------------------------
 
@@ -204,14 +209,14 @@ object TalkRpnFont {
     private const val Y_DESC = TOTAL_HEIGHT            // 2.46280
 
     /** Where the top hook lands on the left column, and where the bottom one leaves it. */
-    private const val Y_F_TOP = HOOK_R                 // 0.13551
-    private const val Y_E_BOTTOM = Y_BASE - HOOK_R     // 1.57477
+    private const val Y_F_TOP = HOOK_R                 // 0.13545
+    private const val Y_E_BOTTOM = Y_BASE - HOOK_R     // 1.57483
 
     /** Where each horizontal bar's straight run ends and its hook begins. */
-    private const val X_HOOK_START = HOOK_R            // 0.13551
+    private const val X_HOOK_START = HOOK_R            // 0.13545
 
     /** The mirror point on the right, where the parenthesis arcs turn. */
-    private const val X_HOOK_END_R = CELL_WIDTH - HOOK_R   // 0.86449
+    private const val X_HOOK_END_R = CELL_WIDTH - HOOK_R   // 0.86455
 
     /**
      * Control-point offset for a quarter-circle as one cubic Bezier:
@@ -220,34 +225,45 @@ object TalkRpnFont {
     private val HOOK_K = (4.0 / 3.0 * tan(Math.PI / 8.0)).toFloat() * HOOK_R
 
     /**
-     * How far the descender bar is inset from each column.
+     * The descender bar is inset from the columns, symmetrically.
      *
-     * One constant, applied to both sides. It used to be a pair - 3.74 left and
-     * 3.75 right in the old units - which was rounding noise pretending to be an
-     * asymmetry the comment already denied.
+     * The two figures differ by 0.0002, which is the rounding left over from the
+     * grid they were drawn on. It is not worth "correcting": doing so would move
+     * a vertex, and nothing here is measured well enough to justify that.
      */
-    private const val X_DESC_INSET = 0.064f
-
-    private const val X_N_LEFT = X_DESC_INSET              // 0.064
-    private const val X_O_RIGHT = CELL_WIDTH - X_DESC_INSET // 0.936
+    private const val X_N_LEFT = 3.74f / GRID_CELL_WIDTH    // 0.06396
+    private const val X_O_RIGHT = 54.72f / GRID_CELL_WIDTH  // 0.93586
 
     // ---- Dots ---------------------------------------------------------------
 
-    private const val DOT_AXIS_X = X_MID                    // 0.5
-    private const val COL1_Y = 18.75f / HP01_CELL_WIDTH     // 0.35047
-    private const val COL2_Y = 73.75f / HP01_CELL_WIDTH     // 1.37851
+    private const val DOT_AXIS_X = X_MID                    // 0.5 exactly
+    private const val COL1_Y = 20.49f / GRID_CELL_WIDTH     // 0.35044
+    private const val COL2_Y = 80.60f / GRID_CELL_WIDTH     // 1.37848
+
+    /**
+     * The decimal point and comma sit outside the cell, in the gap to its right.
+     *
+     * Taken from an HP datasheet, at the authentic pitch. Note what that means:
+     * the dot does not belong to its cell, it belongs to the GAP, so a fixed x is
+     * only right at one pitch. Tighten the pitch and the gap shrinks underneath a
+     * dot that has not moved, until it is standing inside the next character.
+     */
+    private const val DP_X = 86.64f / GRID_CELL_WIDTH       // 1.48179
+
+    /** How far the dot sits below the baseline, as a fraction of the cap height. */
+    private const val DP_DROP_FRACTION = 0.1908f            // 119.08 / 100, exactly
+
+    private const val DP_Y = CELL_HEIGHT * (1f + DP_DROP_FRACTION)   // 2.03660
 
     /**
      * Where the decimal point sits across the gap between two cells, as a
      * fraction of that gap.
      *
-     * The dot does not belong to its cell - it belongs to the GAP - so a fixed x
-     * is only right at one pitch. Tighten the pitch and the gap shrinks
-     * underneath a dot that has not moved, until it is standing inside the next
-     * character. Stating the fraction instead makes it pitch-independent, and it
-     * reproduces the HP datasheet's position exactly at [PITCH].
+     * Derived from [DP_X] rather than stated, so it carries no rounding of its
+     * own: [dpXAt] reproduces the datasheet position exactly at [PITCH] and stays
+     * sensible either side of it.
      */
-    const val DP_GAP_FRACTION = 0.3369f
+    const val DP_GAP_FRACTION = (DP_X - CELL_WIDTH) / (PITCH - CELL_WIDTH)   // 0.33692
 
     /**
      * The decimal point's x at a given pitch. Callers rendering at anything other
@@ -255,15 +271,9 @@ object TalkRpnFont {
      */
     fun dpXAt(pitch: Float) = CELL_WIDTH + DP_GAP_FRACTION * (pitch - CELL_WIDTH)
 
-    /** How far the dot sits below the baseline, as a fraction of the cap height. */
-    private const val DP_DROP_FRACTION = 0.1908f
-
-    private val DP_X = dpXAt(PITCH)                                  // 1.48174
-    private const val DP_Y = CELL_HEIGHT * (1f + DP_DROP_FRACTION)   // 2.03660
-
-    /** The comma's tail, relative to its dot. The HP-01's own 19 and 7. */
-    private const val COMMA_TAIL_DROP = 19f / HP01_CELL_WIDTH   // 0.35514
-    private const val COMMA_TAIL_LEFT = 7f / HP01_CELL_WIDTH    // 0.13084
+    /** The comma's tail, relative to its dot. */
+    private const val COMMA_TAIL_DROP = 20.76f / GRID_CELL_WIDTH   // 0.35505
+    private const val COMMA_TAIL_LEFT = 7.65f / GRID_CELL_WIDTH    // 0.13084
 
     // ---- Slant --------------------------------------------------------------
 

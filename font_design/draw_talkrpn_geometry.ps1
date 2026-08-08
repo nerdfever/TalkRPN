@@ -22,20 +22,20 @@ $OUT = "$PSScriptRoot\$OutputName"
 
 # ---- geometry, in cell widths (must match TalkRpnFont.kt) -------------------
 #
-# THE UNIT: segment E to segment B/C is 1. Every figure below is the HP-01's own
-# centreline geometry divided by its 53.5 cell width, which is why the horizontal
-# grid lands on exact halves.
+# THE UNIT: segment E to segment B/C is 1. Every figure below is its value on the
+# working grid the geometry was drawn on - the grid where the cap height was 100 -
+# divided by the cell width there. A pure rescale, so no vertex moves.
 
-$HP01_CELL_WIDTH = 53.5
+$GRID_CELL_WIDTH = 58.47
 
 $CELL_WIDTH   = 1.0
-$CELL_HEIGHT  = 91.5 / $HP01_CELL_WIDTH        # 1.71028
-$DESCENDER_FRACTION = 0.44
+$CELL_HEIGHT  = 100.0 / $GRID_CELL_WIDTH       # 1.71028
+$DESCENDER_FRACTION = 0.44                     # 144 against 100, exactly
 $TOTAL_HEIGHT = $CELL_HEIGHT * (1.0 + $DESCENDER_FRACTION)   # 2.46280
-$STROKE       = 8.5 / $HP01_CELL_WIDTH         # 0.15888
+$STROKE       = 9.29 / $GRID_CELL_WIDTH        # 0.15888
 $SLANT_DEG    = 7.5
-$HOOK_R       = 7.25 / $HP01_CELL_WIDTH        # 0.13551
-$PITCH        = 130.0 / $HP01_CELL_WIDTH       # 2.42991
+$HOOK_R       = 7.92 / $GRID_CELL_WIDTH        # 0.13545
+$PITCH        = 142.08 / $GRID_CELL_WIDTH      # 2.43031
 
 $X_LEFT  = 0.0
 $X_MID   = $CELL_WIDTH / 2.0                   # 0.5 exactly
@@ -51,26 +51,27 @@ $Y_E_BOTTOM   = $Y_BASE - $HOOK_R
 $X_HOOK_START = $HOOK_R
 $X_HOOK_END_R = $X_RIGHT - $HOOK_R
 
-$X_DESC_INSET = 0.064
-$X_N_LEFT  = $X_DESC_INSET
-$X_O_RIGHT = $CELL_WIDTH - $X_DESC_INSET
+# The two insets differ by 0.0002 - rounding left over from the old grid, not an
+# asymmetry worth moving a vertex to fix.
+$X_N_LEFT  = 3.74 / $GRID_CELL_WIDTH           # 0.06396
+$X_O_RIGHT = 54.72 / $GRID_CELL_WIDTH          # 0.93586
 
-$COL1_Y = 18.75 / $HP01_CELL_WIDTH             # 0.35047
-$COL2_Y = 73.75 / $HP01_CELL_WIDTH             # 1.37851
+$COL1_Y = 20.49 / $GRID_CELL_WIDTH             # 0.35044
+$COL2_Y = 80.60 / $GRID_CELL_WIDTH             # 1.37848
 
-$DP_GAP_FRACTION = 0.3369
-$DP_X   = $CELL_WIDTH + $DP_GAP_FRACTION * ($PITCH - $CELL_WIDTH)   # 1.48174
-$DP_Y   = $CELL_HEIGHT * (1.0 + 0.1908)        # 2.03660
+$DP_X   = 86.64 / $GRID_CELL_WIDTH             # 1.48179
+$DP_Y   = $CELL_HEIGHT * (1.0 + 0.1908)        # 2.03660, 119.08 / 100 exactly
+$DP_GAP_FRACTION = ($DP_X - $CELL_WIDTH) / ($PITCH - $CELL_WIDTH)   # 0.33692
 
-$COMMA_TAIL_DROP = 19.0 / $HP01_CELL_WIDTH     # 0.35514
-$COMMA_TAIL_LEFT = 7.0 / $HP01_CELL_WIDTH      # 0.13084
+$COMMA_TAIL_DROP = 20.76 / $GRID_CELL_WIDTH    # 0.35505
+$COMMA_TAIL_LEFT = 7.65 / $GRID_CELL_WIDTH     # 0.13084
 $COMMA_TAIL_TIP_X = $DP_X - $COMMA_TAIL_LEFT
 $COMMA_TAIL_TIP_Y = $DP_Y + $COMMA_TAIL_DROP
 
 # ---- page ------------------------------------------------------------------
 
-# Px per cell width. Was 5.2 when a unit was a hundredth of the cap height.
-$SCALE    = 304.0
+# Px per cell width. Was 5.2 per unit when a unit was a hundredth of the cap height.
+$SCALE    = 5.2 * $GRID_CELL_WIDTH             # 304.044
 $ORIGIN_X = 330.0
 $ORIGIN_Y = 190.0
 $CANVAS_W = 1330
@@ -238,8 +239,8 @@ function Dim($x1, $y1, $x2, $y2, $text, $tdx, $tdy) {
 
 # How far the first dimension line stands off the cell, and how far apart the
 # stacked ones are. In cell widths, like everything else on the drawing.
-$DIM_GAP  = 0.205
-$DIM_STEP = 0.24
+$DIM_GAP  = 12.0 / $GRID_CELL_WIDTH    # 0.20523
+$DIM_STEP = 14.0 / $GRID_CELL_WIDTH    # 0.23944
 
 # Every label's number is formatted FROM the value it points at, so a dimension
 # can never end up quoting a figure the drawing no longer uses.
@@ -284,7 +285,7 @@ $g.DrawString("TalkRPN cell - centreline skeleton", $titleFont, $black, 24, 22)
 
 $header = @(
     "No stroke width, no slant. Origin is the top-left centreline corner; x right, y down.",
-    "THE UNIT: segment E to segment B/C is 1. The HP-01's centreline box (53.5 x 91.5) divided by 53.5, so the centre axis is exactly 0.5.",
+    "THE UNIT: segment E to segment B/C is 1. The old cap-height-100 grid divided by its 58.47 cell width - a pure rescale, so the centre axis is exactly 0.5.",
     "28 bars + COL1 + COL2 + DP + COMMA = 32 elements; mask is a Long.  Blue: A3/D3 are ALTERNATIVES to A4/D4; RPAR is the whole right paren.",
     "Segments meet flush - no gaps, unlike the DL-3422. TalkRpnFont.kt is the source of truth."
 )
@@ -340,7 +341,7 @@ $lines += "  hook radius = hook start x = {0:F3}, so each arc is tangent to both
 $lines += "  F1 top = {0:F3} = where A3 lands.  E1 bottom = {1:F3} = where D3 lands." -f $Y_F_TOP, $Y_E_BOTTOM
 $lines += "  F2 and E2 are the stubs that carry the left column out to the corner when it is square."
 $lines += "  B = C = {0:F3}: the right column is undivided at the corners, which is what makes a 4 lopsided." -f $Y_MID
-$lines += "  N and O are both inset {0:F3} from the columns - one constant, applied to both sides." -f $X_DESC_INSET
+$lines += "  N and O are inset {0:F4} and {1:F4} from the columns - symmetric to within measurement." -f $X_N_LEFT, ($CELL_WIDTH - $X_O_RIGHT)
 $lines += ""
 $lines += "THE THREE LEFT-COLUMN ENDINGS"
 $lines += "  square   A4 + F2      most letters"

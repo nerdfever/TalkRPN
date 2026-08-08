@@ -18,21 +18,22 @@ $OUT = "$PSScriptRoot\talkrpn_font_reference.pdf"
 # ---- geometry, in cell widths (must match TalkRpnFont.kt) -------------------
 #
 # THE UNIT: segment E to segment B/C is 1. Every length below is in that unit,
-# horizontally and vertically alike, and it comes from the HP-01's own centreline
-# figures divided by its 53.5 cell width - which is why the horizontal grid falls
-# on exact halves.
+# horizontally and vertically alike. Each is its value on the working grid the
+# geometry was drawn on - the grid where the cap height was 100 - divided by the
+# cell width there. A pure rescale, so no vertex moves.
 
-$HP01_CELL_WIDTH = 53.5
+$GRID_CELL_WIDTH = 58.47
 
-$CELL_WIDTH = 1.0                        # by definition
-$CELL_HEIGHT = 91.5 / $HP01_CELL_WIDTH   # 1.71028, segment D to segment A
-$DESCENDER_FRACTION = 0.44
+$CELL_WIDTH = 1.0                          # by definition
+$CELL_HEIGHT = 100.0 / $GRID_CELL_WIDTH    # 1.71028, segment D to segment A
+$DESCENDER_FRACTION = 0.44                 # 144 against 100 on the old grid, exactly
 $TOTAL_HEIGHT = $CELL_HEIGHT * (1.0 + $DESCENDER_FRACTION)   # 2.46280
 
-$STROKE = 0.09       # the review weight; the nominal 0.159 is too heavy at this bar count
+# The review weight; the nominal 0.15888 is too heavy at this bar count.
+$STROKE = 5.5 / $GRID_CELL_WIDTH           # 0.09407
 $SLANT_DEG = 7.5
 
-$HOOK_R = 7.25 / $HP01_CELL_WIDTH        # 0.13551
+$HOOK_R = 7.92 / $GRID_CELL_WIDTH          # 0.13545
 
 # The grid every segment endpoint hangs from.
 $XL = 0.0
@@ -48,22 +49,24 @@ $Y_F_TOP = $HOOK_R                       # where the top hook lands on the colum
 $Y_E_BOT = $YB - $HOOK_R                 # where the bottom hook leaves it
 $X_HOOK_END_R = $XR - $HOOK_R            # the parenthesis arcs' turning point
 
-# The descender bar, inset symmetrically from both columns.
-$X_DESC_INSET = 0.064
-$XN = $X_DESC_INSET
-$XO = $CELL_WIDTH - $X_DESC_INSET
+# The descender bar, inset from both columns. The two differ by 0.0002 - rounding
+# left over from the old grid, not an asymmetry worth moving a vertex to fix.
+$XN = 3.74 / $GRID_CELL_WIDTH            # 0.06396
+$XO = 54.72 / $GRID_CELL_WIDTH           # 0.93586
 
 # Dots.
-$COL1_Y = 18.75 / $HP01_CELL_WIDTH       # 0.35047
-$COL2_Y = 73.75 / $HP01_CELL_WIDTH       # 1.37851
+$COL1_Y = 20.49 / $GRID_CELL_WIDTH       # 0.35044
+$COL2_Y = 80.60 / $GRID_CELL_WIDTH       # 1.37848
 
-$PITCH = 130.0 / $HP01_CELL_WIDTH        # 2.42991, the HP-01's own
-$DP_GAP_FRACTION = 0.3369
-$DP_X = $CELL_WIDTH + $DP_GAP_FRACTION * ($PITCH - $CELL_WIDTH)   # 1.48174
-$DP_Y = $CELL_HEIGHT * (1.0 + 0.1908)    # 2.03660
+$PITCH = 142.08 / $GRID_CELL_WIDTH       # 2.43031, the HP-01's own
+$DP_X = 86.64 / $GRID_CELL_WIDTH         # 1.48179
+$DP_Y = $CELL_HEIGHT * (1.0 + 0.1908)    # 2.03660, 119.08 / 100 exactly
 
-$COMMA_TAIL_DROP = 19.0 / $HP01_CELL_WIDTH   # 0.35514
-$COMMA_TAIL_LEFT = 7.0 / $HP01_CELL_WIDTH    # 0.13084
+# Derived from DP_X, so it carries no rounding of its own.
+$DP_GAP_FRACTION = ($DP_X - $CELL_WIDTH) / ($PITCH - $CELL_WIDTH)   # 0.33692
+
+$COMMA_TAIL_DROP = 20.76 / $GRID_CELL_WIDTH   # 0.35505
+$COMMA_TAIL_LEFT = 7.65 / $GRID_CELL_WIDTH    # 0.13084
 
 # ---- page setup -------------------------------------------------------------
 
@@ -80,8 +83,8 @@ $COLUMNS = 16
 
 # One glyph box in cell widths: wide enough for the sheared cell plus the decimal
 # point hanging off to the right, tall enough for the descender.
-$GLYPH_W_UNITS = 1.66
-$GLYPH_H_UNITS = 2.65
+$GLYPH_W_UNITS = 97.0 / $GRID_CELL_WIDTH    # 1.65897
+$GLYPH_H_UNITS = 155.0 / $GRID_CELL_WIDTH   # 2.65094
 
 # Vertical space under each glyph for its character and segment listing. Pixels,
 # not units - it holds text set in a system font, which has no cell to scale to.

@@ -713,31 +713,33 @@ column's centreline to the right column's — the cell width, measured where the
 ink's *middle* is, not where its edge is. Pitch, vpitch, stroke, cap height, the
 decimal point's offset: all in that unit, all directly comparable.
 
-Every figure is the HP-01's own centreline geometry — a 53.5 × 91.5 box — divided
-through by **53.5**. Dividing by the width rather than the height is what makes
-it tidy: the scale factor that used to sit between the HP-01's numbers and ours
-cancels away entirely, and the horizontal grid falls on exact halves.
+The geometry was drawn on a working grid where the cap height was 100 — the
+HP-01's centreline box scaled by 100/91.5. Every figure is its value on **that**
+grid divided by **58.47**, the cell width there.
+
+That matters: it is a pure rescale, so **not one vertex moves**. Re-deriving the
+numbers afresh from the HP-01's own 53.5 would have been prettier by a digit or
+two and would have shifted points by up to 0.04% — which is not a licence a font
+already corrected glyph by glyph should be given.
 
 | | units | from |
 |---|---|---|
-| cell width (the definition) | 1 | 53.5 / 53.5 |
-| centre axis | 0.5 exactly | 26.75 / 53.5 |
-| cap height, D to A | 1.71028 | 91.5 / 53.5 |
-| hook radius | 0.13551 | 7.25 / 53.5 |
-| stroke, HP-01's own | 0.15888 | 8.5 / 53.5 |
-| `PITCH` — cell to cell, HP-01's own | 2.42991 | 130 / 53.5 |
+| cell width (the definition) | 1 | 58.47 / 58.47 |
+| centre axis | 0.5 exactly | 29.235 / 58.47 |
+| cap height, D to A | 1.71028 | 100 / 58.47 |
+| hook radius | 0.13545 | 7.92 / 58.47 |
+| stroke, nominal | 0.15888 | 9.29 / 58.47 |
+| `PITCH` — cell to cell, HP-01's own | 2.43031 | 142.08 / 58.47 |
 | full height including descenders | 2.46280 | cap × 1.44 |
-| ink height, top of `A` to bottom of the descender bar | 2.62168 | + one stroke |
+| ink height, top of `A` to bottom of the descender bar | 2.62169 | + one stroke |
 | `VPITCH` — baseline to baseline | 2.75 | chosen |
 
 The payoff in reading it: since the cell is exactly 1 wide, **pitch minus 1 *is*
 the clearance** between neighbouring cells, and the ink meets at pitch = 1 +
 stroke. No arithmetic needed to see whether a pitch is viable.
 
-Because the source figures are a reconstruction quoted to the nearest quarter —
-about half a percent — the constants are written in code as the division rather
-than as decimals. No digit is claimed that the source does not support, and the
-provenance stays visible.
+The constants are written in code as the division rather than as decimals, so the
+grid figure stays visible and no digit is invented in the conversion.
 
 Millimetres enter at exactly **one** place: whoever draws the font picks a size,
 and that fixes everything else. So the display's *shape* is fully specified by
@@ -765,9 +767,9 @@ Two floors fall out of this, both from ink rather than taste:
   one cell's top-right passes close to the next cell's bottom-left, but those
   sit at different heights and never actually touch. All caps read well from
   about 1.45 to 1.80.
-- **vpitch ≥ 2.62168** — the ink height, below which descenders reach the row
+- **vpitch ≥ 2.62169** — the ink height, below which descenders reach the row
   beneath. A digits-only display could go far tighter; a seven-segment font has
-  no descenders at all, which is why `DisplayTestActivity` still sits at 1.97.
+  no descenders at all, which is why `DisplayTestActivity` still sits at 1.96682.
 
 Divergences from the DL-3422, all deliberate:
 
@@ -793,7 +795,7 @@ Divergences from the DL-3422, all deliberate:
 | ~~Comma taper~~ | **Decided: keep the constant-width tail.** More period-correct — though the real LED calculators drew no commas at all. |
 | **Segment `M` (the descender stem) is too tall** | Not the letter M. `DESCENDER_FRACTION` is 0.44 of the cap height, against an x-height of half of it, so `g q y j` tails plunge nearly as deep as their bowls are tall. Now one number: lower `DESCENDER_FRACTION` and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all follow. |
 | **`P`/`Q` shift** | Both may want to move left a little; `B` and `D` are what show it. |
-| **Decimal-point position** | *Half done.* The dot belongs to the **gap** between cells, not to a cell, so a fixed `DP_X = 1.48` is only right at pitch 2.43 — tighten the pitch and the gap shrinks underneath a dot that has not moved. `DP_GAP_FRACTION` and `dpXAt(pitch)` now express it pitch-independently, and the specimen renderer uses them. **Still to do:** `TalkRpnFont` bakes `DP_X` into its paths at object-init, so `draw()` has to take a pitch before the font itself follows suit. |
+| **Decimal-point position** | *Half done.* The dot belongs to the **gap** between cells, not to a cell, so a fixed `DP_X = 1.48179` is only right at pitch 2.43031 — tighten the pitch and the gap shrinks underneath a dot that has not moved. `DP_GAP_FRACTION` and `dpXAt(pitch)` now express it pitch-independently, and the specimen renderer uses them. **Still to do:** `TalkRpnFont` bakes `DP_X` into its paths at object-init, so `draw()` has to take a pitch before the font itself follows suit. |
 | **Stroke width** | The HP-01's 0.15888 is too heavy for 26 bars. Around 0.09 reads well; not yet fixed. Dave wants to chase the bubble-LED look here — a very thin stroke at high brightness with diffuse scatter around it — which argues for going thinner still. |
 | **`l` and `\|` are identical** | Both are `P Q`. Fine or not, but it should be a decision rather than an accident. |
 | ~~Parens vs brackets~~ | **Done.** Both parens are now properly curved: `(` is the left column with both corners hooked; `)` got `A5` and `D5`, each half of the right parenthesis as one bundled element (bar stub + arc + column stub — the right side has no shortened bars for a bare arc to join). This crossed the `Int` ceiling deliberately: 33 elements, the mask is now a `Long`. What was rejected earlier was a *mismatched* pair, not curvature. |

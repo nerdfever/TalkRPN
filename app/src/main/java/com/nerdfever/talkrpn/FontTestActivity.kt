@@ -74,12 +74,14 @@ private const val INITIAL_SIZE_INDEX = 3
 /**
  * Stroke widths offered, in cell widths - the unit segment E to segment B/C.
  *
- * The font's nominal 0.159 is the HP-01's own 8.5, and it is visibly too heavy
- * here, because seven segments had room in this width and twenty-six do not.
- * Expect the answer to be nearer the middle of this list; 0.09 has read best so
- * far. 0.08 is exactly half the nominal.
+ * Written as the old cap-height-100 figures over 58.47 so the list is the same
+ * one that has been judged on the watch, unrounded. The nominal 0.15888 is the
+ * HP-01's, and it is visibly too heavy here, because seven segments had room in
+ * this width and twenty-six do not. Expect the answer to be nearer the middle of
+ * this list; 0.09407 has read best so far, and 0.07953 is exactly half nominal.
  */
-private val STROKE_CHOICES = listOf(0.05f, 0.07f, 0.08f, 0.09f, 0.11f, 0.13f, 0.159f, 0.19f)
+private val STROKE_CHOICES =
+    listOf(3.0f, 4.0f, 4.65f, 5.5f, 6.5f, 7.5f, 9.29f, 11.0f).map { it / 58.47f }
 private const val INITIAL_STROKE_INDEX = 3
 
 /** Lit colour. */
@@ -96,7 +98,7 @@ private val LED_GHOST = Color(0xFF2A0A08)
 private val CELL_BOUNDS = Color(0xFF3D8B96)
 
 /** Boundary line width, in cell widths, so it scales with the glyph. */
-private const val BOUNDS_STROKE = 0.02f
+private const val BOUNDS_STROKE = 1.2f / 58.47f    // 0.02052
 
 private val DISPLAY_BACKGROUND = Color(0xFF000000)
 private val LABEL = Color(0xFF9A9A9A)

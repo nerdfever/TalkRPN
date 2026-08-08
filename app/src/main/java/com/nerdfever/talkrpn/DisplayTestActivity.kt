@@ -121,7 +121,7 @@ private const val HEIGHT_FRACTION_MAX = 0.25f
  * to make a fixed cell count fill the row exactly - so a tighter pitch bought taller
  * digits. Convenient, but it meant neither control did one thing.
  */
-private const val INITIAL_PITCH_UNITS = 2.42991f
+private const val INITIAL_PITCH_UNITS = 142.08f / 58.47f    // 2.43031
 private const val PITCH_UNITS_MIN = 1.0f
 private const val PITCH_UNITS_MAX = 4.0f
 
@@ -141,7 +141,7 @@ private const val PITCH_UNITS_MAX = 4.0f
  * does, and its ink is 2.62 tall, so expect to want about 2.75 once the display
  * draws letters.
  */
-private const val INITIAL_VPITCH_UNITS = 1.97f
+private const val INITIAL_VPITCH_UNITS = 115f / 58.47f      // 1.96682
 private const val VPITCH_UNITS_MAX = 4.5f
 
 /**

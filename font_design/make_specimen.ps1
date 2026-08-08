@@ -49,7 +49,7 @@ $PITCH_SAMPLE = "QUICK BROWN FOX 0123456789 42.9565"
 # right, with the HP-01's own 2.43 and a deliberately-too-tight 1.35 as anchors.
 # The cell is exactly 1 wide, so the figure minus 1 IS the clearance between
 # neighbours: 1.35 leaves 0.35, and the ink only meets at 1.16.
-$PITCHES = @(2.43, 2.05, 1.90, 1.80, 1.70, 1.65, 1.55, 1.45, 1.35)
+$PITCHES = @($PITCH, 2.05, 1.90, 1.80, 1.70, 1.65, 1.55, 1.45, 1.35)
 
 $LINES = @()
 foreach ($p in $PITCHES) {
