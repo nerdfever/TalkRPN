@@ -324,9 +324,10 @@ object TalkRpnGlyphs {
         '`' to m(Seg.H),
 
         // A squared-off wave, in the TOP half of the cell: up F, right along A,
-        // down P, right along G2, up B. The same zigzag the lower half would
-        // give, shifted up one row - E->F, G1->A, Q->P, D2->G2, C->B.
-        '~' to (UL or TOP_LEFT or m(Seg.P, Seg.G2) or UR),
+        // down P, right along G2, up B - with the left crest ROUNDED, segment A3
+        // curling the F-to-A corner. F2 dark per the hook rule. The other two
+        // bends have no arcs available, so the wave rounds only where it can.
+        '~' to (UL_SHORT or TOP_LEFT_HOOK or m(Seg.P, Seg.G2) or UR),
     )
 
     /** Segment mask for a character, or null if this font has no glyph for it. */
@@ -344,6 +345,7 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
 
