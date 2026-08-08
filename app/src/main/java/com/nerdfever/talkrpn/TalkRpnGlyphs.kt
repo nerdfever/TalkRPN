@@ -189,11 +189,11 @@ object TalkRpnGlyphs {
         'm' to (MID or LL or LR or m(Seg.Q)),
         'n' to (LL or m(Seg.J, Seg.Q)),
         'o' to (LL_SHORT or m(Seg.G1, Seg.D3, Seg.D1, Seg.Q)),
-                // Moved to the left half, where every other lowercase bowl lives. The cost
-        // is handedness: the descender can only hang from the centre column, so
-        // p, g and q now share one bowl and differ only by tail - g flicks left
-        // (segment N), q flicks right (segment O), p hangs plain.
-        'p' to (LL_SHORT or m(Seg.G1, Seg.D3, Seg.D1, Seg.Q, Seg.M)),
+                // Right-half bowl, deliberately: p went to the left half briefly, but
+        // with the descender only possible on the centre column that form was a
+        // tailless q. The bowl sitting RIGHT of the stem is what makes it a p,
+        // and that outweighs it being the one lowercase bowl off the left side.
+        'p' to (LR or m(Seg.G2, Seg.D2, Seg.Q, Seg.M)),
 
         // g and q share a bowl and differ only in which way the tail curls:
         // g curls left (N), q curls right (O).
@@ -342,6 +342,7 @@ object TalkRpnGlyphs {
         return Seg.entries.filter { mask and it.bit != 0L }.map { it.name }
     }
 }
+
 
 
 
