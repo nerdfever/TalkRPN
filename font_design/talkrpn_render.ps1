@@ -80,6 +80,25 @@ function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
 
     $half = $w / 2.0
 
+    # Extend half a stroke past each end, along the segment's own direction.
+    #
+    # Without this the corners notch: a top bar ending at x = 1 spans y either
+    # side of the centreline but stops dead, while the column beside it starts at
+    # y = 0, so the square OUTSIDE both is empty. The old square cap filled that;
+    # a fixed nib on its own does not, because it adds no length.
+    #
+    # This is that cap restored, with the difference that the end FACE stays
+    # axis-aligned rather than turning with the segment - so the corners come back
+    # flush without the angled ends coming back with them.
+    $len = [Math]::Sqrt(($x2 - $x1) * ($x2 - $x1) + ($y2 - $y1) * ($y2 - $y1))
+
+    if ($len -gt 0) {
+        $ux = ($x2 - $x1) / $len
+        $uy = ($y2 - $y1) / $len
+        $x1 = $x1 - $ux * $half;  $y1 = $y1 - $uy * $half
+        $x2 = $x2 + $ux * $half;  $y2 = $y2 + $uy * $half
+    }
+
     # Which way does the nib point? Across the segment's dominant axis, so a
     # horizontal bar gets height and everything else gets width.
     if ([Math]::Abs($x2 - $x1) -gt [Math]::Abs($y2 - $y1)) {

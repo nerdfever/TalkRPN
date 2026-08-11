@@ -33,7 +33,7 @@ $CELL_HEIGHT  = 100.0 / $GRID_CELL_WIDTH       # 1.71028
 $DESCENDER_FRACTION = 0.44                     # 144 against 100, exactly
 $TOTAL_HEIGHT = $CELL_HEIGHT * (1.0 + $DESCENDER_FRACTION)   # 2.46280
 $STROKE       = 16.0 / 108.5                   # 0.14747, measured off a real HP-55
-$SLANT_DEG    = 7.5
+$SLANT_DEG    = 6.0
 $HOOK_R       = 7.92 / $GRID_CELL_WIDTH        # 0.13545
 $PITCH        = 142.08 / $GRID_CELL_WIDTH      # 2.43031
 

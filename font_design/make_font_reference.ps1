@@ -32,7 +32,8 @@ $TOTAL_HEIGHT = $CELL_HEIGHT * (1.0 + $DESCENDER_FRACTION)   # 2.46280
 # Measured off a microscope photograph of a real HP-55: a 16 px stroke against
 # 108.5 px from the left column's centre to the right's.
 $STROKE = 16.0 / 108.5                     # 0.14747
-$SLANT_DEG = 7.5
+# Dave's compromise between HP's datasheet 5.0 and the 7.5 first used.
+$SLANT_DEG = 6.0
 
 $HOOK_R = 7.92 / $GRID_CELL_WIDTH          # 0.13545
 
