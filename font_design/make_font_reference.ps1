@@ -293,108 +293,12 @@ function Draw-CellBounds($g, $ox, $oy, $k) {
     $pen.Dispose()
 }
 
-# Draws one glyph with its cell origin at (ox, oy) canvas pixels, k px per unit.
-# Every lit bar goes into ONE path stroked once, so overlaps are not brighter
-# than anything else - mirrors drawTalkRpnCell in TalkRpnFont.kt.
+. "$PSScriptRoot/talkrpn_render.ps1"
+
+# Kept as a thin name so the call sites below do not all have to change; the
+# drawing itself lives in talkrpn_render.ps1, shared with every other script.
 function Draw-Glyph($g, $names, $ox, $oy, $k, $color) {
-
-    # SQUARE caps and MITRE joins, and the shear applied as a TRANSFORM rather
-    # than point by point - which is what shears the pen along with the path.
-    # A real segment is a rectangular die: a vertical bar's ends are horizontal,
-    # a horizontal bar's ends are cut at the slant. Stroking pre-sheared points
-    # leaves a pen that is square to each bar instead, wrong by the slant angle
-    # at every end. Mirrors drawTalkRpnCell in TalkRpnFont.kt.
-    #
-    # The pen width is in CELL units here, because the transform does the scaling.
-    $pen = New-Object System.Drawing.Pen $color, $STROKE
-    $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Square
-    $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Square
-    $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Miter
-    $pen.MiterLimit = 2.5
-    $brush = New-Object System.Drawing.SolidBrush $color
-
-    # Upright cell coordinates. The transform below carries them to the canvas.
-    function UP($x, $y) { New-Object System.Drawing.PointF ([float]$x, [float]$y) }
-
-    # Where a point ends up once sheared, scaled and placed - for the dots, which
-    # are drawn outside the transform so they stay square.
-    function PT($x, $y) {
-        New-Object System.Drawing.PointF (
-            ($ox + ($x - $SHEAR * $y + $SHEAR_OFFSET) * $k), ($oy + $y * $k))
-    }
-
-    $path = New-Object System.Drawing.Drawing2D.GraphicsPath
-
-    foreach ($n in $names) {
-
-        if ($SEG_LINES.Contains($n)) {
-            $s = $SEG_LINES[$n]
-            $path.StartFigure()
-            $path.AddLine((UP $s[0] $s[1]), (UP $s[2] $s[3]))
-        }
-        elseif ($SEG_ARCS.Contains($n)) {
-            $s = $SEG_ARCS[$n]
-            $pts = @()
-            foreach ($p in (New-ArcPoints $s[0] $s[1] $s[2] $s[3] $s[4])) {
-                $pts += UP $p[0] $p[1]
-            }
-            $path.StartFigure()
-            $path.AddLines([System.Drawing.PointF[]]$pts)
-        }
-        elseif ($SEG_POLYS.Contains($n)) {
-            $pts = @()
-            foreach ($p in $SEG_POLYS[$n]) { $pts += UP $p[0] $p[1] }
-            $path.StartFigure()
-            $path.AddLines([System.Drawing.PointF[]]$pts)
-        }
-        elseif ($n -eq "COMMA") {
-            $path.StartFigure()
-            $path.AddLine((UP $COMMA_TAIL[0] $COMMA_TAIL[1]), (UP $COMMA_TAIL[2] $COMMA_TAIL[3]))
-        }
-    }
-
-    if ($path.PointCount -gt 0) {
-
-        # x' = k*x - k*SHEAR*y + (ox + k*SHEAR_OFFSET),  y' = k*y
-        # GDI+ takes these as (m11, m12, m21, m22, dx, dy).
-        $m = New-Object System.Drawing.Drawing2D.Matrix (
-            [float]$k, [float]0, [float](-$k * $SHEAR), [float]$k,
-            [float]($ox + $k * $SHEAR_OFFSET), [float]$oy)
-
-        $saved = $g.Save()
-        $g.Transform = $m
-        $g.DrawPath($pen, $path)
-
-        # Dots inside the transform too, so they shear with the bars instead of
-        # sitting upright among them. Upright coordinates, half-side = STROKE.
-        foreach ($n in $names) {
-            if ($SEG_DOTS.Contains($n)) {
-                $s = $SEG_DOTS[$n]
-                $g.FillRectangle($brush, ($s[0] - $STROKE), ($s[1] - $STROKE),
-                    (2 * $STROKE), (2 * $STROKE))
-            }
-        }
-
-        $g.Restore($saved)
-
-        $m.Dispose()
-    }
-
-    $path.Dispose()
-
-    # Dots are filled, not stroked, and never overlap a bar. Drawn outside the
-    # transform, from centres that already carry the shear, so they stay square.
-    foreach ($n in $names) {
-        if ($SEG_DOTS.Contains($n)) {
-            $s = $SEG_DOTS[$n]
-            $c = PT $s[0] $s[1]
-            $r = $STROKE * $k
-            $g.FillRectangle($brush, ($c.X - $r), ($c.Y - $r), (2 * $r), (2 * $r))
-        }
-    }
-
-    $pen.Dispose()
-    $brush.Dispose()
+    Draw-TalkRpnCell $g $names $ox $oy $k $color
 }
 
 # ---- the character sheet: one landscape page, traditional chart layout -------
