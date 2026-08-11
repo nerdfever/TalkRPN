@@ -811,6 +811,109 @@ object TalkRpnFont {
         DP_X - COMMA_TAIL_LEFT, DP_Y + COMMA_TAIL_DROP
     )
 
+    /**
+     * The shear for an arbitrary slant. The font's own default is cached; the
+     * test screens' live slant control builds others on the fly, which is one
+     * small allocation per cell per frame on a diagnostic screen - fine.
+     */
+    private fun shearMatrixFor(slantDegrees: Float): Matrix {
+
+        if (slantDegrees == SLANT_DEGREES) return SHEAR_MATRIX
+
+        val shear = tan(Math.toRadians(slantDegrees.toDouble())).toFloat()
+
+        return Matrix().apply {
+            values[Matrix.SkewX] = -shear
+            values[Matrix.TranslateX] = shear * TOTAL_HEIGHT
+        }
+    }
+
+    /** Ink width of one slanted cell at an arbitrary slant, in cell units. */
+    fun shearedWidth(slantDegrees: Float = SLANT_DEGREES): Float =
+        CELL_WIDTH + tan(Math.toRadians(slantDegrees.toDouble())).toFloat() * TOTAL_HEIGHT
+
+    // ---- Text layout ---------------------------------------------------------
+    //
+    // The one convention the layer above needs: a '.' or ',' does NOT take a
+    // cell. It merges into the PRECEDING cell's DP or COMMA element - that is
+    // the whole point of those elements - so "42.9" is three cells, not four.
+
+    /** The text as cell masks, with '.' and ',' merged into their predecessors. */
+    fun cellMasks(text: String): List<Long> {
+
+        val cells = ArrayList<Long>(text.length)
+
+        for (ch in text) {
+
+            val punct = when (ch) {
+                '.' -> Seg.DP.bit
+                ',' -> Seg.COMMA.bit
+                else -> 0L
+            }
+
+            if (punct != 0L) {
+                // Into the cell before it - or a cell of its own at the start of
+                // the string, exactly as a leading ".5" shows on a real display.
+                if (cells.isNotEmpty()) cells[cells.size - 1] = cells.last() or punct
+                else cells.add(punct)
+                continue
+            }
+
+            // Unknown characters get a blank cell rather than vanishing: a gap
+            // that holds its place reads as a missing glyph, not a layout bug.
+            cells.add(TalkRpnGlyphs.maskFor(ch) ?: 0L)
+        }
+
+        return cells
+    }
+
+    /**
+     * Ink width of [text] in pixels: cells at [pitch], the last cell's sheared
+     * ink, and the decimal point's overhang past the right column if the final
+     * cell carries one.
+     */
+    fun measureWidth(
+        text: String,
+        cellHeight: Float,
+        pitch: Float = PITCH,
+        slantDegrees: Float = SLANT_DEGREES
+    ): Float {
+
+        val cells = cellMasks(text)
+        if (cells.isEmpty()) return 0f
+
+        val scale = cellHeight / CELL_HEIGHT
+
+        var units = (cells.size - 1) * pitch + shearedWidth(slantDegrees) + STROKE
+
+        // A trailing dot pokes into the gap beyond its own cell.
+        val punctBits = Seg.DP.bit or Seg.COMMA.bit
+        if (cells.last() and punctBits != 0L) {
+            units = maxOf(units, (cells.size - 1) * pitch + dpXAt(pitch) + STROKE)
+        }
+
+        return units * scale
+    }
+
+    /** Draws [text] with its cells' top-left centreline corners on [origin]'s row. */
+    fun DrawScope.drawTalkRpnText(
+        text: String,
+        origin: Offset,
+        cellHeight: Float,
+        color: Color,
+        pitch: Float = PITCH,
+        slantDegrees: Float = SLANT_DEGREES,
+        strokeWidth: Float = STROKE
+    ) {
+        val scale = cellHeight / CELL_HEIGHT
+        var x = origin.x
+
+        for (mask in cellMasks(text)) {
+            drawTalkRpnCell(mask, Offset(x, origin.y), cellHeight, color, strokeWidth, pitch, slantDegrees)
+            x += pitch * scale
+        }
+    }
+
     // ---- Drawing ------------------------------------------------------------
 
     /**
@@ -827,11 +930,18 @@ object TalkRpnFont {
         origin: Offset,
         cellHeight: Float,
         color: Color,
-        strokeWidth: Float = STROKE
+        strokeWidth: Float = STROKE,
+        pitch: Float = PITCH,
+        slantDegrees: Float = SLANT_DEGREES
     ) {
         if (mask == 0L) return
 
         val scale = cellHeight / CELL_HEIGHT
+
+        // The decimal point and comma live in the GAP between cells, so their x
+        // depends on the pitch - a fixed position is only right at one pitch.
+        // Zero at the design pitch, so nothing moves where nothing should.
+        val dpShift = dpXAt(pitch) - dpXAt(PITCH)
 
         withTransform({
             translate(origin.x, origin.y)
@@ -949,7 +1059,8 @@ object TalkRpnFont {
 
             if (mask and Seg.COMMA.bit != 0L)
                 lit.addDiagonal(
-                    COMMA_TAIL[0], COMMA_TAIL[1], COMMA_TAIL[2], COMMA_TAIL[3],
+                    COMMA_TAIL[0] + dpShift, COMMA_TAIL[1],
+                    COMMA_TAIL[2] + dpShift, COMMA_TAIL[3],
                     strokeWidth
                 )
 
@@ -962,10 +1073,15 @@ object TalkRpnFont {
 
                 if (mask and seg.bit == 0L) continue
 
-                lit.moveTo(centre.x - strokeWidth, centre.y - strokeWidth)
-                lit.lineTo(centre.x + strokeWidth, centre.y - strokeWidth)
-                lit.lineTo(centre.x + strokeWidth, centre.y + strokeWidth)
-                lit.lineTo(centre.x - strokeWidth, centre.y + strokeWidth)
+                // Only the two gap-dwellers move with the pitch; the colon dots
+                // live on the cell axis and stay put.
+                val cx = centre.x +
+                    if (seg == Seg.DP || seg == Seg.COMMA) dpShift else 0f
+
+                lit.moveTo(cx - strokeWidth, centre.y - strokeWidth)
+                lit.lineTo(cx + strokeWidth, centre.y - strokeWidth)
+                lit.lineTo(cx + strokeWidth, centre.y + strokeWidth)
+                lit.lineTo(cx - strokeWidth, centre.y + strokeWidth)
                 lit.close()
             }
 
@@ -981,7 +1097,7 @@ object TalkRpnFont {
 
                 // Filled INSIDE the shear, so the whole outline leans together.
                 canvas.save()
-                canvas.concat(SHEAR_MATRIX)
+                canvas.concat(shearMatrixFor(slantDegrees))
                 canvas.drawPath(lit, paint)
                 canvas.restore()
             }

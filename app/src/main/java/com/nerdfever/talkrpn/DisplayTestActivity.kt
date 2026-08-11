@@ -105,10 +105,9 @@ private const val HEIGHT_FRACTION_MAX = 0.25f
  * also makes the pitch read itself: the cell is 1 wide, so pitch minus 1 is the
  * clearance between neighbours.
  *
- * The font actually being drawn does not have to agree, and Hp01Font does not:
- * its coordinates are the OUTER ink box, whose E/F-to-B/C span is 53.5 of its own
- * 62. Hp01Font.UNIT_SPAN states that and [fontUnitsPerUnit] converts, so the
- * figures below mean the same thing whichever font ends up on the screen.
+ * The screen draws TalkRpnFont, which defines the unit, so the conversion
+ * factor is 1 - but it is still written through [fontUnitsPerUnit], so the
+ * arithmetic stays correct for any font that states its own UNIT_SPAN.
  *
  * PITCH - horizontal cell-to-cell distance, in cell widths.
  *
@@ -137,11 +136,11 @@ private const val PITCH_UNITS_MAX = 4.0f
  * rows ended up unequally spaced baseline to baseline. Making the SPACING uniform
  * instead means the gaps now differ, which is the way round that reads evenly.
  *
- * 1.97 suits the seven-segment font, which has no descenders at all. TalkRpnFont
- * does, and its ink is 2.62 tall, so expect to want about 2.75 once the display
- * draws letters.
+ * The display draws TalkRpnFont now, whose ink runs 2.62 units tall with the
+ * descenders, so the default is the font's own VPITCH. The old seven-segment
+ * screen sat at 1.97, which would overlap rows here.
  */
-private const val INITIAL_VPITCH_UNITS = 115f / 58.47f      // 1.96682
+private val INITIAL_VPITCH_UNITS = TalkRpnFont.VPITCH
 private const val VPITCH_UNITS_MAX = 4.5f
 
 /**
@@ -155,7 +154,7 @@ private const val PITCH_STEP_UNITS = 0.025f
 private const val ADJUST_STEP_FRACTION = 0.05f
 
 /**
- * Slant, in degrees from vertical. The default is Hp01Font.SLANT_DEGREES.
+ * Slant, in degrees from vertical. The default is TalkRpnFont.SLANT_DEGREES.
  *
  * Stepped by a fixed amount rather than by a percentage: slant is the one
  * adjustment whose useful range includes zero, and a percentage step cannot move
@@ -395,7 +394,7 @@ private fun DisplayTestScreen() {
     var heightFraction by remember { mutableStateOf(INITIAL_HEIGHT_FRACTION) }
 
     var vpitchUnits by remember { mutableStateOf(INITIAL_VPITCH_UNITS) }
-    var slantDegrees by remember { mutableStateOf(Hp01Font.SLANT_DEGREES) }
+    var slantDegrees by remember { mutableStateOf(TalkRpnFont.SLANT_DEGREES) }
     var sampleIndex by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(false) }
 
@@ -414,14 +413,15 @@ private fun DisplayTestScreen() {
     // is the wrong size: units -> the drawing font's own coordinates, and units
     // -> device pixels at the X row's size.
 
-    // The drawing font's own coordinates per display unit. 53.5 for Hp01Font,
-    // which measures its cell to the outside of the ink; it would be 1 if this
-    // screen drew with TalkRpnFont, which defines the unit.
-    val fontUnitsPerUnit = Hp01Font.UNIT_SPAN
+    // The drawing font's own coordinates per display unit. Trivially 1 now:
+    // this screen draws with TalkRpnFont, which DEFINES the unit. Kept as a
+    // named factor so the arithmetic below still reads correctly if a font
+    // with alien coordinates ever returns.
+    val fontUnitsPerUnit = TalkRpnFont.UNIT_SPAN
 
     // Pixels per display unit, always at the X row's size - that is the reference
     // the vpitch is quoted in, so a smaller row must not redefine it.
-    val unitPx = xCellHeightPx / Hp01Font.CELL_HEIGHT * fontUnitsPerUnit
+    val unitPx = xCellHeightPx / TalkRpnFont.CELL_HEIGHT * fontUnitsPerUnit
 
     val advanceUnits = pitchUnits * fontUnitsPerUnit
     val vpitchPx = vpitchUnits * unitPx
@@ -452,10 +452,10 @@ private fun DisplayTestScreen() {
     // With both free, the cell count becomes the *result* rather than the input -
     // which is the more useful reading anyway, since the question was how many
     // digits fit at a size that can be read.
-    val scale = xCellHeightPx / Hp01Font.CELL_HEIGHT
+    val scale = xCellHeightPx / TalkRpnFont.CELL_HEIGHT
     val cellsAcross =
         if (rowWidthPx <= 0 || scale <= 0f) 0
-        else ((rowWidthPx / scale - Hp01Font.shearedWidth(slantDegrees)) / advanceUnits).toInt() + 1
+        else ((rowWidthPx / scale - TalkRpnFont.shearedWidth(slantDegrees)) / advanceUnits).toInt() + 1
 
     // Fit the digits first, then punctuate: the radix and the separators are all
     // narrower than a cell, so counting them as cells would under-fill the row.
@@ -532,7 +532,7 @@ private fun DisplayTestScreen() {
                     }
             ) {
                 val limit =
-                    chordRightEdgePx(xTopInRootPx, xCellHeightPx, screenPx, insetPx) - xLeftInRootPx
+                    chordRightEdgePx(xTopInRootPx, inkHeightPx(xCellHeightPx), screenPx, insetPx) - xLeftInRootPx
 
                 drawRegister(
                     samples["X"].orEmpty(), xCellHeightPx, advanceUnits, LED_RED,
@@ -605,7 +605,7 @@ private fun DisplayTestScreen() {
                     text = "%.1f mm  %d cells  clear %.2f".format(
                         xCellHeightPx / pixelsPerMm,
                         cellsAcross,
-                        pitchUnits - Hp01Font.CELL_WIDTH / fontUnitsPerUnit
+                        pitchUnits - TalkRpnFont.CELL_WIDTH / fontUnitsPerUnit
                     ),
                     color = LABEL,
                     fontSize = TEXT_READOUT,
@@ -802,7 +802,7 @@ private fun RegisterRow(
                 .height(canvasHeightDp(cellHeightPx, density))
         ) {
             // Convert the screen-space limit into this Canvas's own coordinates.
-            val limit = chordRightEdgePx(topInRootPx, cellHeightPx, screenPx, insetPx) - leftInRootPx
+            val limit = chordRightEdgePx(topInRootPx, inkHeightPx(cellHeightPx), screenPx, insetPx) - leftInRootPx
 
             drawRegister(value, cellHeightPx, advanceUnits, color, limit.coerceAtMost(size.width), slantDegrees)
         }
@@ -816,7 +816,7 @@ private fun RegisterRow(
         // closed in to x = 27, so it was invisible on a round screen while looking
         // perfectly fine on a square emulator.
         val labelIndentPx =
-            (chordLeftEdgePx(topInRootPx, cellHeightPx, screenPx, insetPx) - leftInRootPx)
+            (chordLeftEdgePx(topInRootPx, inkHeightPx(cellHeightPx), screenPx, insetPx) - leftInRootPx)
                 .coerceAtLeast(0f)
 
         Text(
@@ -931,35 +931,37 @@ private fun DrawScope.drawRegister(
 ) {
     if (value.isEmpty() || cellHeightPx <= 0f) return
 
-    // Anything the font has no glyph for would silently draw nothing, which would
-    // look like a rendering bug rather than a missing character. Show a '-' so a
-    // gap in the glyph table is visible.
-    var drawable = value.map { if (Hp01Font.maskFor(it) != null) it else '-' }.joinToString("")
+    // Anything the font has no glyph for draws as a blank cell inside the text
+    // helper, so a gap in the glyph table is visible rather than silently
+    // swallowed. Radix and comma are legal without glyph entries of their own:
+    // they merge into the preceding cell's DP/COMMA element.
+    var drawable = value
 
     // Separators are added after the cell count is worked out, so a grouped value
     // can be a little wider than the row. Drop from the left - the display is
     // right-aligned, so that is the end that would run off the screen anyway.
     while (drawable.isNotEmpty() &&
-        Hp01Font.measureWidth(drawable, cellHeightPx, advanceUnits, Hp01Font.PUNCTUATION_ADVANCE, slantDegrees) > widthPx
+        TalkRpnFont.measureWidth(drawable, cellHeightPx, advanceUnits, slantDegrees) > widthPx
     ) {
         drawable = drawable.drop(1)
     }
 
     if (drawable.isEmpty()) return
 
-    val inkWidth = Hp01Font.measureWidth(drawable, cellHeightPx, advanceUnits, Hp01Font.PUNCTUATION_ADVANCE, slantDegrees)
+    val inkWidth = TalkRpnFont.measureWidth(drawable, cellHeightPx, advanceUnits, slantDegrees)
 
-    with(Hp01Font) {
-        drawHp01Text(
+    // Ink rises half a stroke above the cap centreline at extended corners, so
+    // the row is drawn that far down its canvas.
+    val headroomPx = TalkRpnFont.STROKE / 2f / TalkRpnFont.CELL_HEIGHT * cellHeightPx
+
+    with(TalkRpnFont) {
+        drawTalkRpnText(
             text = drawable,
-            origin = Offset(widthPx - inkWidth, 0f),
+            origin = Offset(widthPx - inkWidth, headroomPx),
             cellHeight = cellHeightPx,
             color = color,
-            advance = advanceUnits,
-            punctuationAdvance = Hp01Font.PUNCTUATION_ADVANCE,
-            slantDegrees = slantDegrees,
-            stroke = Hp01Font.STROKE,
-            gFraction = Hp01Font.G_FRACTION
+            pitch = advanceUnits,
+            slantDegrees = slantDegrees
         )
     }
 }
@@ -1025,12 +1027,22 @@ private fun pxToDp(px: Float, density: Float) = (px / density).dp
 /**
  * How far a row's baseline sits above the bottom edge of its own canvas.
  *
- * The canvas is exactly the cell height, and Hp01Font measures its cell to the
- * OUTSIDE of the ink, so the baseline - segment D's centreline - is half a stroke
- * up from the bottom. Scales with the row, hence the argument.
+ * The canvas holds the full ink: half a stroke of headroom, the cap, the
+ * descender, and half a stroke below the descender bar. The baseline - segment
+ * D's centreline - therefore sits the descender depth plus half a stroke above
+ * the bottom. Scales with the row, hence the argument.
  */
 private fun baselineToBottomPx(cellHeightPx: Float) =
-    cellHeightPx * (Hp01Font.STROKE / 2f) / Hp01Font.CELL_HEIGHT
+    cellHeightPx * (TalkRpnFont.TOTAL_HEIGHT - TalkRpnFont.CELL_HEIGHT + TalkRpnFont.STROKE / 2f) /
+        TalkRpnFont.CELL_HEIGHT
+
+/** Ink from the canvas top down to the baseline: headroom plus the cap height. */
+private fun baselineFromTopPx(cellHeightPx: Float) =
+    cellHeightPx * (1f + TalkRpnFont.STROKE / 2f / TalkRpnFont.CELL_HEIGHT)
+
+/** The full ink height of a row's canvas, for chord limits and canvas sizing. */
+private fun inkHeightPx(cellHeightPx: Float) =
+    cellHeightPx * (TalkRpnFont.TOTAL_HEIGHT + TalkRpnFont.STROKE) / TalkRpnFont.CELL_HEIGHT
 
 /**
  * The Column gap that leaves two stacked rows exactly [vpitchPx] apart, baseline
@@ -1048,9 +1060,9 @@ private fun rowGapPx(vpitchPx: Float, abovePx: Float, belowPx: Float) =
  * because that is where the row below is tallest.
  */
 private fun minVpitchPx(smallPx: Float, xPx: Float) = maxOf(
-    baselineToBottomPx(smallPx) + smallPx - baselineToBottomPx(smallPx),
-    baselineToBottomPx(smallPx) + xPx - baselineToBottomPx(xPx),
-    baselineToBottomPx(xPx) + smallPx - baselineToBottomPx(smallPx)
+    baselineToBottomPx(smallPx) + baselineFromTopPx(smallPx),
+    baselineToBottomPx(smallPx) + baselineFromTopPx(xPx),
+    baselineToBottomPx(xPx) + baselineFromTopPx(smallPx)
 )
 
 /**
@@ -1065,7 +1077,7 @@ private fun minVpitchPx(smallPx: Float, xPx: Float) = maxOf(
  *
  * Rounding up costs a pixel of layout and removes the failure mode entirely.
  */
-private fun canvasHeightDp(px: Float, density: Float) = ((ceil(px) + 1f) / density).dp
+private fun canvasHeightDp(px: Float, density: Float) = ((ceil(inkHeightPx(px)) + 1f) / density).dp
 
 
 
