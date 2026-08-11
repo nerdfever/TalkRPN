@@ -17,7 +17,7 @@ $OUT = "$PSScriptRoot\talkrpn_font_reference.pdf"
 
 # ---- geometry, in cell widths (must match TalkRpnFont.kt) -------------------
 #
-# THE UNIT: segment E to segment B/C is 1. Every length below is in that unit,
+# THE UNIT: segment E/F to segment B/C is 1. Every length below is in that unit,
 # horizontally and vertically alike. Each is its value on the working grid the
 # geometry was drawn on - the grid where the cap height was 100 - divided by the
 # cell width there. A pure rescale, so no vertex moves.

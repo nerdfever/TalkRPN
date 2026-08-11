@@ -72,7 +72,7 @@ private val CELL_HEIGHTS_MM = listOf(1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 6
 private const val INITIAL_SIZE_INDEX = 3
 
 /**
- * Stroke widths offered, in cell widths - the unit segment E to segment B/C.
+ * Stroke widths offered, in cell widths - the unit segment E/F to segment B/C.
  *
  * Written as the old cap-height-100 figures over 58.47 so the list is the same
  * one that has been judged on the watch, unrounded. The nominal 0.15888 is the

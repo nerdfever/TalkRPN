@@ -22,7 +22,7 @@ $OUT = "$PSScriptRoot\$OutputName"
 
 # ---- geometry, in cell widths (must match TalkRpnFont.kt) -------------------
 #
-# THE UNIT: segment E to segment B/C is 1. Every figure below is its value on the
+# THE UNIT: segment E/F to segment B/C is 1. Every figure below is its value on the
 # working grid the geometry was drawn on - the grid where the cap height was 100 -
 # divided by the cell width there. A pure rescale, so no vertex moves.
 
@@ -65,20 +65,32 @@ $DP_GAP_FRACTION = ($DP_X - $CELL_WIDTH) / ($PITCH - $CELL_WIDTH)   # 0.33692
 
 $COMMA_TAIL_DROP = 20.76 / $GRID_CELL_WIDTH    # 0.35505
 $COMMA_TAIL_LEFT = 7.65 / $GRID_CELL_WIDTH     # 0.13084
-$COMMA_TAIL_TIP_X = $DP_X - $COMMA_TAIL_LEFT
-$COMMA_TAIL_TIP_Y = $DP_Y + $COMMA_TAIL_DROP
+$COMMA_TAIL_TIP_X = $DP_X - $COMMA_TAIL_LEFT   # 1.35095
+$COMMA_TAIL_TIP_Y = $DP_Y + $COMMA_TAIL_DROP   # 2.39165
+
+# COL2_TAIL is the same tail hung off the lower colon dot instead, which is what
+# turns a colon into a semicolon.
+$COL2_TAIL_TIP_X = $X_MID - $COMMA_TAIL_LEFT   # 0.36916
+$COL2_TAIL_TIP_Y = $COL2_Y + $COMMA_TAIL_DROP  # 1.73353
 
 # ---- page ------------------------------------------------------------------
 
 # Px per cell width. Was 5.2 per unit when a unit was a hundredth of the cap height.
 $SCALE    = 5.2 * $GRID_CELL_WIDTH             # 304.044
 $ORIGIN_X = 330.0
-$ORIGIN_Y = 190.0
-$CANVAS_W = 1330
 
-# Height depends on what is on the sheet. The listing runs to about fifty lines
-# at 15 px each; the drawing ends near y = 1460.
-$DRAWING_BOTTOM = 1500
+# Below the header block, which explains what this is before it draws anything.
+$ORIGIN_Y = 290.0
+$CANVAS_W = 1460
+
+# Where the header starts and how tall a line of it is - the drawing and the
+# listing both have to clear it, so it is stated once.
+$HEADER_TOP = 56
+$HEADER_LINE_H = 16
+
+# Height depends on what is on the sheet. The drawing ends below the horizontal
+# dimension stack; the listing runs to about seventy lines.
+$DRAWING_BOTTOM = 1380
 $LISTING_LINE_H = 15
 $LISTING_LINES = 72
 
@@ -230,52 +242,100 @@ foreach ($s in $SEGMENTS) {
 
 # ---- dimensions ------------------------------------------------------------
 
-function Dim($x1, $y1, $x2, $y2, $text, $tdx, $tdy) {
-    $a = P $x1 $y1
-    $b = P $x2 $y2
-    $g.DrawLine($dimPen, $a, $b)
-    $g.DrawString($text, $noteFont, $dimBrush, (($a.X + $b.X) / 2 + $tdx), (($a.Y + $b.Y) / 2 + $tdy))
+function Dim($x1, $y1, $x2, $y2) {
+    $g.DrawLine($dimPen, (P $x1 $y1), (P $x2 $y2))
 }
-
-# How far the first dimension line stands off the cell, and how far apart the
-# stacked ones are. In cell widths, like everything else on the drawing.
-$DIM_GAP  = 12.0 / $GRID_CELL_WIDTH    # 0.20523
-$DIM_STEP = 14.0 / $GRID_CELL_WIDTH    # 0.23944
 
 # Every label's number is formatted FROM the value it points at, so a dimension
 # can never end up quoting a figure the drawing no longer uses.
 function DimLabel($value, $what) { "{0:F3}  {1}" -f $value, $what }
 
-# Verticals, stacked out to the right of the cell.
-$vx = $X_RIGHT + $DIM_GAP
-Dim $vx $Y_TOP $vx $Y_MID  (DimLabel $Y_MID "") 6 -8
-$vx += $DIM_STEP
-Dim $vx $Y_TOP $vx $Y_BASE (DimLabel $Y_BASE "baseline") 6 -8
-$vx += $DIM_STEP
-Dim $vx $Y_TOP $vx $Y_DESC (DimLabel $Y_DESC "descender") 6 -8
-$vx += $DIM_STEP
-Dim $vx $Y_TOP $vx $COL1_Y (DimLabel $COL1_Y "COL1") 6 -8
-$vx += $DIM_STEP
-Dim $vx $Y_TOP $vx $COL2_Y (DimLabel $COL2_Y "COL2") 6 -8
+# How far the first dimension line stands off the drawing, and how far apart the
+# stacked ones are. In cell widths, like everything else here.
+#
+# The stack is tight because the labels are NOT on it: each label sits beside the
+# END of its own line, at the very coordinate it calls out. With ten dimensions
+# that is the difference between a readable sheet and ten labels in one band.
+$DIM_GAP  = 0.20
+$DIM_STEP = 0.10
 
-# Horizontals, stacked below.
+# ---- verticals: every y worth naming, in top-to-bottom order ----------------
+#
+# Stacked out to the right of EVERYTHING, decimal point included, so no dimension
+# line is drawn across a segment or a dot.
+#
+# DY nudges a label off its natural spot, needed only where two dimensions land
+# within a line's height of each other.
+
+$VERTICALS = @(
+    @{ Y = $Y_F_TOP;          What = "F1 top, where A3 lands" }
+    @{ Y = $COL1_Y;           What = "COL1 dot" }
+    @{ Y = $Y_MID;            What = "middle bar" }
+    @{ Y = $COL2_Y;           What = "COL2 dot" }
+    @{ Y = $Y_E_BOTTOM;       What = "E1 bottom, where D3 leaves" }
+    @{ Y = $Y_BASE;           What = "baseline";           DY = -20 }
+    @{ Y = $COL2_TAIL_TIP_Y;  What = "COL2_TAIL bottom";   DY = 2 }
+    @{ Y = $DP_Y;             What = "DP and COMMA dot" }
+    @{ Y = $COMMA_TAIL_TIP_Y; What = "COMMA tail bottom";  DY = -20 }
+    @{ Y = $Y_DESC;           What = "descender bar, N and O" }
+)
+
+# Far enough right to clear the decimal point, which is the rightmost ink.
+$VERTICAL_STACK_LEFT = $DP_X + $DIM_GAP
+
+# Labels go in one column past the WHOLE stack, not beside their own line. Put
+# each beside its own line and the leftmost label is printed across the nine
+# lines to its right, which is what the first draft did.
+$VERTICAL_LABEL_X = $VERTICAL_STACK_LEFT + $VERTICALS.Count * $DIM_STEP
+
+$vx = $VERTICAL_STACK_LEFT
+
+foreach ($d in $VERTICALS) {
+
+    Dim $vx $Y_TOP $vx $d.Y
+
+    $end = P $VERTICAL_LABEL_X $d.Y
+    $dy = if ($d.ContainsKey("DY")) { $d.DY } else { -8 }
+
+    $g.DrawString((DimLabel $d.Y $d.What), $noteFont, $dimBrush, $end.X, ($end.Y + $dy))
+
+    $vx += $DIM_STEP
+}
+
+# ---- horizontals: every x worth naming, left-to-right ------------------------
+#
+# Each gets its own row below the drawing, so the labels can sit at the end of
+# their own line without any chance of collision.
+
+$HORIZONTALS = @(
+    @{ X = $X_N_LEFT;         What = "segment N, left end" }
+    @{ X = $X_HOOK_START;     What = "hook radius, and where each bar's straight run ends" }
+    @{ X = $COL2_TAIL_TIP_X;  What = "COL2_TAIL left end" }
+    @{ X = $X_MID;            What = "centre axis" }
+    @{ X = $X_HOOK_END_R;     What = "RPAR, where its arcs turn" }
+    @{ X = $X_O_RIGHT;        What = "segment O, right end" }
+    @{ X = $X_RIGHT;          What = "cell width, the unit" }
+    @{ X = $COMMA_TAIL_TIP_X; What = "COMMA tail left end" }
+    @{ X = $DP_X;             What = "DP and COMMA axis" }
+)
+
 $hy = $Y_DESC + $DIM_STEP
-Dim $X_LEFT $hy $X_RIGHT $hy (DimLabel $X_RIGHT "cell width") -40 6
-$hy += $DIM_STEP
-Dim $X_LEFT $hy $X_MID $hy (DimLabel $X_MID "centre axis") -50 6
-$hy += $DIM_STEP
-Dim $X_LEFT $hy $X_HOOK_START $hy (DimLabel $HOOK_R "hook R") -30 6
-$hy += $DIM_STEP
-Dim $X_LEFT $hy $X_N_LEFT $hy (DimLabel $X_N_LEFT "N left") -20 6
-$hy += $DIM_STEP
-Dim $X_LEFT $hy $X_O_RIGHT $hy (DimLabel $X_O_RIGHT "O right") -40 6
-$hy += $DIM_STEP
-Dim $X_LEFT $hy $DP_X $hy (DimLabel $DP_X "DP axis") -40 6
 
-# Guides from the cell out to the dimension stacks.
-foreach ($y in @($Y_MID, $Y_BASE, $Y_DESC, $COL1_Y, $COL2_Y)) {
-    $a = P $X_LEFT $y
-    $b = P ($X_RIGHT + $DIM_GAP + 4 * $DIM_STEP) $y
+foreach ($d in $HORIZONTALS) {
+
+    Dim $X_LEFT $hy $d.X $hy
+
+    $end = P $d.X $hy
+    $g.DrawString((DimLabel $d.X $d.What), $noteFont, $dimBrush, ($end.X + 8), ($end.Y - 9))
+
+    $hy += $DIM_STEP
+}
+
+# Guides from the drawing out to the vertical stack, so each dimension line can be
+# traced back to the feature it measures.
+foreach ($d in $VERTICALS) {
+    $a = P $X_LEFT $d.Y
+    $b = P $VERTICAL_LABEL_X $d.Y
     $g.DrawLine($guidePen, $a, $b)
 }
 }
@@ -284,23 +344,36 @@ foreach ($y in @($Y_MID, $Y_BASE, $Y_DESC, $COL1_Y, $COL2_Y)) {
 $g.DrawString("TalkRPN cell - centreline skeleton", $titleFont, $black, 24, 22)
 
 $header = @(
-    "No stroke width, no slant. Origin is the top-left centreline corner; x right, y down.",
-    "THE UNIT: segment E to segment B/C is 1. The old cap-height-100 grid divided by its 58.47 cell width - a pure rescale, so the centre axis is exactly 0.5.",
-    "28 bars + COL1 + COL2 + DP + COMMA = 32 elements; mask is a Long.  Blue: A3/D3 are ALTERNATIVES to A4/D4; RPAR is the whole right paren.",
-    "Segments meet flush - no gaps, unlike the DL-3422. TalkRpnFont.kt is the source of truth."
+    "Inspired by the HP-01 (1977) and the Litronix DL-3422, and identical to neither. The HP-01's look - hooked corners, the slant, the proportions -",
+    "carried onto roughly the DL-3422's segment count, so the display can show letters as well as digits. Departures from both are deliberate: the",
+    "corners hook where the DL-3422's are square, the segments meet flush where a real part leaves gaps, the decimal point sits between cells rather",
+    "than taking one of its own, and there are elements here that neither part had. It is a period style, not a reproduction of any real component.",
+    "",
+    "THE UNIT: segment E/F to segment B/C is 1 - the left column to the right column, centre to centre. Every length here is in that unit, across and",
+    "down alike, so the centre axis is exactly 0.5 and pitch minus 1 is the clearance between neighbouring cells.",
+    "",
+    "No stroke width, no slant: these are centrelines, and both are applied at render time. Origin is the top-left centreline corner; x right, y down.",
+    "28 bars + COL1 + COL2 + DP + COMMA = 32 elements; the mask is a Long.  Blue: A3/D3 are ALTERNATIVES to A4/D4; RPAR is the whole right paren.",
+    "TalkRpnFont.kt is the source of truth - this sheet mirrors it."
 )
 
-$y = 56
+$y = $HEADER_TOP
 foreach ($line in $header) {
     $g.DrawString($line, $noteFont, $greyBrush, 24, $y)
-    $y += 16
+    $y += $HEADER_LINE_H
 }
+
+# Where the header actually ended, so anything below it clears it by measurement
+# rather than by a guess that goes stale the next time a line is added.
+$headerBottom = $y + $HEADER_LINE_H
 
 # ---- printed listing -------------------------------------------------------
 
-# The listing starts a cap height below the drawing's descender bar - enough to
-# clear the horizontal dimension stack.
-$textTop = if ($Section -eq "listing") { 140 } else { $ORIGIN_Y + ($Y_DESC + $CELL_HEIGHT) * $SCALE }
+# On its own sheet the listing sits just under the header; sharing a sheet with
+# the drawing it has to clear the horizontal dimension stack as well.
+$textTop =
+    if ($Section -eq "listing") { $headerBottom }
+    else { $ORIGIN_Y + ($Y_DESC + $HORIZONTALS.Count * $DIM_STEP + $DIM_STEP) * $SCALE }
 
 $lines = @()
 $lines += "SEGMENT CENTRELINES              from                 to"
@@ -340,8 +413,10 @@ $lines += "RELATIONSHIPS"
 $lines += "  hook radius = hook start x = {0:F3}, so each arc is tangent to both bar and column" -f $HOOK_R
 $lines += "  F1 top = {0:F3} = where A3 lands.  E1 bottom = {1:F3} = where D3 lands." -f $Y_F_TOP, $Y_E_BOTTOM
 $lines += "  F2 and E2 are the stubs that carry the left column out to the corner when it is square."
-$lines += "  B = C = {0:F3}: the right column is undivided at the corners, which is what makes a 4 lopsided." -f $Y_MID
+$lines += "  B meets C at y = {0:F3}: the right column is undivided at the corners, which is what makes a 4 lopsided." -f $Y_MID
 $lines += "  N and O are inset {0:F4} and {1:F4} from the columns - symmetric to within measurement." -f $X_N_LEFT, ($CELL_WIDTH - $X_O_RIGHT)
+$lines += "  COL2_TAIL and the COMMA tail are the SAME tail, {0:F3} down and {1:F3} left, hung off two different dots." -f $COMMA_TAIL_DROP, $COMMA_TAIL_LEFT
+$lines += "  That is what makes a semicolon a colon whose lower dot grew a tail, at no cost in new geometry."
 $lines += ""
 $lines += "THE THREE LEFT-COLUMN ENDINGS"
 $lines += "  square   A4 + F2      most letters"

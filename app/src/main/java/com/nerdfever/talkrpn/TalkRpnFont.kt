@@ -28,7 +28,7 @@ import kotlin.math.tan
  * time, so a segment is a zero-width hairline until it is drawn. Origin is the
  * top-left centreline corner; x runs right, y runs down.
  *
- * THE UNIT: segment E to segment B/C is exactly 1. That is the left column's
+ * THE UNIT: segment E/F to segment B/C is exactly 1. That is the left column's
  * centreline to the right column's - the cell width, measured where the ink's
  * middle is, not where its edge is. Every length in this font and in everything
  * that lays it out - pitch, vpitch, stroke, the lot - is in that one unit,
@@ -117,7 +117,7 @@ object TalkRpnFont {
     private const val GRID_CELL_WIDTH = 58.47f
 
     /**
-     * Segment E to segment B/C - the left column to the right column, centre to
+     * Segment E/F to segment B/C - the left column to the right column, centre to
      * centre. This is the unit's definition, so it is 1 by construction and must
      * never be anything else.
      */
@@ -127,9 +127,9 @@ object TalkRpnFont {
      * How many of this font's own coordinates make one display unit.
      *
      * Trivially 1 here, because this font defines the unit. It exists so layout
-     * code can be written against any font's E-to-B/C span rather than against
+     * code can be written against any font's E/F-to-B/C span rather than against
      * its cell width - the two are NOT the same in Hp01Font, whose coordinates
-     * are ink-box based and whose E-to-B/C span is 53.5 of its own 62.
+     * are ink-box based and whose E/F-to-B/C span is 53.5 of its own 62.
      */
     const val UNIT_SPAN = CELL_WIDTH
 

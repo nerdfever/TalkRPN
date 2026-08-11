@@ -104,6 +104,36 @@ stay visibly "open" to the user — the earlier red/green signalling problem, wh
 the indicator flipped to red a few milliseconds after the user had already started
 talking, no longer arises.
 
+### Restarting is bounded: backoff, then give up
+
+Continuous listening restarts the recognizer after every result, because the
+platform one stops dead each time. That restart had a fixed 80 ms delay and no
+limit, which is fine while the recognizer works and pathological when it does
+not: on the emulator, which has no recognition service installed, every attempt
+failed instantly and was retried immediately — **hundreds per second**, enough
+that the process could not draw its own window. The first symptom was a *font*
+screen refusing to appear.
+
+Two bounds now:
+
+- **Backoff.** The delay doubles per consecutive immediate failure, capped at
+  30 s, and drops back to 80 ms the moment a session runs for a sensible length
+  of time. An isolated hiccup costs nothing.
+- **Give up** after 8 consecutive immediate failures — about 20 s with the
+  doubling. Long enough to ride out a recognition service restarting or a locale
+  pack installing; short enough that a broken device stops burning battery.
+  `start()` clears the count, so asking again overrules the give-up.
+
+**The trigger is elapsed time, not the error code.** The failure that prompted
+this arrives as an ordinary `ERROR_CLIENT`, indistinguishable from faults worth
+retrying — while `ERROR_NO_MATCH` and `ERROR_SPEECH_TIMEOUT`, which *are* the
+normal outcome of a pause, must not count. What separates them is that a healthy
+silent session lasts seconds and a refused one returns in milliseconds. So the
+test is "did this attempt survive 400 ms without hearing anything", which catches
+the whole class rather than the one code that happened to show up.
+
+---
+
 ---
 
 ## Cloud recognition: not now, and the reason is measurement not principle
@@ -706,7 +736,7 @@ in ascending order of how much they depart from the original font.
 `TalkRpnGlyphs.kt` maps all 95 printable ASCII characters onto it, derived from
 Litronix's published set and then corrected glyph by glyph against it.
 
-### Units: segment E to segment B/C is 1
+### Units: segment E/F to segment B/C is 1
 
 One unit, used for everything, horizontally and vertically alike. It is the left
 column's centreline to the right column's — the cell width, measured where the
@@ -756,7 +786,7 @@ reads. Making the pitch uniform means the gaps now differ, which is the way roun
 that looks even.
 
 **`Hp01Font` does not share the unit.** Its coordinates are the *outer* ink box,
-so its E-to-B/C span is 53.5 of its own 62 — a length copied between the two
+so its E/F-to-B/C span is 53.5 of its own 62 — a length copied between the two
 fonts unchanged is wrong. Both fonts now declare `UNIT_SPAN`, and layout code
 scales by it rather than assuming.
 

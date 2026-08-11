@@ -97,7 +97,7 @@ private const val HEIGHT_FRACTION_MIN = 0.03f
 private const val HEIGHT_FRACTION_MAX = 0.25f
 
 /**
- * THE UNIT for both pitches below: segment E to segment B/C - the cell width -
+ * THE UNIT for both pitches below: segment E/F to segment B/C - the cell width -
  * is 1.
  *
  * TalkRpnFont's header defines it; this is the same unit, used horizontally and
@@ -106,7 +106,7 @@ private const val HEIGHT_FRACTION_MAX = 0.25f
  * clearance between neighbours.
  *
  * The font actually being drawn does not have to agree, and Hp01Font does not:
- * its coordinates are the OUTER ink box, whose E-to-B/C span is 53.5 of its own
+ * its coordinates are the OUTER ink box, whose E/F-to-B/C span is 53.5 of its own
  * 62. Hp01Font.UNIT_SPAN states that and [fontUnitsPerUnit] converts, so the
  * figures below mean the same thing whichever font ends up on the screen.
  *

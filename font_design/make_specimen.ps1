@@ -22,7 +22,7 @@ foreach ($e in $GLYPHS) { $MAP[[char]$e.C] = $e.S }
 
 # ---- what this renderer adds to the borrowed geometry ------------------------
 #
-# EVERY length here is in cell widths: segment E to segment B/C is 1, and that
+# EVERY length here is in cell widths: segment E/F to segment B/C is 1, and that
 # same unit measures pitch and vpitch, horizontally and vertically alike. The one
 # exception is $SCALE, which is the px-per-unit conversion, and it says so.
 #

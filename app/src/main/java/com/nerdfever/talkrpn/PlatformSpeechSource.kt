@@ -40,6 +40,34 @@ const val TRIAL_LANGUAGE_TAG = "en-US"
 private const val RESTART_DELAY_MS = 80L
 
 /**
+ * A session that ends sooner than this, without having heard anything, did not
+ * really run at all.
+ *
+ * The discriminator for a recognizer that is refusing rather than idling. A
+ * healthy silent session lasts seconds - it waits out the speech timeout before
+ * reporting ERROR_NO_MATCH - so nothing legitimate comes back this fast.
+ *
+ * Error codes are deliberately NOT used for this. The failure that prompted it -
+ * no recognition service installed, seen on the emulator - arrives as an ordinary
+ * ERROR_CLIENT, indistinguishable from faults worth retrying. How long the
+ * attempt survived tells you what the code does not.
+ */
+private const val FAST_FAILURE_MS = 400L
+
+/** How fast the restart delay grows while it keeps failing, and its ceiling. */
+private const val BACKOFF_FACTOR = 2
+private const val RESTART_DELAY_MAX_MS = 30_000L
+
+/**
+ * Consecutive immediate failures before continuous listening gives up.
+ *
+ * Eight, which with the doubling above spans about twenty seconds - long enough
+ * to ride out a recognition service restarting or a locale pack installing, short
+ * enough that a genuinely broken device stops burning battery promptly.
+ */
+private const val FAST_FAILURE_GIVE_UP = 8
+
+/**
  * Silence that ends one segment, in milliseconds.
  *
  * Only a boundary between results — not the end of listening — so it can be short
@@ -178,6 +206,18 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
     private var startedAt = 0L
     private var speechEndedAt = 0L
 
+    /**
+     * When the current utterance's recognizer was started.
+     *
+     * Separate from [startedAt], which is rebased mid-utterance so that partial
+     * timings stay comparable. This one is not, because it answers a different
+     * question: how long did this attempt survive?
+     */
+    private var utteranceStartedAt = 0L
+
+    /** Consecutive sessions that died at once without hearing anything. */
+    private var fastFailures = 0
+
     override fun start() {
 
         // One microphone for the whole session, opened before the first recognizer
@@ -190,6 +230,10 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
         committedTokens = emptyList()
         inFlightTokens = emptyList()
         partialUpdates = 0
+
+        // Asking again is the user overruling an earlier give-up, so the count that
+        // produced it starts over.
+        fastFailures = 0
 
         beginUtterance()
     }
@@ -214,6 +258,7 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
         state = TrialState.Starting
 
         startedAt = SystemClock.elapsedRealtime()
+        utteranceStartedAt = startedAt
         speechEndedAt = 0L
         speechDetected = false
 
@@ -538,7 +583,53 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
 
         if (!continuous) return
 
-        mainHandler.postDelayed({ if (continuous) beginUtterance() }, RESTART_DELAY_MS)
+        // Did this attempt actually run, or did it die on the doorstep?
+        val elapsed = SystemClock.elapsedRealtime() - utteranceStartedAt
+        val diedImmediately = elapsed < FAST_FAILURE_MS && !speechDetected
+
+        if (diedImmediately) fastFailures += 1 else fastFailures = 0
+
+        // Give up rather than retry for ever. Whatever is wrong will not be fixed by
+        // asking again, and an invisible retry loop is worse than a visible failure:
+        // on the emulator, with no recognition service installed, this span ran
+        // hundreds of attempts a second and left the process too busy to draw its own
+        // window. On a watch it would be a flat battery by lunchtime.
+        if (fastFailures >= FAST_FAILURE_GIVE_UP) {
+
+            continuous = false
+            state = TrialState.Failed
+            message = "Recognizer failed $fastFailures times immediately - stopped trying"
+
+            Log.w(LOG_TAG, "platform: gave up after $fastFailures immediate failures")
+            return
+        }
+
+        val delay = restartDelayMs()
+
+        if (diedImmediately) {
+            Log.d(LOG_TAG, "platform: died in $elapsed ms (#$fastFailures), next try in $delay ms")
+        }
+
+        mainHandler.postDelayed({ if (continuous) beginUtterance() }, delay)
+    }
+
+    /**
+     * The normal restart cadence, doubled once per consecutive immediate failure
+     * and capped.
+     *
+     * Returns to the normal cadence the moment a session runs for a sensible
+     * length of time, so an isolated hiccup costs nothing.
+     */
+    private fun restartDelayMs(): Long {
+
+        var delay = RESTART_DELAY_MS
+
+        repeat(fastFailures) {
+            delay *= BACKOFF_FACTOR
+            if (delay >= RESTART_DELAY_MAX_MS) return RESTART_DELAY_MAX_MS
+        }
+
+        return delay
     }
 
     override fun onEvent(eventType: Int, params: Bundle?) {

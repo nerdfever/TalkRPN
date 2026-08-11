@@ -60,10 +60,10 @@ object Hp01Font {
     //
     // CAREFUL: these are OUTER ink dimensions - edge of segment to edge of
     // segment - so they carry a STROKE/2 at each end. TalkRpnFont's coordinates
-    // are CENTRELINES, and its unit is the E-to-B/C span rather than the cell
+    // are CENTRELINES, and its unit is the E/F-to-B/C span rather than the cell
     // box. A length copied between the two fonts unchanged will be wrong.
     //
-    // Anything that lays out either font should work in E-to-B/C units and scale
+    // Anything that lays out either font should work in E/F-to-B/C units and scale
     // by UNIT_SPAN, which states the difference rather than hiding it.
 
     const val CELL_HEIGHT = 100f
@@ -71,7 +71,7 @@ object Hp01Font {
     const val STROKE = 8.5f
 
     /**
-     * How many of this font's cell units span segment E to segment B/C - the
+     * How many of this font's cell units span segment E/F to segment B/C - the
      * display's unit of length.
      *
      * The 62-wide box less a half-stroke at each side, which is the HP-01's own
