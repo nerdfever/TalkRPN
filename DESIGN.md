@@ -891,17 +891,17 @@ consequences, both now in the font:
   than a bar, which is what a fixed nib does. Curves keep a perpendicular
   thickness — they turn a bar into a column, and a fixed nib would pinch them to
   nothing at one end.
-- **Axis-aligned bars extend half a stroke at any end lying on the cell's outer
-  boundary; diagonals and curves never extend; nothing else is added.** Third
-  design, and the one that holds. The extension is what the old square cap did,
-  and it is what makes both ticks of `"` the same height — one ends at a corner,
-  the other mid-edge, but both are ON the boundary so both reach the ink box.
-  Interior ends stay flat, so a bar never pokes past its corner hook. Diagonals
-  get nothing anywhere: a lone tip is a flat die, as on the real part, and at a
-  shared corner it tucks under the bar and column ink. The two rejected designs
-  each failed one way — extending diagonals overshot the vertex (the stub at
-  `M`'s apex); patching corners regardless of shape put a square nub on every
-  lone diagonal tip and made the `"` ticks unequal.
+- **The end rule, fourth design and counting:** bars extend half a stroke at
+  *every* end except the four hook handovers; diagonal tips on the cell's outer
+  edge are extruded vertically to the ink box; curves get nothing. Each clause
+  earned its place by a failure: (1) extending diagonals along their own
+  direction overshot the vertex — the stub at `M`'s apex. (2) A square patch at
+  cell corners put a nub on every lone diagonal tip and made the ticks of `"`
+  unequal. (3) Extending bars *only* at the outer boundary notched every
+  interior L-turn — the shoulders of `h`, `a`, `?` and most of lower case — and
+  left `V`/`W`'s vees half a stroke short of the columns beside them. The
+  square cap the font started with had clauses 1 and 3 right all along; what it
+  got wrong was only rotating with the pen and bumping the hooks.
 
 ### What colour were they, really?
 

@@ -80,22 +80,30 @@ function Add-Wound($path, $pts) {
 
 # A straight segment, as the parallelogram a fixed nib sweeps.
 #
-# END RULE, the third attempt and the one that holds:
+# END RULE, fourth design. The one-line version:
 #
-#   Axis-aligned bars extend half a stroke at any end lying on the cell's outer
-#   boundary; diagonals and curves never extend; nothing else is added.
+#   Bars extend half a stroke at every end except the hook handovers; diagonal
+#   tips on the cell's outer edge are extruded vertically to the ink box;
+#   curves get nothing.
 #
-# The extension is what the old square cap did, and it is what makes both ticks
-# of a double quote the same height: the left tick's column ends at a corner and
-# the right tick's P ends mid-edge, but both ends are ON the boundary, so both
-# reach the ink box. Interior ends stay flat - a bar handing over to its corner
-# hook must not poke past the arc.
+# Why each clause is there:
 #
-# Diagonals get nothing anywhere. A lone diagonal tip is a flat die, exactly as
-# on a real DL-3422, and at a shared corner it tucks underneath the bar and
-# column ink that formed the corner. The two rejected designs both failed here:
-# extending diagonals overshot the vertex (the stub at M's apex), and patching
-# corners regardless of shape put a square nub on every lone diagonal tip.
+#   Bars extend EVERYWHERE, not just at the outer boundary, because an interior
+#   L-turn - the G bar turning into a stem at the x-height line, as in h, a, ?
+#   and most of lower case - is notched at its outside corner when neither piece
+#   extends. Extended, the two overshoots land exactly flush with each other's
+#   ink edges: the notch fills and nothing pokes out. At colinear joints the
+#   overshoot is buried. This is the old square cap, which got this right.
+#
+#   EXCEPT at the four hook handovers, where the bar meets an arc mid-run: an
+#   extension there pokes past the arc's outer edge and puts a bump on the hook.
+#
+#   Diagonal tips landing on the top edge, baseline or descender line are
+#   extruded VERTICALLY - the flat end face pushed out to the ink box - so a V's
+#   foot and a W's vees reach the same line the columns do, instead of stopping
+#   half a stroke short. Not extended along their own direction: that is the
+#   overshoot that put a stub through M's apex. Interior diagonal ends still get
+#   nothing, which is what keeps that apex a clean butt joint.
 function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
 
     $half = $w / 2.0
@@ -110,30 +118,55 @@ function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
     $isHorizontal = [Math]::Abs($y2 - $y1) -lt $e
     $isVertical = [Math]::Abs($x2 - $x1) -lt $e
 
-    # Which boundary counts depends on the bar's own axis: a horizontal bar can
-    # only reach the cell sideways, a vertical one only up or down.
-    function Test-OuterEnd($x, $y) {
-        if ($isHorizontal) {
-            return ([Math]::Abs($x) -lt $e) -or ([Math]::Abs($x - $CELL_WIDTH) -lt $e)
-        }
-        if ($isVertical) {
-            return ([Math]::Abs($y) -lt $e) -or ([Math]::Abs($y - $CELL_HEIGHT) -lt $e) -or
-                   ([Math]::Abs($y - $TOTAL_HEIGHT) -lt $e)
-        }
-        return $false
+    # The four points where a bar hands over to a corner arc. An extension here
+    # pokes past the arc's outer edge; the seam overlap alone joins them.
+    function Test-HookPoint($x, $y) {
+        return (([Math]::Abs($x - $HOOK_R) -lt $e) -and ([Math]::Abs($y) -lt $e)) -or
+               (([Math]::Abs($x) -lt $e) -and ([Math]::Abs($y - $Y_F_TOP) -lt $e)) -or
+               (([Math]::Abs($x) -lt $e) -and ([Math]::Abs($y - $Y_E_BOT) -lt $e)) -or
+               (([Math]::Abs($x - $HOOK_R) -lt $e) -and ([Math]::Abs($y - $CELL_HEIGHT) -lt $e))
     }
 
-    # Each end separately: the boundary end of a bar extends outward along the
-    # bar; every end also takes the hair of seam overlap, so abutting polygons
-    # overlap instead of leaving a sub-pixel antialiasing gap.
-    $ext1 = $SEAM_OVERLAP
-    if (Test-OuterEnd $x1 $y1) { $ext1 += $half }
+    if ($isHorizontal -or $isVertical) {
 
-    $ext2 = $SEAM_OVERLAP
-    if (Test-OuterEnd $x2 $y2) { $ext2 += $half }
+        $ext1 = $SEAM_OVERLAP
+        if (-not (Test-HookPoint $x1 $y1)) { $ext1 += $half }
 
-    $x1 = $x1 - $ux * $ext1;  $y1 = $y1 - $uy * $ext1
-    $x2 = $x2 + $ux * $ext2;  $y2 = $y2 + $uy * $ext2
+        $ext2 = $SEAM_OVERLAP
+        if (-not (Test-HookPoint $x2 $y2)) { $ext2 += $half }
+
+        $x1 = $x1 - $ux * $ext1;  $y1 = $y1 - $uy * $ext1
+        $x2 = $x2 + $ux * $ext2;  $y2 = $y2 + $uy * $ext2
+    }
+    else {
+        # Diagonals and tails: seam overlap only, along the run...
+        $x1 = $x1 - $ux * $SEAM_OVERLAP;  $y1 = $y1 - $uy * $SEAM_OVERLAP
+        $x2 = $x2 + $ux * $SEAM_OVERLAP;  $y2 = $y2 + $uy * $SEAM_OVERLAP
+
+        # ...plus the vertical extrusion at outer-edge tips. The rectangle runs
+        # from just inside the tip to half a stroke past the boundary, the same
+        # x-span as the tip's flat face.
+        foreach ($end in @(@($x1, $y1), @($x2, $y2))) {
+
+            $tx = $end[0]; $ty = $end[1]
+
+            $outTop = [Math]::Abs($ty) -lt 0.01
+            $outBase = [Math]::Abs($ty - $CELL_HEIGHT) -lt 0.01
+            $outDesc = [Math]::Abs($ty - $TOTAL_HEIGHT) -lt 0.01
+
+            if ($outTop) { $yFrom = -$half; $yTo = $SEAM_OVERLAP }
+            elseif ($outBase -or $outDesc) { $yFrom = $ty - $SEAM_OVERLAP; $yTo = $ty + $half }
+            else { continue }
+
+            $pts = @(
+                (New-Object System.Drawing.PointF ([float]($tx - $half), [float]$yFrom))
+                (New-Object System.Drawing.PointF ([float]($tx + $half), [float]$yFrom))
+                (New-Object System.Drawing.PointF ([float]($tx + $half), [float]$yTo))
+                (New-Object System.Drawing.PointF ([float]($tx - $half), [float]$yTo))
+            )
+            Add-Wound $path $pts
+        }
+    }
 
     # Which way does the nib point? Across the segment's dominant axis, so a
     # horizontal bar gets height and everything else gets width.

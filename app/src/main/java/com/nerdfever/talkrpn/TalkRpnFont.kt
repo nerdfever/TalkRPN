@@ -570,23 +570,32 @@ object TalkRpnFont {
     /**
      * Add one straight segment, as the parallelogram a fixed nib sweeps.
      *
-     * END RULE, the third attempt and the one that holds:
+     * END RULE, fourth design. The one-line version:
      *
-     *   Axis-aligned bars extend half a stroke at any end lying on the cell's
-     *   outer boundary; diagonals and curves never extend; nothing else is added.
+     *   Bars extend half a stroke at every end except the hook handovers;
+     *   diagonal tips on the cell's outer edge are extruded vertically to the
+     *   ink box; curves get nothing.
      *
-     * The extension is what the old square cap did, and it is what makes both
-     * ticks of a double quote the same height: the left tick's column ends at a
-     * corner and the right tick's P ends mid-edge, but both ends are ON the
-     * boundary, so both reach the ink box. Interior ends stay flat - a bar
-     * handing over to its corner hook must not poke past the arc.
+     * Why each clause is there:
      *
-     * Diagonals get nothing anywhere. A lone diagonal tip is a flat die, exactly
-     * as on a real DL-3422, and at a shared corner it tucks underneath the bar
-     * and column ink that formed the corner. The two rejected designs both
-     * failed here: extending diagonals overshot the vertex (the stub at M's
-     * apex), and patching corners regardless of shape put a square nub on every
-     * lone diagonal tip.
+     * Bars extend EVERYWHERE, not just at the outer boundary, because an
+     * interior L-turn - the G bar turning into a stem at the x-height line, as
+     * in h, a, ? and most of lower case - is notched at its outside corner when
+     * neither piece extends. Extended, the two overshoots land exactly flush
+     * with each other's ink edges: the notch fills and nothing pokes out. At
+     * colinear joints the overshoot is buried. This is the old square cap,
+     * which got this right.
+     *
+     * EXCEPT at the four hook handovers, where the bar meets an arc mid-run: an
+     * extension there pokes past the arc's outer edge and puts a bump on the
+     * hook.
+     *
+     * Diagonal tips landing on the top edge, baseline or descender line are
+     * extruded VERTICALLY - the flat end face pushed out to the ink box - so a
+     * V's foot and a W's vees reach the same line the columns do, instead of
+     * stopping half a stroke short. Not extended along their own direction:
+     * that is the overshoot that put a stub through M's apex. Interior diagonal
+     * ends still get nothing, which is what keeps that apex a clean butt joint.
      */
     private fun Path.addBar(x1: Float, y1: Float, x2: Float, y2: Float, w: Float) {
 
@@ -602,22 +611,54 @@ object TalkRpnFont {
         val isHorizontal = abs(y2 - y1) < e
         val isVertical = abs(x2 - x1) < e
 
-        // Which boundary counts depends on the bar's own axis: a horizontal bar
-        // can only reach the cell sideways, a vertical one only up or down.
-        fun outerEnd(x: Float, y: Float): Boolean = when {
-            isHorizontal -> abs(x) < e || abs(x - CELL_WIDTH) < e
-            isVertical -> abs(y) < e || abs(y - CELL_HEIGHT) < e || abs(y - TOTAL_HEIGHT) < e
-            else -> false
+        // The four points where a bar hands over to a corner arc. An extension
+        // here pokes past the arc's outer edge; the seam overlap alone joins them.
+        fun hookPoint(x: Float, y: Float): Boolean =
+            (abs(x - X_HOOK_START) < e && abs(y) < e) ||
+                (abs(x) < e && abs(y - Y_F_TOP) < e) ||
+                (abs(x) < e && abs(y - Y_E_BOTTOM) < e) ||
+                (abs(x - X_HOOK_START) < e && abs(y - CELL_HEIGHT) < e)
+
+        val ax: Float; val ay: Float; val bx: Float; val by: Float
+
+        if (isHorizontal || isVertical) {
+
+            val ext1 = SEAM_OVERLAP + if (hookPoint(x1, y1)) 0f else half
+            val ext2 = SEAM_OVERLAP + if (hookPoint(x2, y2)) 0f else half
+
+            ax = x1 - ux * ext1; ay = y1 - uy * ext1
+            bx = x2 + ux * ext2; by = y2 + uy * ext2
+
+        } else {
+
+            // Diagonals and tails: seam overlap only, along the run...
+            ax = x1 - ux * SEAM_OVERLAP; ay = y1 - uy * SEAM_OVERLAP
+            bx = x2 + ux * SEAM_OVERLAP; by = y2 + uy * SEAM_OVERLAP
+
+            // ...plus the vertical extrusion at outer-edge tips, the same x-span
+            // as the tip's flat face.
+            for ((tx, ty) in arrayOf(x1 to y1, x2 to y2)) {
+
+                val yFrom: Float; val yTo: Float
+
+                when {
+                    abs(ty) < 0.01f -> { yFrom = -half; yTo = SEAM_OVERLAP }
+                    abs(ty - CELL_HEIGHT) < 0.01f || abs(ty - TOTAL_HEIGHT) < 0.01f -> {
+                        yFrom = ty - SEAM_OVERLAP; yTo = ty + half
+                    }
+                    else -> continue
+                }
+
+                addWound(
+                    floatArrayOf(
+                        tx - half, yFrom,
+                        tx + half, yFrom,
+                        tx + half, yTo,
+                        tx - half, yTo
+                    )
+                )
+            }
         }
-
-        // Each end separately: the boundary end of a bar extends outward along
-        // the bar; every end also takes the hair of seam overlap, so abutting
-        // polygons overlap instead of leaving a sub-pixel antialiasing gap.
-        val ext1 = SEAM_OVERLAP + if (outerEnd(x1, y1)) half else 0f
-        val ext2 = SEAM_OVERLAP + if (outerEnd(x2, y2)) half else 0f
-
-        val ax = x1 - ux * ext1; val ay = y1 - uy * ext1
-        val bx = x2 + ux * ext2; val by = y2 + uy * ext2
 
         // The nib points across the segment's dominant axis.
         val dx: Float; val dy: Float
