@@ -81,7 +81,23 @@ $ORIGIN_X = 330.0
 
 # Below the header block, which explains what this is before it draws anything.
 $ORIGIN_Y = 290.0
-$CANVAS_W = 1460
+
+# The drawing needs width for its dimension stacks; the listing is only as wide
+# as its longest line. Sizing them separately matters because each sheet is
+# scaled to fit the page - so a canvas wider than its content shrinks the text
+# for no reason, which is what made the listing render at half the size it could.
+#
+# The listing width is set by its longest line. $noteFont is Consolas 11 POINTS,
+# which at 96 dpi is 14.7 px tall and about 8.1 px per character - so a 108-column
+# line needs ~880 px plus the left inset. Measured by rendering, not assumed:
+# 820 clipped "the whole right paren" off the RPAR row.
+$CANVAS_W_DRAWING = 1460
+$CANVAS_W_LISTING = 960
+
+$CANVAS_W = switch ($Section) {
+    "listing" { $CANVAS_W_LISTING }
+    default   { $CANVAS_W_DRAWING }
+}
 
 # Where the header starts and how tall a line of it is - the drawing and the
 # listing both have to clear it, so it is stated once.
@@ -92,7 +108,7 @@ $HEADER_LINE_H = 16
 # dimension stack; the listing runs to about seventy lines.
 $DRAWING_BOTTOM = 1380
 $LISTING_LINE_H = 15
-$LISTING_LINES = 72
+$LISTING_LINES = 52
 
 $CANVAS_H = switch ($Section) {
     "diagram" { $DRAWING_BOTTOM }
@@ -341,9 +357,16 @@ foreach ($d in $VERTICALS) {
 }
 # ---- headings --------------------------------------------------------------
 
-$g.DrawString("TalkRPN cell - centreline skeleton", $titleFont, $black, 24, 22)
+$title =
+    if ($Section -eq "listing") { "TalkRPN cell - centreline listing" }
+    else { "TalkRPN cell - centreline skeleton" }
 
-$header = @(
+$g.DrawString($title, $titleFont, $black, 24, 22)
+
+# The explanatory block belongs on the drawing only. When the two sections are
+# separate sheets it used to be printed on both, which is just the same three
+# paragraphs read twice.
+$header = if ($Section -eq "listing") { @() } else { @(
     "Inspired by the HP-01 (1977) and the Litronix DL-3422, and identical to neither. The HP-01's look - hooked corners, the slant, the proportions -",
     "carried onto roughly the DL-3422's segment count, so the display can show letters as well as digits. Departures from both are deliberate: the",
     "corners hook where the DL-3422's are square, the segments meet flush where a real part leaves gaps, the decimal point sits between cells rather",
@@ -355,7 +378,7 @@ $header = @(
     "No stroke width, no slant: these are centrelines, and both are applied at render time. Origin is the top-left centreline corner; x right, y down.",
     "28 bars + COL1 + COL2 + DP + COMMA = 32 elements; the mask is a Long.  Blue: A3/D3 are ALTERNATIVES to A4/D4; RPAR is the whole right paren.",
     "TalkRpnFont.kt is the source of truth - this sheet mirrors it."
-)
+) }
 
 $y = $HEADER_TOP
 foreach ($line in $header) {
@@ -422,13 +445,6 @@ $lines += "THE THREE LEFT-COLUMN ENDINGS"
 $lines += "  square   A4 + F2      most letters"
 $lines += "  hooked   A3 + F1      0 2 3 5 7 8 9, A C G O Q S, ( & and @   (F2 dark)"
 $lines += "  short    F1 alone     digit 4, no A at all - left side sits {0:F3} lower than the right" -f $HOOK_R
-$lines += ""
-$lines += "WHY THE LETTER V IS DRAWN SIDEWAYS"
-$lines += "  A textbook V is two arms meeting at the bottom centre. The left arm exists - segment J"
-$lines += "  runs from the left column at the middle down to the bottom centre - but no mirrored"
-$lines += "  segment exists on the right. So the letter V is the left column plus the full slash"
-$lines += "  (segment I into segment L), as on the DL-3422. A mirror of segment J would allow a"
-$lines += "  textbook V and a pointier W."
 
 if ($Section -ne "diagram") {
 $y = $textTop

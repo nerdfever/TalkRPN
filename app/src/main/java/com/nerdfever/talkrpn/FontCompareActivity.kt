@@ -61,7 +61,14 @@ private const val SLANT_DEGREES = 7.5f
 private const val STROKE_CURRENT = 8.5f
 private const val STROKE_MEASURED = 4.26f
 
-private val LED_RED = Color(0xFFE81810)
+/**
+ * The lit-segment colour: the display's reddest red.
+ *
+ * See DisplayTestActivity for why - briefly, the real emitters peak at 655-660 nm,
+ * which is outside every display gamut, and clipping to maximum saturation is the
+ * closest reachable colour by a factor of two in dE2000.
+ */
+private val LED_RED = Color(0xFFFF0000)
 private val LABEL = Color(0xFF8A8A8A)
 private val BACKGROUND = Color(0xFF000000)
 

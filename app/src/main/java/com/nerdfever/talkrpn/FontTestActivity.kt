@@ -84,8 +84,14 @@ private val STROKE_CHOICES =
     listOf(3.0f, 4.0f, 4.65f, 5.5f, 6.5f, 7.5f, 9.29f, 11.0f).map { it / 58.47f }
 private const val INITIAL_STROKE_INDEX = 3
 
-/** Lit colour. */
-private val LED_RED = Color(0xFFE81810)
+/**
+ * The lit-segment colour: the display's reddest red.
+ *
+ * See DisplayTestActivity for why - briefly, the real emitters peak at 655-660 nm,
+ * which is outside every display gamut, and clipping to maximum saturation is the
+ * closest reachable colour by a factor of two in dE2000.
+ */
+private val LED_RED = Color(0xFFFF0000)
 
 /** Unlit segments, drawn faintly in step mode so the cell keeps its shape. */
 private val LED_GHOST = Color(0xFF2A0A08)

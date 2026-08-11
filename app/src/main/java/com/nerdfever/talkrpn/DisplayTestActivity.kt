@@ -182,15 +182,30 @@ private const val SLANT_DEGREES_MAX = 24f
 private const val MIN_STEP_PX = 1f
 
 /**
- * The lit-segment colour.
+ * The lit-segment colour: the display's reddest red, and deliberately so.
  *
- * The HP-01 used GaAsP emitters at roughly 655 nm seen through a deep red filter.
- * Photographs disagree about the hue - filter, camera and age all move it - so this
- * is a plausible reading rather than a measured answer. Two others were tried on
- * screen: 0xFFFF2A10, orange-leaning, how a lit LED tends to photograph, and
- * 0xFFFF3B24, brighter again. This deeper one was chosen; the choice is not final.
+ * These parts are GaAsP, and both datasheets state the peak outright - 655 nm for
+ * HP's 5082-7400 bubble, 660 nm for the Siemens DL-3422. That is x = 0.728,
+ * y = 0.272 in CIE 1931, which is outside EVERY display gamut: sRGB's red primary
+ * falls short by 0.088 in x, Display P3 by 0.048, even Rec.2020 by 0.020.
+ *
+ * So there is no exact match and the question is which reachable colour is
+ * closest. Clipping to maximum saturation gives this, at dE2000 7.8; desaturating
+ * along the constant-dominant-wavelength line gives 0xFFFF0052, at 17.0. The
+ * second is not wrong about the wavelength - it is genuinely 655 nm at 63% purity
+ * - but that line leaves the gamut through the MAGENTA edge, so it lands on pink.
+ *
+ * Do not sample this from a photograph. Camera filters overlap, the red channel
+ * clips almost at once on a lit segment, and the highlight rolls into whatever
+ * green and blue were picking up - which is why photographs of these displays
+ * show a white-pink core. The eye does not do that: its cones overlap too, but
+ * with no hard clip and far more dynamic range, so a bright segment stays
+ * saturated red. Matching a photograph reproduces the camera's failure.
+ *
+ * Free improvement available: this watch's OLED covers P3, so rendering in a
+ * wide-gamut space would move the red primary from x = 0.64 to x = 0.68.
  */
-private val LED_RED = Color(0xFFE81810)
+private val LED_RED = Color(0xFFFF0000)
 
 /** Behind everything. Black costs no power on OLED. */
 private val DISPLAY_BACKGROUND = Color(0xFF000000)

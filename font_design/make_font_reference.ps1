@@ -374,7 +374,7 @@ $g.Clear([System.Drawing.Color]::White)
 
 $g.DrawString("TalkRPN character set", $titleFont, $BLACK, $MARGIN, 8)
 $g.DrawString(
-    "16 per row, code-point order 0x20-0x7E.  Stroke $STROKE, slant $SLANT_DEG deg.  Red = lit, grey = unlit, cyan = cell bounds and baseline.  Orange ? = low confidence: ' f t",
+    ("16 per row, code-point order 0x20-0x7E.  Stroke {0:F3}, slant {1:F1} deg.  Red = lit, grey = unlit, cyan = cell bounds and baseline.  Orange ? = low confidence: ' f t" -f $STROKE, $SLANT_DEG),
     $subFont, $GREY, ($MARGIN + 330), 18)
 
 # The datasheet furniture: a light grid, hex column labels 0-F along the top,
@@ -448,6 +448,12 @@ $charsetPage = $bmp
 
 $geometryPages = @()
 
+# The factor each geometry sheet gets scaled by when placed on the page. Captured
+# because the page number has to be sized against the body text AS PLACED, not as
+# it was drawn - and the two sheets are different widths, so they scale
+# differently.
+$placedScale = @{}
+
 foreach ($name in @("talkrpn_geometry_diagram.png", "talkrpn_geometry_listing.png")) {
 
     $geo = [System.Drawing.Image]::FromFile("$PSScriptRoot\$name")
@@ -461,6 +467,8 @@ foreach ($name in @("talkrpn_geometry_diagram.png", "talkrpn_geometry_listing.pn
     $w = $geo.Width * $scale
     $h = $geo.Height * $scale
     $g.DrawImage($geo, (($PORTRAIT_W - $w) / 2), $MARGIN, $w, $h)
+
+    $placedScale[$name] = $scale
 
     $g.Dispose()
     $geo.Dispose()
@@ -479,6 +487,56 @@ $pages = @(
     @{ Bmp = $geometryPages[1]; WPt = 612; HPt = 792 }
     @{ Bmp = $charsetPage;      WPt = 792; HPt = 612 }
 )
+
+# ---- page numbers ---------------------------------------------------------------
+#
+# "n/m" at the bottom right, one point smaller than the body text. The m is there
+# so a printed copy shows at a glance whether a page is missing.
+#
+# Sizing takes two steps of care.
+#
+# First, GDI+ font sizes are POINTS unless told otherwise, and these scripts are
+# drawing into bitmaps at 96 dpi - so $noteFont's "11" is 14.67 px, not 11. Using
+# 11 here made the page number two thirds the size it should have been.
+#
+# Second, a "point" on the finished page only means anything after the bitmap has
+# been scaled onto it. The body text is drawn at BODY_PT and then placed at that
+# sheet's scale, so on the page it is that product.
+#
+# Which sheet's scale? The listing's. It is the page that carries running body
+# text, the drawing's sheet is mostly artwork, and the two are different widths so
+# they scale differently. One size on every page is the convention worth keeping -
+# a page number that changed size page to page would look like a mistake.
+#
+# Both page sizes work out at the same pixels per point - 1700/612 and 2200/792
+# are both 2.778 - so a single pixel size is correct on all three.
+
+$BODY_PT = 11                   # matches $noteFont in draw_talkrpn_geometry.ps1
+$DPI = 96.0
+$PAGE_NUMBER_INSET = 34         # from the trimmed edge, in page pixels
+
+$pxPerPoint = $PORTRAIT_W / 612.0
+$bodyPxOnPage = $BODY_PT * $DPI / 72.0 * $placedScale["talkrpn_geometry_listing.png"]
+$pageNumberPx = $bodyPxOnPage - $pxPerPoint
+
+$pageNumberFont = New-Object System.Drawing.Font "Consolas", $pageNumberPx, ([System.Drawing.GraphicsUnit]::Pixel)
+$pageNumberBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(110, 110, 110))
+
+for ($i = 0; $i -lt $pages.Count; $i++) {
+
+    $bmp = $pages[$i].Bmp
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::ClearTypeGridFit
+
+    $text = "{0}/{1}" -f ($i + 1), $pages.Count
+    $size = $g.MeasureString($text, $pageNumberFont)
+
+    $g.DrawString($text, $pageNumberFont, $pageNumberBrush,
+        ($bmp.Width - $PAGE_NUMBER_INSET - $size.Width),
+        ($bmp.Height - $PAGE_NUMBER_INSET - $size.Height))
+
+    $g.Dispose()
+}
 
 $jpegCodec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() |
     Where-Object { $_.MimeType -eq "image/jpeg" }
