@@ -245,7 +245,7 @@ foreach ($s in $SEGMENTS) {
 
         "Dot" {
             $c = P $s.X1 $s.Y1
-            $g.FillEllipse($redBrush, ($c.X - 4), ($c.Y - 4), 8, 8)
+            $g.FillRectangle($redBrush, ($c.X - 4), ($c.Y - 4), 8, 8)
             $g.DrawString($s.N, $noteFont, $greyBrush, ($c.X + $s.LabelDX), ($c.Y + $s.LabelDY))
 
             # The comma is a dot PLUS its tail; show the tail too.
@@ -424,7 +424,7 @@ $lines += "DOT CENTRES     COL1    {0:F3}, {1:F3}      upper colon dot; also dot
 $lines += "                COL2    {0:F3}, {1:F3}      lower colon dot, colon only" -f $X_MID, $COL2_Y
 $lines += "                DP      {0:F3}, {1:F3}     decimal point, outside the cell to the right" -f $DP_X, $DP_Y
 $lines += "                COMMA   {0:F3}, {1:F3}     same centre, plus a tail down and left" -f $DP_X, $DP_Y
-$lines += "                radius = STROKE = {0:F3}, so diameter {1:F3}" -f $STROKE, (2 * $STROKE)
+$lines += "                SQUARE, side = 2 x STROKE = {0:F3} - a real HP-55's decimal point is a square die" -f (2 * $STROKE)
 $lines += ""
 $lines += "CENTRELINE BOX  {0:F3} wide x {1:F3} tall    aspect {2:F3}" -f $CELL_WIDTH, $CELL_HEIGHT, ($CELL_WIDTH / $CELL_HEIGHT)
 $lines += "                {0:F3} tall including the descender" -f $TOTAL_HEIGHT

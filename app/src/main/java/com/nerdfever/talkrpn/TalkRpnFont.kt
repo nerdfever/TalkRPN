@@ -1,6 +1,7 @@
 ﻿package com.nerdfever.talkrpn
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.PaintingStyle
@@ -170,17 +171,20 @@ object TalkRpnFont {
     const val SLANT_DEGREES = 7.5f
 
     /**
-     * Dot diameter is twice the stroke, as on the HP-01.
+     * Side of the square dots - the decimal point, the colon dots and the comma's
+     * head - at twice the stroke.
      *
-     * NOTE this is tied to [STROKE], so halving the stroke halved the decimal
-     * point, the colon and the comma's head with it. That is faithful to the
-     * relation, but it is a real change to how prominent a decimal point is, and
-     * it was a consequence of the stroke decision rather than a decision of its
-     * own. If the dots come out too small on the watch, pinning this to its own
-     * constant is a one-line change - the relation is an observation about the
-     * HP-01, not a rule this font has to obey.
+     * SQUARE, because that is what the real part has: a macro photograph of an
+     * HP-55 shows the decimal point as a distinct square die, and the same
+     * photograph shows every segment beaded out of small rectangular dies. Round
+     * was the earlier guess and it was wrong.
+     *
+     * Tied to [STROKE], so a change there moves the dots with it. That is the
+     * HP-01's own relation, but it is an observation rather than a rule this font
+     * has to obey - if the dots read wrong on the watch, giving this its own
+     * constant is a one-line change.
      */
-    const val DOT_RADIUS = STROKE
+    const val DOT_SIDE = 2f * STROKE
 
     /**
      * PITCH - horizontal distance between successive cell origins, in cell widths.
@@ -608,9 +612,25 @@ object TalkRpnFont {
                 // Dots are filled, not stroked, and never overlap a bar.
                 paint.style = PaintingStyle.Fill
 
+                // SQUARE, not round. A macro photograph of a real HP-55 shows the
+                // decimal point as a distinct square die - which is what these
+                // parts are made of, small rectangular dies, visible in the same
+                // photograph as the beading along every segment.
+                //
+                // Axis-aligned, and deliberately not sheared with the rest of the
+                // cell: shearing a square makes a parallelogram, and the real dot
+                // is not one. Same reasoning that kept the round version circular.
                 for ((seg, centre) in DOT_CENTRES) {
+
                     if (mask and seg.bit == 0L) continue
-                    canvas.drawCircle(centre, strokeWidth, paint)
+
+                    canvas.drawRect(
+                        Rect(
+                            centre.x - strokeWidth, centre.y - strokeWidth,
+                            centre.x + strokeWidth, centre.y + strokeWidth
+                        ),
+                        paint
+                    )
                 }
             }
         }

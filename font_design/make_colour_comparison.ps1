@@ -143,7 +143,7 @@ function Draw-Cell($names, $ox, $oy, $k, $colour) {
             $s = $SEG_DOTS[$n]
             $c = PT $s[0] $s[1]
             $r = $STROKE * $k
-            $g.FillEllipse($brush, ($c.X - $r), ($c.Y - $r), (2 * $r), (2 * $r))
+            $g.FillRectangle($brush, ($c.X - $r), ($c.Y - $r), (2 * $r), (2 * $r))
         }
     }
 
