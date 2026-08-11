@@ -80,24 +80,26 @@ function Add-Wound($path, $pts) {
 
 # An axis-aligned bar, as the rectangle a fixed nib sweeps.
 #
-# END RULE, fifth design:
+# END RULE, final - Dave chose the DIE policy (2026-08-11):
 #
-#   Bars extend half a stroke at every end except the hook handovers.
-#   A diagonal's FREE ends - shared with no other lit segment - extend along the
-#   diagonal's own slope until the flat end face reaches the ink line, x-clamped
-#   to the ink box. SHARED diagonal ends stay flat. Curves get nothing.
+#   An end extends half a stroke ONLY when a perpendicular axis-aligned lit
+#   segment shares the endpoint. Everything else ends flat at the centreline,
+#   exactly as the separate dies on a real DL-3422 do.
 #
-# The free/shared distinction is the piece every earlier design lacked, and it
-# is per-GLYPH information: the same segment end is shared in one glyph and free
-# in another. M's apex is two shared ends - flat butt, nothing added. X's four
-# tips are free - each extends along its own slope to the ink line, sides
-# continuous, which is what the vertical-sided extrusion box got wrong (it put a
-# kinked boot on every tip). And a diagonal tip tucked under a column - M's top
-# corners - is shared, so nothing pokes.
-function Add-AxisBar($path, $x1, $y1, $x2, $y2, $w) {
+# The support case is what fills every corner and L-turn: at 7's top-right, A2
+# and B each overshoot half a stroke and land exactly flush with each other's
+# ink edges; same at h's shoulder. Where there is no such partner the end is a
+# die edge: a lone 1 really is half a stroke shorter than the 0 beside it, v's
+# foot is flat with the diagonal melding into it, and lowercase tops sit dead
+# on the x-height line - all as on the real part.
+#
+# Rejected on the way here, each after Dave caught its artefact: blanket
+# extension (eaves hanging past diagonals, spurs on n), boundary extension
+# (heels under v and w), corner patches (nubs on lone tips), slope extension of
+# free diagonal tips (kinked boots).
+function Add-AxisBar($path, $x1, $y1, $x2, $y2, $w, $extend1, $extend2) {
 
     $half = $w / 2.0
-    $e = 0.0005
 
     $len = [Math]::Sqrt(($x2 - $x1) * ($x2 - $x1) + ($y2 - $y1) * ($y2 - $y1))
     if ($len -eq 0) { return }
@@ -105,20 +107,11 @@ function Add-AxisBar($path, $x1, $y1, $x2, $y2, $w) {
     $ux = ($x2 - $x1) / $len
     $uy = ($y2 - $y1) / $len
 
-    # The four points where a bar hands over to a corner arc. An extension here
-    # pokes past the arc's outer edge; the seam overlap alone joins them.
-    function Test-HookPoint($x, $y) {
-        return (([Math]::Abs($x - $HOOK_R) -lt $e) -and ([Math]::Abs($y) -lt $e)) -or
-               (([Math]::Abs($x) -lt $e) -and ([Math]::Abs($y - $Y_F_TOP) -lt $e)) -or
-               (([Math]::Abs($x) -lt $e) -and ([Math]::Abs($y - $Y_E_BOT) -lt $e)) -or
-               (([Math]::Abs($x - $HOOK_R) -lt $e) -and ([Math]::Abs($y - $CELL_HEIGHT) -lt $e))
-    }
-
     $ext1 = $SEAM_OVERLAP
-    if (-not (Test-HookPoint $x1 $y1)) { $ext1 += $half }
+    if ($extend1) { $ext1 += $half }
 
     $ext2 = $SEAM_OVERLAP
-    if (-not (Test-HookPoint $x2 $y2)) { $ext2 += $half }
+    if ($extend2) { $ext2 += $half }
 
     $x1 = $x1 - $ux * $ext1;  $y1 = $y1 - $uy * $ext1
     $x2 = $x2 + $ux * $ext2;  $y2 = $y2 + $uy * $ext2
@@ -140,9 +133,9 @@ function Add-AxisBar($path, $x1, $y1, $x2, $y2, $w) {
     Add-Wound $path $pts
 }
 
-# A diagonal (or tail): the parallelogram a horizontal nib sweeps, with flat
-# horizontal end faces, plus the free-end extensions described above.
-function Add-Diagonal($path, $x1, $y1, $x2, $y2, $w, $free1, $free2) {
+# A diagonal (or tail): the parallelogram a horizontal nib sweeps. Flat
+# horizontal end faces exactly at the endpoints - a die, nothing added.
+function Add-Diagonal($path, $x1, $y1, $x2, $y2, $w) {
 
     $half = $w / 2.0
 
@@ -152,7 +145,6 @@ function Add-Diagonal($path, $x1, $y1, $x2, $y2, $w, $free1, $free2) {
     $ux = ($x2 - $x1) / $len
     $uy = ($y2 - $y1) / $len
 
-    # The body, with the hair of seam overlap along the run.
     $ax = $x1 - $ux * $SEAM_OVERLAP;  $ay = $y1 - $uy * $SEAM_OVERLAP
     $bx = $x2 + $ux * $SEAM_OVERLAP;  $by = $y2 + $uy * $SEAM_OVERLAP
 
@@ -164,40 +156,9 @@ function Add-Diagonal($path, $x1, $y1, $x2, $y2, $w, $free1, $free2) {
     )
 
     Add-Wound $path $pts
-
-    # Free-end extensions: continue along the slope until the end face sits on
-    # the ink line, half a stroke past the endpoint's level. The quad's sides
-    # have the diagonal's own slope, so the outline is continuous - no kink. The
-    # face is x-clamped to the ink box, which chamfers a tip into a cell corner
-    # rather than letting it poke out sideways (the M-corner overshoot).
-    if ([Math]::Abs($uy) -gt 0.0001) {
-
-        $t = $half / [Math]::Abs($uy)
-
-        foreach ($end in @(
-            @($free1, $x1, $y1, (-$ux * $t), (-$uy * $t)),
-            @($free2, $x2, $y2, ($ux * $t), ($uy * $t))
-        )) {
-            if (-not $end[0]) { continue }
-
-            $tipX = $end[1] + $end[3]
-            $tipY = $end[2] + $end[4]
-
-            $lo = [Math]::Max($tipX - $half, -$half)
-            $hi = [Math]::Min($tipX + $half, $CELL_WIDTH + $half)
-
-            $quad = @(
-                (New-Object System.Drawing.PointF ([float]($end[1] - $half), [float]$end[2]))
-                (New-Object System.Drawing.PointF ([float]($end[1] + $half), [float]$end[2]))
-                (New-Object System.Drawing.PointF ([float]$hi, [float]$tipY))
-                (New-Object System.Drawing.PointF ([float]$lo, [float]$tipY))
-            )
-
-            Add-Wound $path $quad
-        }
-    }
 }
 
+# The two ribbon shapes and everything below are unchanged.
 # A curved run, as a ribbon of constant PERPENDICULAR thickness either side of
 # its centreline. Used only for the hooks and the parenthesis.
 function Add-Ribbon($path, $pts, $w) {
@@ -265,47 +226,66 @@ function Draw-TalkRpnCell($g, $names, $ox, $oy, $k, $colour, $slantTan = $null, 
     $path = New-Object System.Drawing.Drawing2D.GraphicsPath
     $path.FillMode = [System.Drawing.Drawing2D.FillMode]::Winding
 
-    # Every lit segment's endpoints, for the free/shared test. An end is free
-    # if no OTHER lit segment ends at the same point.
+    # Every lit segment's endpoints, tagged with the segment's axis, for the
+    # support and free/shared tests. H = horizontal bar, V = vertical bar,
+    # D = diagonal, C = curve.
     $endpoints = @()
 
     foreach ($n in $names) {
         if ($SEG_LINES.Contains($n)) {
             $sl = $SEG_LINES[$n]
-            $endpoints += , @($sl[0], $sl[1])
-            $endpoints += , @($sl[2], $sl[3])
+            $ax = "D"
+            if ([Math]::Abs($sl[1] - $sl[3]) -lt 0.0005) { $ax = "H" }
+            elseif ([Math]::Abs($sl[0] - $sl[2]) -lt 0.0005) { $ax = "V" }
+            $endpoints += , @($sl[0], $sl[1], $ax)
+            $endpoints += , @($sl[2], $sl[3], $ax)
         }
         elseif ($SEG_ARCS.Contains($n)) {
             $a = $SEG_ARCS[$n]
             foreach ($deg in @($a[3], $a[4])) {
                 $th = $deg * [Math]::PI / 180.0
-                $endpoints += , @(($a[0] + $a[2] * [Math]::Cos($th)), ($a[1] + $a[2] * [Math]::Sin($th)))
+                $endpoints += , @(($a[0] + $a[2] * [Math]::Cos($th)), ($a[1] + $a[2] * [Math]::Sin($th)), "C")
             }
         }
         elseif ($SEG_POLYS.Contains($n)) {
             $poly = $SEG_POLYS[$n]
-            $endpoints += , @($poly[0][0], $poly[0][1])
-            $endpoints += , @($poly[-1][0], $poly[-1][1])
+            $endpoints += , @($poly[0][0], $poly[0][1], "C")
+            $endpoints += , @($poly[-1][0], $poly[-1][1], "C")
         }
     }
 
-    function Test-Shared($x, $y) {
-        $hits = 0
+    # Does a lit segment of the given axis (other than one instance of me) end
+    # at this point?
+    function Test-PartnerAxis($x, $y, $axes, $selfAxis) {
+        $selfSeen = $false
         foreach ($pt in $endpoints) {
             if (([Math]::Abs($pt[0] - $x) -lt 0.001) -and ([Math]::Abs($pt[1] - $y) -lt 0.001)) {
-                $hits += 1
-                if ($hits -ge 2) { return $true }
+                if ((-not $selfSeen) -and ($pt[2] -eq $selfAxis)) { $selfSeen = $true; continue }
+                if ($axes -contains $pt[2]) { return $true }
             }
         }
         return $false
     }
 
-    # Tails are diagonals too, but their tips hang in space by design and must
-    # not grow. Only ends on the H..L lattice are eligible for free extension.
-    function Test-OnLattice($x, $y) {
-        $xOk = ([Math]::Abs($x) -lt 0.001) -or ([Math]::Abs($x - 0.5) -lt 0.001) -or ([Math]::Abs($x - $CELL_WIDTH) -lt 0.001)
-        $yOk = ([Math]::Abs($y) -lt 0.001) -or ([Math]::Abs($y - $CELL_HEIGHT / 2.0) -lt 0.001) -or ([Math]::Abs($y - $CELL_HEIGHT) -lt 0.001)
-        return $xOk -and $yOk
+
+
+    # The four points where a bar hands over to a corner arc: never extend into
+    # an arc, it puts a bump on the hook's outer edge.
+    function Test-HookPoint($x, $y) {
+        $he = 0.0005
+        return (([Math]::Abs($x - $HOOK_R) -lt $he) -and ([Math]::Abs($y) -lt $he)) -or
+               (([Math]::Abs($x) -lt $he) -and ([Math]::Abs($y - $Y_F_TOP) -lt $he)) -or
+               (([Math]::Abs($x) -lt $he) -and ([Math]::Abs($y - $Y_E_BOT) -lt $he)) -or
+               (([Math]::Abs($x - $HOOK_R) -lt $he) -and ([Math]::Abs($y - $CELL_HEIGHT) -lt $he))
+    }
+
+    # Should this bar end extend? Only into a perpendicular partner - and never
+    # into a hook arc, where the overshoot would sit proud of the curve.
+    function Test-BarExtend($x, $y, $selfAxis, $perpAxis) {
+
+        if (Test-HookPoint $x $y) { return $false }
+
+        return Test-PartnerAxis $x $y @($perpAxis) $selfAxis
     }
 
     foreach ($n in $names) {
@@ -314,14 +294,20 @@ function Draw-TalkRpnCell($g, $names, $ox, $oy, $k, $colour, $slantTan = $null, 
             $sl = $SEG_LINES[$n]
             $ee = 0.0005
 
-            if (([Math]::Abs($sl[0] - $sl[2]) -lt $ee) -or ([Math]::Abs($sl[1] - $sl[3]) -lt $ee)) {
-                Add-AxisBar $path $sl[0] $sl[1] $sl[2] $sl[3] $barWidth
+            $isH = [Math]::Abs($sl[1] - $sl[3]) -lt $ee
+            $isV = [Math]::Abs($sl[0] - $sl[2]) -lt $ee
+
+            if ($isH -or $isV) {
+                $selfAx = "V"; $perpAx = "H"
+                if ($isH) { $selfAx = "H"; $perpAx = "V" }
+
+                $e1 = Test-BarExtend $sl[0] $sl[1] $selfAx $perpAx
+                $e2 = Test-BarExtend $sl[2] $sl[3] $selfAx $perpAx
+
+                Add-AxisBar $path $sl[0] $sl[1] $sl[2] $sl[3] $barWidth $e1 $e2
             }
             else {
-                $f1 = (Test-OnLattice $sl[0] $sl[1]) -and (-not (Test-Shared $sl[0] $sl[1]))
-                $f2 = (Test-OnLattice $sl[2] $sl[3]) -and (-not (Test-Shared $sl[2] $sl[3]))
-
-                Add-Diagonal $path $sl[0] $sl[1] $sl[2] $sl[3] $barWidth $f1 $f2
+                Add-Diagonal $path $sl[0] $sl[1] $sl[2] $sl[3] $barWidth
             }
         }
         elseif ($SEG_ARCS.Contains($n)) {
@@ -332,7 +318,7 @@ function Draw-TalkRpnCell($g, $names, $ox, $oy, $k, $colour, $slantTan = $null, 
             Add-Ribbon $path $SEG_POLYS[$n] $barWidth
         }
         elseif ($n -eq "COMMA") {
-            Add-Diagonal $path $COMMA_TAIL[0] $COMMA_TAIL[1] $COMMA_TAIL[2] $COMMA_TAIL[3] $barWidth $false $false
+            Add-Diagonal $path $COMMA_TAIL[0] $COMMA_TAIL[1] $COMMA_TAIL[2] $COMMA_TAIL[3] $barWidth
         }
 
         # Dots are squares of side twice the stroke, sheared with everything else.

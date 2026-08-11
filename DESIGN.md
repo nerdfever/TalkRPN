@@ -891,18 +891,21 @@ consequences, both now in the font:
   than a bar, which is what a fixed nib does. Curves keep a perpendicular
   thickness — they turn a bar into a column, and a fixed nib would pinch them to
   nothing at one end.
-- **The end rule, fifth design:** bars extend half a stroke at every end except
-  the four hook handovers; a diagonal's **free** ends — shared with no other lit
-  segment — extend along the diagonal's own slope until the flat end face
-  reaches the ink line, x-clamped to the ink box; **shared** diagonal ends stay
-  flat; curves get nothing. The free/shared distinction is the piece every
-  earlier design lacked, and it is per-glyph information the cell renderer has
-  and the shape primitives do not: the same segment end is shared in one glyph
-  and free in another. `M`'s apex is two shared ends — flat butt. `X`'s four
-  tips are free — each extends along its own slope, sides continuous, which is
-  what the v4 vertical-sided extrusion box got wrong (a kinked boot on every
-  tip, and lowercase `v w x z` tops stopped ragged at the x-height line while
-  the columns beside them poked half a stroke above it).
+- **The end rule, final — the DIE policy, chosen 2026-08-11:** an end extends
+  half a stroke **only when a perpendicular axis-aligned segment shares the
+  endpoint**; everything else ends flat at the centreline, exactly as the
+  separate dies on a real DL-3422 do; hooks never take an extension; curves get
+  nothing. The support case fills every corner and L-turn — `7`'s top-right,
+  `h`'s shoulder — with the two overshoots landing exactly flush. Everywhere
+  else the end is a die edge: a lone `1` really is half a stroke shorter than
+  the `0` beside it, `v`'s foot is flat with the diagonal melding in, lowercase
+  tops sit dead on the x-height line. Chosen over the “ink box” alternative
+  (uniform outer rectangle, but heel kinks where diagonals meld into extended
+  feet) from a side-by-side. Five earlier designs each died on an artefact Dave
+  caught: blanket extension (eaves past diagonals, spurs on `n`), boundary
+  extension (heels under `v w`), corner patches (nubs on lone tips, unequal `"`
+  ticks), slope-extension of free tips (kinked boots), and the original
+  rotating pen (angled ends, bumped hooks).
 
 ### What colour were they, really?
 
