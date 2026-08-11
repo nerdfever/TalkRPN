@@ -891,14 +891,17 @@ consequences, both now in the font:
   than a bar, which is what a fixed nib does. Curves keep a perpendicular
   thickness — they turn a bar into a column, and a fixed nib would pinch them to
   nothing at one end.
-- **Axis-aligned bars extend half a stroke past each end**, along their own
-  direction; diagonals do not. Without the extension the corners notch — a bar
-  ending at x = 1 stops dead there while the column beside it starts at y = 0,
-  leaving the square outside both empty. But a diagonal ends at a *junction*,
-  where it already shares its flat end face with whatever it meets: two diagonals
-  meeting at the apex of `M` or `W` have the **same** end face. Extending those
-  only pushed them through and out the other side, which left a notch and a stub
-  at exactly those vertices.
+- **Axis-aligned bars extend half a stroke at any end lying on the cell's outer
+  boundary; diagonals and curves never extend; nothing else is added.** Third
+  design, and the one that holds. The extension is what the old square cap did,
+  and it is what makes both ticks of `"` the same height — one ends at a corner,
+  the other mid-edge, but both are ON the boundary so both reach the ink box.
+  Interior ends stay flat, so a bar never pokes past its corner hook. Diagonals
+  get nothing anywhere: a lone tip is a flat die, as on the real part, and at a
+  shared corner it tucks under the bar and column ink. The two rejected designs
+  each failed one way — extending diagonals overshot the vertex (the stub at
+  `M`'s apex); patching corners regardless of shape put a square nub on every
+  lone diagonal tip and made the `"` ticks unequal.
 
 ### What colour were they, really?
 

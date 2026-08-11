@@ -14,7 +14,7 @@ $OUT_DIAG = "$PSScriptRoot\talkrpn_pen_diagnostic.png"
 
 # X and Y together are the case Dave pointed at: X is all diagonals, Y puts a
 # diagonal directly above a vertical. # and $ carry segment M under the baseline.
-$SHOW = @('3', 'D', 'M', '0')
+$SHOW = @('"', 'M', 'V', 'X', 'Z', '8')
 
 $SCALE = 320.0
 $MARGIN = 40.0

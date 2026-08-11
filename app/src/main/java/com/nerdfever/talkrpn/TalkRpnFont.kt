@@ -568,67 +568,56 @@ object TalkRpnFont {
     }
 
     /**
-     * Is this endpoint one of the cell's CORNERS - extreme on both axes?
+     * Add one straight segment, as the parallelogram a fixed nib sweeps.
      *
-     * Corners only, not the whole boundary. An edge test is too loose: the top
-     * bar hands over to the corner hook at (0.1355, 0), which is on the top edge
-     * but is a mid-bar junction, and dropping a square there chamfered the curve.
+     * END RULE, the third attempt and the one that holds:
+     *
+     *   Axis-aligned bars extend half a stroke at any end lying on the cell's
+     *   outer boundary; diagonals and curves never extend; nothing else is added.
+     *
+     * The extension is what the old square cap did, and it is what makes both
+     * ticks of a double quote the same height: the left tick's column ends at a
+     * corner and the right tick's P ends mid-edge, but both ends are ON the
+     * boundary, so both reach the ink box. Interior ends stay flat - a bar
+     * handing over to its corner hook must not poke past the arc.
+     *
+     * Diagonals get nothing anywhere. A lone diagonal tip is a flat die, exactly
+     * as on a real DL-3422, and at a shared corner it tucks underneath the bar
+     * and column ink that formed the corner. The two rejected designs both
+     * failed here: extending diagonals overshot the vertex (the stub at M's
+     * apex), and patching corners regardless of shape put a square nub on every
+     * lone diagonal tip.
      */
-    private fun atCorner(x: Float, y: Float): Boolean {
-
-        val e = 0.0005f
-
-        val xEdge = abs(x) < e || abs(x - CELL_WIDTH) < e
-        val yEdge = abs(y) < e || abs(y - CELL_HEIGHT) < e || abs(y - TOTAL_HEIGHT) < e
-
-        return xEdge && yEdge
-    }
-
-    /**
-     * A square of side [w] centred on an endpoint that sits at a cell corner.
-     *
-     * This is what closes the corners, and it replaced an earlier attempt that
-     * extended each segment along its own direction. That worked for bars and
-     * broke everything a diagonal touched: at the top of M and N the column ran
-     * half a stroke past the diagonal beside it, and the same step showed on Z's
-     * ends and under V and W.
-     *
-     * What matters is WHERE an end sits, not what shape owns it. At a corner the
-     * ink has to reach the cell's outer rectangle whatever direction the segment
-     * came from, so every segment ending there gets the SAME square and they land
-     * on top of each other instead of stepping past. Anywhere else nothing is
-     * added: segments meeting mid-run already share an end face.
-     */
-    private fun Path.addCornerPatch(x: Float, y: Float, w: Float) {
-
-        if (!atCorner(x, y)) return
-
-        val half = w / 2f
-
-        addWound(
-            floatArrayOf(
-                x - half, y - half,
-                x + half, y - half,
-                x + half, y + half,
-                x - half, y + half
-            )
-        )
-    }
-
-    /** Add one straight segment, as the parallelogram a fixed nib sweeps. */
     private fun Path.addBar(x1: Float, y1: Float, x2: Float, y2: Float, w: Float) {
 
         val half = w / 2f
+        val e = 0.0005f
+
         val len = hypot(x2 - x1, y2 - y1)
         if (len == 0f) return
 
-        // A hair of overlap at each end, so that two abutting polygons do not
-        // leave a sub-pixel antialiasing seam. Far too small to change a shape.
-        val ux = (x2 - x1) / len * SEAM_OVERLAP
-        val uy = (y2 - y1) / len * SEAM_OVERLAP
+        val ux = (x2 - x1) / len
+        val uy = (y2 - y1) / len
 
-        val ax = x1 - ux; val ay = y1 - uy
-        val bx = x2 + ux; val by = y2 + uy
+        val isHorizontal = abs(y2 - y1) < e
+        val isVertical = abs(x2 - x1) < e
+
+        // Which boundary counts depends on the bar's own axis: a horizontal bar
+        // can only reach the cell sideways, a vertical one only up or down.
+        fun outerEnd(x: Float, y: Float): Boolean = when {
+            isHorizontal -> abs(x) < e || abs(x - CELL_WIDTH) < e
+            isVertical -> abs(y) < e || abs(y - CELL_HEIGHT) < e || abs(y - TOTAL_HEIGHT) < e
+            else -> false
+        }
+
+        // Each end separately: the boundary end of a bar extends outward along
+        // the bar; every end also takes the hair of seam overlap, so abutting
+        // polygons overlap instead of leaving a sub-pixel antialiasing gap.
+        val ext1 = SEAM_OVERLAP + if (outerEnd(x1, y1)) half else 0f
+        val ext2 = SEAM_OVERLAP + if (outerEnd(x2, y2)) half else 0f
+
+        val ax = x1 - ux * ext1; val ay = y1 - uy * ext1
+        val bx = x2 + ux * ext2; val by = y2 + uy * ext2
 
         // The nib points across the segment's dominant axis.
         val dx: Float; val dy: Float
@@ -642,14 +631,6 @@ object TalkRpnFont {
                 ax + dx, ay + dy
             )
         )
-
-        // Patched from the ORIGINAL ends, not the nudged ones. atCorner matches to
-        // 0.0005 and SEAM_OVERLAP is 0.0015, so testing ax/bx would fail every
-        // time and no bar would ever get its corner. The PowerShell copy of this
-        // did exactly that, and the corners quietly went missing on every bar -
-        // only the hook-formed left ones survived, since an arc takes no overlap.
-        addCornerPatch(x1, y1, w)
-        addCornerPatch(x2, y2, w)
     }
 
     /** Add one curved run, as a ribbon of constant perpendicular thickness. */
@@ -692,9 +673,6 @@ object TalkRpnFont {
         }
 
         addWound(outline)
-
-        addCornerPatch(pts[0], pts[1], w)
-        addCornerPatch(pts[(n - 1) * 2], pts[(n - 1) * 2 + 1], w)
     }
 
     /** Two points is a bar; more is a curve. */

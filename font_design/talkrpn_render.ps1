@@ -78,82 +78,62 @@ function Add-Wound($path, $pts) {
     $path.AddPolygon([System.Drawing.PointF[]]$pts)
 }
 
-# Is this endpoint one of the cell's CORNERS - extreme on both axes?
-#
-# Corners only, not the whole boundary. An edge test is too loose: the top bar
-# hands over to the corner hook at (0.1355, 0), which is on the top edge but is a
-# mid-bar junction, and dropping a square there chamfered the curve. It showed as
-# the top-left of 8, 9, 0, 6, C and 2 having a faceted hook instead of a smooth one.
-function Test-AtCorner($x, $y) {
-
-    $e = 0.0005
-
-    $xEdge = ([Math]::Abs($x) -lt $e) -or ([Math]::Abs($x - $CELL_WIDTH) -lt $e)
-
-    $yEdge = ([Math]::Abs($y) -lt $e) -or ([Math]::Abs($y - $CELL_HEIGHT) -lt $e) -or
-             ([Math]::Abs($y - $TOTAL_HEIGHT) -lt $e)
-
-    return $xEdge -and $yEdge
-}
-
-# A square of side $w centred on an endpoint that sits at a cell corner.
-#
-# This is what closes the corners, and it replaces an earlier attempt that
-# extended each segment along its own direction. That worked for bars and broke
-# everything a diagonal touched: at the top of M and N the column ran half a
-# stroke past the diagonal beside it, and the same step showed on Z's ends and
-# under V and W.
-#
-# The difference that matters is WHERE an end sits, not what shape owns it. At a
-# corner the ink has to reach the cell's outer rectangle whatever direction the
-# segment came from - so every segment ending there gets the SAME square, and they
-# land on top of each other instead of stepping past. Anywhere else nothing is
-# added: segments meeting mid-run already share an end face, and a patch there
-# only pokes through.
-function Add-EndPatch($path, $x, $y, $w) {
-
-    if (-not (Test-AtCorner $x $y)) { return }
-
-    $half = $w / 2.0
-    $pts = @(
-        (New-Object System.Drawing.PointF ([float]($x - $half), [float]($y - $half)))
-        (New-Object System.Drawing.PointF ([float]($x + $half), [float]($y - $half)))
-        (New-Object System.Drawing.PointF ([float]($x + $half), [float]($y + $half)))
-        (New-Object System.Drawing.PointF ([float]($x - $half), [float]($y + $half)))
-    )
-
-    Add-Wound $path $pts
-}
-
 # A straight segment, as the parallelogram a fixed nib sweeps.
+#
+# END RULE, the third attempt and the one that holds:
+#
+#   Axis-aligned bars extend half a stroke at any end lying on the cell's outer
+#   boundary; diagonals and curves never extend; nothing else is added.
+#
+# The extension is what the old square cap did, and it is what makes both ticks
+# of a double quote the same height: the left tick's column ends at a corner and
+# the right tick's P ends mid-edge, but both ends are ON the boundary, so both
+# reach the ink box. Interior ends stay flat - a bar handing over to its corner
+# hook must not poke past the arc.
+#
+# Diagonals get nothing anywhere. A lone diagonal tip is a flat die, exactly as
+# on a real DL-3422, and at a shared corner it tucks underneath the bar and
+# column ink that formed the corner. The two rejected designs both failed here:
+# extending diagonals overshot the vertex (the stub at M's apex), and patching
+# corners regardless of shape put a square nub on every lone diagonal tip.
 function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
 
     $half = $w / 2.0
-
-    # A hair of overlap at each end.
-    #
-    # Butted exactly, two polygons leave a sub-pixel seam: antialiasing renders
-    # each edge at partial coverage and the two do not quite add to one. Visible
-    # as a hairline where the top bar hands over to the corner hook. This is far
-    # too small to change any shape - about a hundredth of a stroke - and just
-    # enough that the shapes overlap instead of touching.
-    # The TRUE ends, kept before the overlap moves them. The corner test below
-    # needs these: it matches to 0.0005, the overlap is 0.0015, so testing the
-    # nudged ends failed every time and no bar ever got its corner patch. The
-    # left corners still looked right because they are formed by the hook, an
-    # arc, which takes no overlap - which is exactly why the symptom was "the
-    # RIGHT corners".
-    $endX1 = $x1;  $endY1 = $y1
-    $endX2 = $x2;  $endY2 = $y2
+    $e = 0.0005
 
     $len = [Math]::Sqrt(($x2 - $x1) * ($x2 - $x1) + ($y2 - $y1) * ($y2 - $y1))
+    if ($len -eq 0) { return }
 
-    if ($len -gt 0) {
-        $ux = ($x2 - $x1) / $len * $SEAM_OVERLAP
-        $uy = ($y2 - $y1) / $len * $SEAM_OVERLAP
-        $x1 = $x1 - $ux;  $y1 = $y1 - $uy
-        $x2 = $x2 + $ux;  $y2 = $y2 + $uy
+    $ux = ($x2 - $x1) / $len
+    $uy = ($y2 - $y1) / $len
+
+    $isHorizontal = [Math]::Abs($y2 - $y1) -lt $e
+    $isVertical = [Math]::Abs($x2 - $x1) -lt $e
+
+    # Which boundary counts depends on the bar's own axis: a horizontal bar can
+    # only reach the cell sideways, a vertical one only up or down.
+    function Test-OuterEnd($x, $y) {
+        if ($isHorizontal) {
+            return ([Math]::Abs($x) -lt $e) -or ([Math]::Abs($x - $CELL_WIDTH) -lt $e)
+        }
+        if ($isVertical) {
+            return ([Math]::Abs($y) -lt $e) -or ([Math]::Abs($y - $CELL_HEIGHT) -lt $e) -or
+                   ([Math]::Abs($y - $TOTAL_HEIGHT) -lt $e)
+        }
+        return $false
     }
+
+    # Each end separately: the boundary end of a bar extends outward along the
+    # bar; every end also takes the hair of seam overlap, so abutting polygons
+    # overlap instead of leaving a sub-pixel antialiasing gap.
+    $ext1 = $SEAM_OVERLAP
+    if (Test-OuterEnd $x1 $y1) { $ext1 += $half }
+
+    $ext2 = $SEAM_OVERLAP
+    if (Test-OuterEnd $x2 $y2) { $ext2 += $half }
+
+    $x1 = $x1 - $ux * $ext1;  $y1 = $y1 - $uy * $ext1
+    $x2 = $x2 + $ux * $ext2;  $y2 = $y2 + $uy * $ext2
 
     # Which way does the nib point? Across the segment's dominant axis, so a
     # horizontal bar gets height and everything else gets width.
@@ -171,9 +151,6 @@ function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
     )
 
     Add-Wound $path $pts
-
-    Add-EndPatch $path $endX1 $endY1 $w
-    Add-EndPatch $path $endX2 $endY2 $w
 }
 
 # A curved run, as a ribbon of constant PERPENDICULAR thickness either side of
@@ -211,9 +188,6 @@ function Add-Ribbon($path, $pts, $w) {
     }
 
     Add-Wound $path $outline
-
-    Add-EndPatch $path $pts[0][0] $pts[0][1] $w
-    Add-EndPatch $path $pts[-1][0] $pts[-1][1] $w
 }
 
 <#
