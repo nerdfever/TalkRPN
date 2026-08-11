@@ -364,6 +364,17 @@ function Draw-Glyph($g, $names, $ox, $oy, $k, $color) {
         $saved = $g.Save()
         $g.Transform = $m
         $g.DrawPath($pen, $path)
+
+        # Dots inside the transform too, so they shear with the bars instead of
+        # sitting upright among them. Upright coordinates, half-side = STROKE.
+        foreach ($n in $names) {
+            if ($SEG_DOTS.Contains($n)) {
+                $s = $SEG_DOTS[$n]
+                $g.FillRectangle($brush, ($s[0] - $STROKE), ($s[1] - $STROKE),
+                    (2 * $STROKE), (2 * $STROKE))
+            }
+        }
+
         $g.Restore($saved)
 
         $m.Dispose()

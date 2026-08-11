@@ -581,10 +581,10 @@ object TalkRpnFont {
      * Shearing a circle turns it into an ellipse, which is visibly wrong.
      */
     private val DOT_CENTRES: Map<Seg, Offset> = mapOf(
-        Seg.COL1 to Offset(sx(DOT_AXIS_X, COL1_Y), COL1_Y),
-        Seg.COL2 to Offset(sx(DOT_AXIS_X, COL2_Y), COL2_Y),
-        Seg.DP to Offset(sx(DP_X, DP_Y), DP_Y),
-        Seg.COMMA to Offset(sx(DP_X, DP_Y), DP_Y),
+        Seg.COL1 to Offset(DOT_AXIS_X, COL1_Y),
+        Seg.COL2 to Offset(DOT_AXIS_X, COL2_Y),
+        Seg.DP to Offset(DP_X, DP_Y),
+        Seg.COMMA to Offset(DP_X, DP_Y),
     )
 
     /** The comma's tail: a taper from the dot down and to the left. */
@@ -663,43 +663,45 @@ object TalkRpnFont {
                     strokeMiterLimit = MITRE_LIMIT
                 }
 
-                // Stroked INSIDE the shear, so the pen shears too. That is what
-                // makes a vertical bar's ends horizontal and a horizontal bar's
-                // ends slanted - the parallelograms a real display is built from.
-                // Stroking outside it would give square ends cut square to each
-                // bar, which is wrong by the slant angle at every one of them.
-                if (!lit.isEmpty) {
-                    canvas.save()
-                    canvas.concat(SHEAR_MATRIX)
-                    canvas.drawPath(lit, paint)
-                    canvas.restore()
-                }
+                // Everything is stroked and filled INSIDE the shear, so the pen
+                // shears too. That is what makes a vertical bar's ends horizontal
+                // and a horizontal bar's ends slanted - the parallelograms a real
+                // display is built from. Stroking outside it would give square
+                // ends cut square to each bar, wrong by the slant at every one.
+                canvas.save()
+                canvas.concat(SHEAR_MATRIX)
 
-                // Dots are filled, not stroked, and never overlap a bar. Drawn
-                // OUTSIDE the shear, from centres that already carry it, so they
-                // stay square instead of becoming parallelograms.
+                if (!lit.isEmpty) canvas.drawPath(lit, paint)
+
+                // Dots are filled, not stroked, and never overlap a bar.
+                //
+                // Square, because a macro photograph of a real HP-55 shows the
+                // decimal point as a distinct square die - the same photograph
+                // shows every segment beaded out of small rectangular dies.
+                //
+                // Sheared along with everything else, so they come out as leaning
+                // parallelograms. They were briefly drawn outside the shear, on
+                // the theory that a square die stays square; but the whole array
+                // is one piece of silicon laid out on the slant, and an upright
+                // dot among leaning bars reads as a mistake.
                 paint.style = PaintingStyle.Fill
 
-                // SQUARE, not round. A macro photograph of a real HP-55 shows the
-                // decimal point as a distinct square die - which is what these
-                // parts are made of, small rectangular dies, visible in the same
-                // photograph as the beading along every segment.
-                //
-                // Axis-aligned, and deliberately not sheared with the rest of the
-                // cell: shearing a square makes a parallelogram, and the real dot
-                // is not one. Same reasoning that kept the round version circular.
+                val half = strokeWidth
+
                 for ((seg, centre) in DOT_CENTRES) {
 
                     if (mask and seg.bit == 0L) continue
 
                     canvas.drawRect(
                         Rect(
-                            centre.x - strokeWidth, centre.y - strokeWidth,
-                            centre.x + strokeWidth, centre.y + strokeWidth
+                            centre.x - half, centre.y - half,
+                            centre.x + half, centre.y + half
                         ),
                         paint
                     )
                 }
+
+                canvas.restore()
             }
         }
     }
