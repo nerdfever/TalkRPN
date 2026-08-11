@@ -97,12 +97,22 @@ $SHEAR_OFFSET = $SHEAR * $TOTAL_HEIGHT
 # One glyph, one stroked path, so overlapping segments do not blend twice.
 function Draw-Cell($names, $ox, $oy, $k, $colour) {
 
-    $pen = New-Object System.Drawing.Pen $colour, ($STROKE * $k)
-    $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+    # Square caps, mitre joins, and the shear applied as a TRANSFORM rather than
+    # point by point - which is what shears the pen along with the path, so a
+    # vertical bar's ends come out horizontal and a horizontal bar's slanted, as
+    # a real rectangular die's are. Pen width is in CELL units: the transform
+    # does the scaling. Mirrors drawTalkRpnCell in TalkRpnFont.kt.
+    $pen = New-Object System.Drawing.Pen $colour, $STROKE
+    $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Square
+    $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Square
+    $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Miter
+    $pen.MiterLimit = 2.5
     $brush = New-Object System.Drawing.SolidBrush $colour
 
+    # Upright cell coordinates; the transform carries them to the canvas.
+    function UP($x, $y) { New-Object System.Drawing.PointF ([float]$x, [float]$y) }
+
+    # Where a point lands once placed - for the dots, drawn outside the transform.
     function PT($x, $y) {
         New-Object System.Drawing.PointF (
             ($ox + ($x - $SHEAR * $y + $SHEAR_OFFSET) * $k), ($oy + $y * $k))
@@ -114,28 +124,42 @@ function Draw-Cell($names, $ox, $oy, $k, $colour) {
         if ($SEG_LINES.Contains($n)) {
             $s = $SEG_LINES[$n]
             $path.StartFigure()
-            $path.AddLine((PT $s[0] $s[1]), (PT $s[2] $s[3]))
+            $path.AddLine((UP $s[0] $s[1]), (UP $s[2] $s[3]))
         }
         elseif ($SEG_ARCS.Contains($n)) {
             $s = $SEG_ARCS[$n]
             $pts = @()
-            foreach ($p in (New-ArcPoints $s[0] $s[1] $s[2] $s[3] $s[4])) { $pts += PT $p[0] $p[1] }
+            foreach ($p in (New-ArcPoints $s[0] $s[1] $s[2] $s[3] $s[4])) { $pts += UP $p[0] $p[1] }
             $path.StartFigure()
             $path.AddLines([System.Drawing.PointF[]]$pts)
         }
         elseif ($SEG_POLYS.Contains($n)) {
             $pts = @()
-            foreach ($p in $SEG_POLYS[$n]) { $pts += PT $p[0] $p[1] }
+            foreach ($p in $SEG_POLYS[$n]) { $pts += UP $p[0] $p[1] }
             $path.StartFigure()
             $path.AddLines([System.Drawing.PointF[]]$pts)
         }
         elseif ($n -eq "COMMA") {
             $path.StartFigure()
-            $path.AddLine((PT $COMMA_TAIL[0] $COMMA_TAIL[1]), (PT $COMMA_TAIL[2] $COMMA_TAIL[3]))
+            $path.AddLine((UP $COMMA_TAIL[0] $COMMA_TAIL[1]), (UP $COMMA_TAIL[2] $COMMA_TAIL[3]))
         }
     }
 
-    if ($path.PointCount -gt 0) { $g.DrawPath($pen, $path) }
+    if ($path.PointCount -gt 0) {
+
+        # x' = k*x - k*SHEAR*y + (ox + k*SHEAR_OFFSET),  y' = k*y
+        $m = New-Object System.Drawing.Drawing2D.Matrix (
+            [float]$k, [float]0, [float](-$k * $SHEAR), [float]$k,
+            [float]($ox + $k * $SHEAR_OFFSET), [float]$oy)
+
+        $saved = $g.Save()
+        $g.Transform = $m
+        $g.DrawPath($pen, $path)
+        $g.Restore($saved)
+
+        $m.Dispose()
+    }
+
     $path.Dispose()
 
     foreach ($n in $names) {

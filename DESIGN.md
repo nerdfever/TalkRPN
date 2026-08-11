@@ -852,13 +852,16 @@ sound:
 
 Two mistakes on the way, both mine, both instructive:
 
-- **FWHM was tried and is invalid here.** It assumes an unsaturated profile; on a
-  clipped core the half-max point sits out in the bloom. It read *high*, at 0.062
-  of cap height, which looked like evidence and was noise.
-- **I argued the measurement down** on the grounds that the microscope frame
-  blooms hardest. That is true and it is still an upper bound — but the sharper
-  frame was under-reading by more than the blurry one was over-reading, so the
-  correction pointed the wrong way.
+- **FWHM was tried and is invalid** on the *sharper* frame, where the core is
+  clipped: it assumes an unsaturated profile, so the half-max point sits out in
+  the halo. It read high, at 0.062 of cap height, which looked like evidence and
+  was noise.
+- **I argued the measurement down as "bloomed" and was wrong.** An edge profile
+  across the microscope frame's left column settles it: the plateau is 190 of a
+  ~210 range, so nothing is railed, and the top is flat over ~9 px. That is not
+  an overexposed image. The 90% width is 12 px and the half-max width ~23, so a
+  visual reading of 16 sits sensibly between them. Whatever softness there is
+  comes from the epoxy bubble lens, and being symmetric it does not bias fat.
 
 So the HP-01's own 9.29 — 0.159 in this unit — was close to right all along, and
 the claim that it was "twice what it should be" was simply wrong.

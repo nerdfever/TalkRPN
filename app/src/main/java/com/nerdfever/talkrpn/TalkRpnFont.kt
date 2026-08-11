@@ -64,6 +64,18 @@ import kotlin.math.tan
  *     talkRpn = (hp01 - STROKE/2) / 53.5
  *
  * ---------------------------------------------------------------------------
+ * What the defaults here are for
+ * ---------------------------------------------------------------------------
+ * Every default in this file records the REAL PART as measured - stroke, slant,
+ * dot shape, proportions. It is a description of 1970s bubble LEDs, not a set of
+ * choices about how the calculator should look.
+ *
+ * What the app finally renders is a separate question, to be settled by eye on
+ * the watch. That is what the test screens' controls are for, and why they
+ * bracket these values rather than replacing them. If a tuned value ends up
+ * differing, this file still says what the hardware did.
+ *
+ * ---------------------------------------------------------------------------
  * Segments
  * ---------------------------------------------------------------------------
  *  A1 A2   top bar, split at the centre axis
