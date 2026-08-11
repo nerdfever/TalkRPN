@@ -305,6 +305,38 @@ function Draw-TalkRpnCell($g, $names, $ox, $oy, $k, $colour, $slantTan = $null, 
                 $e2 = Test-BarExtend $sl[2] $sl[3] $selfAx $perpAx
 
                 Add-AxisBar $path $sl[0] $sl[1] $sl[2] $sl[3] $barWidth $e1 $e2
+
+                # THE MITRE DIAMOND. A horizontal bar's end face is vertical and
+                # a diagonal's is horizontal, so where the two share an endpoint
+                # they touch only at the centre and the diagonal's shoulder pokes
+                # half a stroke past the bar's flat end - the notch Dave caught
+                # at the corners of Z, z, s, e, a and the top-left of &.
+                #
+                # Extending the bar instead brings back the eave. What a stroked
+                # join would supply here is a mitre: the diamond spanning both
+                # end faces. Its 45-degree upper edge chamfers the bar's corner
+                # into the diagonal's shoulder; its lower half is buried under
+                # the diagonal's body.
+                #
+                # Only this pairing needs it. A vertical bar's end face is
+                # horizontal - identical to the diagonal's - so column-diagonal
+                # and diagonal-diagonal junctions already meet flush, and adding
+                # anything there is what earlier designs got wrong.
+                if ($isH) {
+                    $half = $barWidth / 2.0
+                    foreach ($endPt in @(@($sl[0], $sl[1]), @($sl[2], $sl[3]))) {
+                        if (Test-PartnerAxis $endPt[0] $endPt[1] @("D") "H") {
+                            $mx = $endPt[0]; $my = $endPt[1]
+                            $quad = @(
+                                (New-Object System.Drawing.PointF ([float]$mx, [float]($my - $half)))
+                                (New-Object System.Drawing.PointF ([float]($mx + $half), [float]$my))
+                                (New-Object System.Drawing.PointF ([float]$mx, [float]($my + $half)))
+                                (New-Object System.Drawing.PointF ([float]($mx - $half), [float]$my))
+                            )
+                            Add-Wound $path $quad
+                        }
+                    }
+                }
             }
             else {
                 Add-Diagonal $path $sl[0] $sl[1] $sl[2] $sl[3] $barWidth

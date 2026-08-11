@@ -895,7 +895,16 @@ consequences, both now in the font:
   half a stroke **only when a perpendicular axis-aligned segment shares the
   endpoint**; everything else ends flat at the centreline, exactly as the
   separate dies on a real DL-3422 do; hooks never take an extension; curves get
-  nothing. The support case fills every corner and L-turn — `7`'s top-right,
+  nothing. One addendum, caught by Dave on the first review of the die policy:
+  **where a horizontal bar and a diagonal share an endpoint, a mitre diamond
+  spanning both end faces fills the wedge between them.** A horizontal bar's end
+  face is vertical and a diagonal's is horizontal, so they touch only at the
+  centre and the diagonal's shoulder pokes half a stroke past the bar's flat end
+  — the corners of `Z z s e a` and the top-left of `&`. The diamond's 45° upper
+  edge chamfers the bar corner into the shoulder; its lower half is buried under
+  the diagonal. Only this pairing needs it — a vertical bar's end face is
+  horizontal, identical to the diagonal's, so column-diagonal and
+  diagonal-diagonal junctions already meet flush. The support case fills every corner and L-turn — `7`'s top-right,
   `h`'s shoulder — with the two overshoots landing exactly flush. Everywhere
   else the end is a die edge: a lone `1` really is half a stroke shorter than
   the `0` beside it, `v`'s foot is flat with the diagonal melding in, lowercase

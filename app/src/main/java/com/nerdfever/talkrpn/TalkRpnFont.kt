@@ -902,11 +902,42 @@ object TalkRpnFont {
 
                 when (axisOf(pts)) {
                     'C' -> lit.addRibbon(pts, strokeWidth)
-                    'H' -> lit.addAxisBar(
-                        pts[0], pts[1], pts[2], pts[3], strokeWidth,
-                        barExtend(pts[0], pts[1], 'H', 'V'),
-                        barExtend(pts[2], pts[3], 'H', 'V')
-                    )
+                    'H' -> {
+                        lit.addAxisBar(
+                            pts[0], pts[1], pts[2], pts[3], strokeWidth,
+                            barExtend(pts[0], pts[1], 'H', 'V'),
+                            barExtend(pts[2], pts[3], 'H', 'V')
+                        )
+
+                        // THE MITRE DIAMOND. A horizontal bar's end face is
+                        // vertical and a diagonal's is horizontal, so where the
+                        // two share an endpoint the diagonal's shoulder pokes
+                        // half a stroke past the bar's flat end - the notch at
+                        // the corners of Z, z, s, e, a and the top-left of &.
+                        // The diamond spanning both end faces is the mitre a
+                        // stroked join would have supplied: its 45-degree upper
+                        // edge chamfers the bar's corner into the shoulder, and
+                        // its lower half is buried under the diagonal's body.
+                        //
+                        // Only this pairing needs it: a vertical bar's end face
+                        // is horizontal, identical to the diagonal's, so those
+                        // junctions already meet flush.
+                        val half = strokeWidth / 2f
+
+                        for (k in 0..1) {
+                            val mx = pts[k * 2]; val my = pts[k * 2 + 1]
+                            if (hasPerpPartner(mx, my, 'D', 'H')) {
+                                lit.addWound(
+                                    floatArrayOf(
+                                        mx, my - half,
+                                        mx + half, my,
+                                        mx, my + half,
+                                        mx - half, my
+                                    )
+                                )
+                            }
+                        }
+                    }
                     'V' -> lit.addAxisBar(
                         pts[0], pts[1], pts[2], pts[3], strokeWidth,
                         barExtend(pts[0], pts[1], 'V', 'H'),
