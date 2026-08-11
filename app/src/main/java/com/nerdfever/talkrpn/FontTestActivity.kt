@@ -72,18 +72,17 @@ private val CELL_HEIGHTS_MM = listOf(1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 6
 private const val INITIAL_SIZE_INDEX = 3
 
 /**
- * Stroke widths offered, in cell widths - the unit segment E/F to segment B/C.
+ * Stroke widths offered, as multiples of the measured value.
  *
- * Written as the old cap-height-100 figures over 58.47 so the list is the same
- * one that has been judged on the watch, unrounded. The nominal 0.15888 is the
- * HP-01's, and it is visibly too heavy here, because seven segments had room in
- * this width and twenty-six do not. Expect the answer to be nearer the middle of
- * this list. 0.07953 - exactly half nominal - is the default, being what a macro
- * photograph of a real HP-55 measures out at.
+ * Centred on TalkRpnFont.STROKE rather than on a fixed list, so the control
+ * brackets what the real part actually does and the middle entry is the
+ * measurement itself. The old list was absolute figures carried over from a
+ * grid where the cap height was 100, which stopped meaning anything once the
+ * stroke was measured properly.
  */
-private val STROKE_CHOICES =
-    listOf(3.0f, 4.0f, 4.65f, 5.5f, 6.5f, 7.5f, 9.29f, 11.0f).map { it / 58.47f }
-private const val INITIAL_STROKE_INDEX = 2      // 4.65/58.47 = 0.0795, the measured weight
+private val STROKE_MULTIPLES = listOf(0.5f, 0.65f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f, 1.5f)
+private val STROKE_CHOICES = STROKE_MULTIPLES.map { it * TalkRpnFont.STROKE }
+private const val INITIAL_STROKE_INDEX = 4      // the 1.0, so it starts as measured
 
 /**
  * The lit-segment colour: the display's reddest red.
