@@ -137,6 +137,15 @@ function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
     # as a hairline where the top bar hands over to the corner hook. This is far
     # too small to change any shape - about a hundredth of a stroke - and just
     # enough that the shapes overlap instead of touching.
+    # The TRUE ends, kept before the overlap moves them. The corner test below
+    # needs these: it matches to 0.0005, the overlap is 0.0015, so testing the
+    # nudged ends failed every time and no bar ever got its corner patch. The
+    # left corners still looked right because they are formed by the hook, an
+    # arc, which takes no overlap - which is exactly why the symptom was "the
+    # RIGHT corners".
+    $endX1 = $x1;  $endY1 = $y1
+    $endX2 = $x2;  $endY2 = $y2
+
     $len = [Math]::Sqrt(($x2 - $x1) * ($x2 - $x1) + ($y2 - $y1) * ($y2 - $y1))
 
     if ($len -gt 0) {
@@ -163,8 +172,8 @@ function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
 
     Add-Wound $path $pts
 
-    Add-EndPatch $path $x1 $y1 $w
-    Add-EndPatch $path $x2 $y2 $w
+    Add-EndPatch $path $endX1 $endY1 $w
+    Add-EndPatch $path $endX2 $endY2 $w
 }
 
 # A curved run, as a ribbon of constant PERPENDICULAR thickness either side of

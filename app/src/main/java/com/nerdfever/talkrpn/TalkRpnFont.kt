@@ -643,6 +643,11 @@ object TalkRpnFont {
             )
         )
 
+        // Patched from the ORIGINAL ends, not the nudged ones. atCorner matches to
+        // 0.0005 and SEAM_OVERLAP is 0.0015, so testing ax/bx would fail every
+        // time and no bar would ever get its corner. The PowerShell copy of this
+        // did exactly that, and the corners quietly went missing on every bar -
+        // only the hook-formed left ones survived, since an arc takes no overlap.
         addCornerPatch(x1, y1, w)
         addCornerPatch(x2, y2, w)
     }
