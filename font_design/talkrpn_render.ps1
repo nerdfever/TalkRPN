@@ -52,6 +52,9 @@ foreach ($e in $GLYPHS) { $GLYPH_MAP[[char]$e.C] = $e.S }
 $SHEAR_DEFAULT = [Math]::Tan($SLANT_DEG * [Math]::PI / 180.0)
 $SHEARED_WIDTH = $CELL_WIDTH + $SHEAR_DEFAULT * $TOTAL_HEIGHT
 
+# How far each bar runs past its end, purely to close antialiasing seams.
+$SEAM_OVERLAP = 0.0015
+
 # ---- building one glyph's outline ---------------------------------------------
 
 # Add a polygon, wound consistently.
@@ -75,32 +78,72 @@ function Add-Wound($path, $pts) {
     $path.AddPolygon([System.Drawing.PointF[]]$pts)
 }
 
+# Is this endpoint one of the cell's CORNERS - extreme on both axes?
+#
+# Corners only, not the whole boundary. An edge test is too loose: the top bar
+# hands over to the corner hook at (0.1355, 0), which is on the top edge but is a
+# mid-bar junction, and dropping a square there chamfered the curve. It showed as
+# the top-left of 8, 9, 0, 6, C and 2 having a faceted hook instead of a smooth one.
+function Test-AtCorner($x, $y) {
+
+    $e = 0.0005
+
+    $xEdge = ([Math]::Abs($x) -lt $e) -or ([Math]::Abs($x - $CELL_WIDTH) -lt $e)
+
+    $yEdge = ([Math]::Abs($y) -lt $e) -or ([Math]::Abs($y - $CELL_HEIGHT) -lt $e) -or
+             ([Math]::Abs($y - $TOTAL_HEIGHT) -lt $e)
+
+    return $xEdge -and $yEdge
+}
+
+# A square of side $w centred on an endpoint that sits at a cell corner.
+#
+# This is what closes the corners, and it replaces an earlier attempt that
+# extended each segment along its own direction. That worked for bars and broke
+# everything a diagonal touched: at the top of M and N the column ran half a
+# stroke past the diagonal beside it, and the same step showed on Z's ends and
+# under V and W.
+#
+# The difference that matters is WHERE an end sits, not what shape owns it. At a
+# corner the ink has to reach the cell's outer rectangle whatever direction the
+# segment came from - so every segment ending there gets the SAME square, and they
+# land on top of each other instead of stepping past. Anywhere else nothing is
+# added: segments meeting mid-run already share an end face, and a patch there
+# only pokes through.
+function Add-EndPatch($path, $x, $y, $w) {
+
+    if (-not (Test-AtCorner $x $y)) { return }
+
+    $half = $w / 2.0
+    $pts = @(
+        (New-Object System.Drawing.PointF ([float]($x - $half), [float]($y - $half)))
+        (New-Object System.Drawing.PointF ([float]($x + $half), [float]($y - $half)))
+        (New-Object System.Drawing.PointF ([float]($x + $half), [float]($y + $half)))
+        (New-Object System.Drawing.PointF ([float]($x - $half), [float]($y + $half)))
+    )
+
+    Add-Wound $path $pts
+}
+
 # A straight segment, as the parallelogram a fixed nib sweeps.
 function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
 
     $half = $w / 2.0
 
-    # Extend half a stroke past each end, along the segment's own direction -
-    # but ONLY for bars that run square to the axes.
+    # A hair of overlap at each end.
     #
-    # The extension exists to close the cell's corners, and those are formed by
-    # horizontal and vertical bars: one ending at x = 1 stops dead there while the
-    # column beside it starts at y = 0, leaving the square outside both empty.
-    #
-    # A diagonal needs none of that. It ends at a junction where it already shares
-    # its flat end face with whatever it meets - two diagonals meeting at the apex
-    # of M or W have the SAME end face - so extending it only pushes it through and
-    # out the other side. That is what left a notch and a stub at those vertices.
-    $axisAligned = ($x1 -eq $x2) -or ($y1 -eq $y2)
+    # Butted exactly, two polygons leave a sub-pixel seam: antialiasing renders
+    # each edge at partial coverage and the two do not quite add to one. Visible
+    # as a hairline where the top bar hands over to the corner hook. This is far
+    # too small to change any shape - about a hundredth of a stroke - and just
+    # enough that the shapes overlap instead of touching.
+    $len = [Math]::Sqrt(($x2 - $x1) * ($x2 - $x1) + ($y2 - $y1) * ($y2 - $y1))
 
-    if ($axisAligned) {
-        $len = [Math]::Sqrt(($x2 - $x1) * ($x2 - $x1) + ($y2 - $y1) * ($y2 - $y1))
-        if ($len -gt 0) {
-            $ux = ($x2 - $x1) / $len
-            $uy = ($y2 - $y1) / $len
-            $x1 = $x1 - $ux * $half;  $y1 = $y1 - $uy * $half
-            $x2 = $x2 + $ux * $half;  $y2 = $y2 + $uy * $half
-        }
+    if ($len -gt 0) {
+        $ux = ($x2 - $x1) / $len * $SEAM_OVERLAP
+        $uy = ($y2 - $y1) / $len * $SEAM_OVERLAP
+        $x1 = $x1 - $ux;  $y1 = $y1 - $uy
+        $x2 = $x2 + $ux;  $y2 = $y2 + $uy
     }
 
     # Which way does the nib point? Across the segment's dominant axis, so a
@@ -119,6 +162,9 @@ function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
     )
 
     Add-Wound $path $pts
+
+    Add-EndPatch $path $x1 $y1 $w
+    Add-EndPatch $path $x2 $y2 $w
 }
 
 # A curved run, as a ribbon of constant PERPENDICULAR thickness either side of
@@ -156,6 +202,9 @@ function Add-Ribbon($path, $pts, $w) {
     }
 
     Add-Wound $path $outline
+
+    Add-EndPatch $path $pts[0][0] $pts[0][1] $w
+    Add-EndPatch $path $pts[-1][0] $pts[-1][1] $w
 }
 
 <#
