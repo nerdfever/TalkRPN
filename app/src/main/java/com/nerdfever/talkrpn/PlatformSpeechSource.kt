@@ -54,18 +54,21 @@ private const val RESTART_DELAY_MS = 80L
  */
 private const val FAST_FAILURE_MS = 400L
 
-/** How fast the restart delay grows while it keeps failing, and its ceiling. */
-private const val BACKOFF_FACTOR = 2
-private const val RESTART_DELAY_MAX_MS = 30_000L
-
 /**
- * Consecutive immediate failures before continuous listening gives up.
+ * How fast the restart delay grows while it keeps failing, and the point at
+ * which waiting longer stops being worth it.
  *
- * Eight, which with the doubling above spans about twenty seconds - long enough
- * to ride out a recognition service restarting or a locale pack installing, short
- * enough that a genuinely broken device stops burning battery promptly.
+ * Ten seconds is already generous: recognition runs ON the watch, so nothing
+ * here is waiting on a network. If ten seconds of backing off has not produced
+ * one session that survives, the thing is not busy, it is broken.
+ *
+ * There is deliberately no second "give up after N tries" constant. The cap IS
+ * the give-up: once the next wait would exceed it, we stop. One knob, and the
+ * two cannot drift into disagreeing about how long we persist - which with 80 ms
+ * doubling is seven retries and about ten seconds in total.
  */
-private const val FAST_FAILURE_GIVE_UP = 8
+private const val BACKOFF_FACTOR = 2
+private const val RESTART_DELAY_MAX_MS = 10_000L
 
 /**
  * Silence that ends one segment, in milliseconds.
@@ -589,12 +592,14 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
 
         if (diedImmediately) fastFailures += 1 else fastFailures = 0
 
-        // Give up rather than retry for ever. Whatever is wrong will not be fixed by
-        // asking again, and an invisible retry loop is worse than a visible failure:
-        // on the emulator, with no recognition service installed, this span ran
-        // hundreds of attempts a second and left the process too busy to draw its own
-        // window. On a watch it would be a flat battery by lunchtime.
-        if (fastFailures >= FAST_FAILURE_GIVE_UP) {
+        val delay = restartDelayMs()
+
+        // Past the cap, so give up rather than retry for ever. Whatever is wrong will
+        // not be fixed by asking again, and an invisible retry loop is worse than a
+        // visible failure: on the emulator, with no recognition service installed,
+        // this span ran hundreds of attempts a second and left the process too busy
+        // to draw its own window. On a watch it would be a flat battery by lunchtime.
+        if (delay > RESTART_DELAY_MAX_MS) {
 
             continuous = false
             state = TrialState.Failed
@@ -604,8 +609,6 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
             return
         }
 
-        val delay = restartDelayMs()
-
         if (diedImmediately) {
             Log.d(LOG_TAG, "platform: died in $elapsed ms (#$fastFailures), next try in $delay ms")
         }
@@ -614,8 +617,11 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
     }
 
     /**
-     * The normal restart cadence, doubled once per consecutive immediate failure
-     * and capped.
+     * The normal restart cadence, doubled once per consecutive immediate failure.
+     *
+     * Deliberately NOT clamped to the cap: the caller needs to see the overshoot,
+     * because overshooting is what tells it to stop. Clamping here would hand back
+     * exactly the cap for ever and the loop would never end.
      *
      * Returns to the normal cadence the moment a session runs for a sensible
      * length of time, so an isolated hiccup costs nothing.
@@ -625,8 +631,12 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
         var delay = RESTART_DELAY_MS
 
         repeat(fastFailures) {
+
             delay *= BACKOFF_FACTOR
-            if (delay >= RESTART_DELAY_MAX_MS) return RESTART_DELAY_MAX_MS
+
+            // Stop multiplying once it is already past the cap, so a long run of
+            // failures cannot overflow the Long.
+            if (delay > RESTART_DELAY_MAX_MS) return delay
         }
 
         return delay

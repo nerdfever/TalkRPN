@@ -832,7 +832,53 @@ Divergences from the DL-3422, all deliberate:
 | ~~Parens vs brackets~~ | **Done.** Both parens are now properly curved: `(` is the left column with both corners hooked; `)` is `RPAR`, the whole right parenthesis as ONE element (bar stub + arc + column + arc + bar stub — the right side has no shortened bars for a bare arc to join). It began as two halves, `A5` and `D5`, but nothing ever lit one without the other so they merged. 32 elements; the mask is a `Long`. What was rejected earlier was a *mismatched* pair, not curvature. |
 | **Not yet wired in** | `DisplayTestActivity` still renders with `Hp01Font`. The calculator display needs moving onto `TalkRpnFont`. |
 | **Still guessed** | `'`, `f` and `t` — the chart is ambiguous at those three. |
-| **Final LED colour** | Three candidate reds are cycled in the test screens; the choice has to be made on the watch, not the emulator. |
+| **Final LED colour** | *Answered on the physics; still to be judged on the watch.* See below — the emitter is 655–660 nm and the closest sRGB is **`#FF0000`**. |
+
+### What colour were they, really?
+
+Both datasheets state it outright — no reconstruction needed:
+
+| part | peak wavelength |
+|---|---|
+| HP 5082-7400 (the HP-35/HP-01 family bubble) | **655 nm** |
+| Siemens DL-3422 (the 22-segment part) | **660 nm** |
+
+Both are GaAsP, the standard red LED chemistry of the period, and both sit at the
+far red end of the spectral locus:
+
+| | CIE 1931 x | y |
+|---|---|---|
+| 655 nm | 0.7283 | 0.2717 |
+| 660 nm | 0.7300 | 0.2700 |
+
+**No consumer display can show that hue.** It is outside every gamut in use — the
+sRGB red primary falls short by 0.088 in x, Display P3 by 0.048, even Rec.2020 by
+0.020. So the question is not "what is the colour" but "what is the closest
+reachable one", and the two standard ways of answering disagree *visibly*:
+
+| mapping | result | ΔE2000 |
+|---|---|---|
+| Clip the negative components — maximum saturation | **`#FF0000`** | **7.8** |
+| Desaturate toward white, preserving dominant wavelength | `#FF0052` | 17.0 |
+
+The second is not a mistake: `#FF0052` genuinely has 655 nm as its dominant
+wavelength, at 63% purity. But the line from 655 nm to the white point exits the
+gamut through the **magenta** edge, so it lands on pink — and against a black
+background, saturation carries the impression far more than dominant wavelength
+does. CIEDE2000 agrees, at less than half the error.
+
+**So: pure `#FF0000`.** The current `LED_RED` is `#E81810`, which mixes in a
+little green and blue and so reads slightly duller and browner than the emitter
+did. Worth noting the watch's OLED covers P3 — rendering in a wide-gamut space
+would get the red primary from x = 0.64 to x = 0.68, which is a real step closer
+and free.
+
+Two caveats before treating this as settled. The emitter is only part of what the
+eye saw: light left these parts through a moulded epoxy bubble lens, and at the
+currents they ran at the segments bloomed. And photographs of the real things are
+*not* good evidence — sensors clip hard on saturated red and shift it orange. The
+number above is where to start, not where to stop; the bloom and scatter Dave
+wants to chase are the rest of it.
 
 ### How many segments is too many? (open question, worth deciding early)
 
