@@ -536,6 +536,38 @@ object TalkRpnFont {
     private const val SEAM_OVERLAP = 0.0015f
 
     /**
+     * Add a polygon, wound consistently.
+     *
+     * Winding matters because every lit segment goes into ONE path filled in
+     * NonZero mode. A bar running right-to-left comes out wound the opposite way
+     * from one running left-to-right, and where two opposite-wound shapes overlap
+     * the winding numbers cancel and punch a HOLE - small black notches exactly
+     * at the crossings in # and $.
+     */
+    private fun Path.addWound(pts: FloatArray) {
+
+        val n = pts.size / 2
+        if (n < 3) return
+
+        // Shoelace: negative means the points run the other way round.
+        var area = 0f
+        for (i in 0 until n) {
+            val j = (i + 1) % n
+            area += pts[i * 2] * pts[j * 2 + 1] - pts[j * 2] * pts[i * 2 + 1]
+        }
+
+        if (area >= 0f) {
+            moveTo(pts[0], pts[1])
+            for (i in 1 until n) lineTo(pts[i * 2], pts[i * 2 + 1])
+        } else {
+            moveTo(pts[(n - 1) * 2], pts[(n - 1) * 2 + 1])
+            for (i in n - 2 downTo 0) lineTo(pts[i * 2], pts[i * 2 + 1])
+        }
+
+        close()
+    }
+
+    /**
      * Is this endpoint one of the cell's CORNERS - extreme on both axes?
      *
      * Corners only, not the whole boundary. An edge test is too loose: the top
@@ -573,11 +605,14 @@ object TalkRpnFont {
 
         val half = w / 2f
 
-        moveTo(x - half, y - half)
-        lineTo(x + half, y - half)
-        lineTo(x + half, y + half)
-        lineTo(x - half, y + half)
-        close()
+        addWound(
+            floatArrayOf(
+                x - half, y - half,
+                x + half, y - half,
+                x + half, y + half,
+                x - half, y + half
+            )
+        )
     }
 
     /** Add one straight segment, as the parallelogram a fixed nib sweeps. */
@@ -599,11 +634,14 @@ object TalkRpnFont {
         val dx: Float; val dy: Float
         if (abs(bx - ax) > abs(by - ay)) { dx = 0f; dy = half } else { dx = half; dy = 0f }
 
-        moveTo(ax - dx, ay - dy)
-        lineTo(bx - dx, by - dy)
-        lineTo(bx + dx, by + dy)
-        lineTo(ax + dx, ay + dy)
-        close()
+        addWound(
+            floatArrayOf(
+                ax - dx, ay - dy,
+                bx - dx, by - dy,
+                bx + dx, by + dy,
+                ax + dx, ay + dy
+            )
+        )
 
         addCornerPatch(x1, y1, w)
         addCornerPatch(x2, y2, w)
@@ -636,10 +674,19 @@ object TalkRpnFont {
             right[i * 2] = pts[i * 2] - nx;     right[i * 2 + 1] = pts[i * 2 + 1] - ny
         }
 
-        moveTo(left[0], left[1])
-        for (i in 1 until n) lineTo(left[i * 2], left[i * 2 + 1])
-        for (i in n - 1 downTo 0) lineTo(right[i * 2], right[i * 2 + 1])
-        close()
+        // Down one side and back the other.
+        val outline = FloatArray(n * 4)
+        for (i in 0 until n) {
+            outline[i * 2] = left[i * 2]
+            outline[i * 2 + 1] = left[i * 2 + 1]
+        }
+        for (i in 0 until n) {
+            val j = n - 1 - i
+            outline[(n + i) * 2] = right[j * 2]
+            outline[(n + i) * 2 + 1] = right[j * 2 + 1]
+        }
+
+        addWound(outline)
 
         addCornerPatch(pts[0], pts[1], w)
         addCornerPatch(pts[(n - 1) * 2], pts[(n - 1) * 2 + 1], w)
