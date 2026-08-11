@@ -132,7 +132,9 @@ object TalkRpnGlyphs {
         'L' to (UL or LL or BOT),
         'M' to (UL or m(Seg.H) or m(Seg.I) or UR or LL or LR),
         'N' to (UL or m(Seg.H) or UR or m(Seg.K) or LL or LR),
-        'O' to (TOP_HOOK or UL_SHORT or UR or LL_SHORT or LR or BOT_HOOK),
+        // Square corners, unlike the hooked 0 - Dave's choice, so the two are
+        // no longer the same mask.
+        'O' to (TOP or UL or UR or LL or LR or BOT),
         'P' to (TOP or UL or UR or MID or LL),
         'Q' to (TOP_HOOK or UL_SHORT or UR or LL_SHORT or BOT_HOOK or LR or m(Seg.K)),
         'R' to (TOP or UL or UR or MID or LL or m(Seg.K)),

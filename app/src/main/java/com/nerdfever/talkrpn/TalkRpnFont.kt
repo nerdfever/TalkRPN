@@ -568,36 +568,25 @@ object TalkRpnFont {
     }
 
     /**
-     * Add one straight segment, as the parallelogram a fixed nib sweeps.
+     * An axis-aligned bar, as the rectangle a fixed nib sweeps.
      *
-     * END RULE, fourth design. The one-line version:
+     * END RULE, fifth design:
      *
-     *   Bars extend half a stroke at every end except the hook handovers;
-     *   diagonal tips on the cell's outer edge are extruded vertically to the
-     *   ink box; curves get nothing.
+     *   Bars extend half a stroke at every end except the hook handovers.
+     *   A diagonal's FREE ends - shared with no other lit segment - extend along
+     *   the diagonal's own slope until the flat end face reaches the ink line,
+     *   x-clamped to the ink box. SHARED diagonal ends stay flat. Curves get
+     *   nothing.
      *
-     * Why each clause is there:
-     *
-     * Bars extend EVERYWHERE, not just at the outer boundary, because an
-     * interior L-turn - the G bar turning into a stem at the x-height line, as
-     * in h, a, ? and most of lower case - is notched at its outside corner when
-     * neither piece extends. Extended, the two overshoots land exactly flush
-     * with each other's ink edges: the notch fills and nothing pokes out. At
-     * colinear joints the overshoot is buried. This is the old square cap,
-     * which got this right.
-     *
-     * EXCEPT at the four hook handovers, where the bar meets an arc mid-run: an
-     * extension there pokes past the arc's outer edge and puts a bump on the
-     * hook.
-     *
-     * Diagonal tips landing on the top edge, baseline or descender line are
-     * extruded VERTICALLY - the flat end face pushed out to the ink box - so a
-     * V's foot and a W's vees reach the same line the columns do, instead of
-     * stopping half a stroke short. Not extended along their own direction:
-     * that is the overshoot that put a stub through M's apex. Interior diagonal
-     * ends still get nothing, which is what keeps that apex a clean butt joint.
+     * The free/shared distinction is the piece every earlier design lacked, and
+     * it is per-GLYPH information: the same segment end is shared in one glyph
+     * and free in another. M's apex is two shared ends - flat butt, nothing
+     * added. X's four tips are free - each extends along its own slope to the
+     * ink line, sides continuous, which is what the vertical-sided extrusion box
+     * got wrong (it put a kinked boot on every tip). And a diagonal tip tucked
+     * under a column - M's top corners - is shared, so nothing pokes.
      */
-    private fun Path.addBar(x1: Float, y1: Float, x2: Float, y2: Float, w: Float) {
+    private fun Path.addAxisBar(x1: Float, y1: Float, x2: Float, y2: Float, w: Float) {
 
         val half = w / 2f
         val e = 0.0005f
@@ -608,9 +597,6 @@ object TalkRpnFont {
         val ux = (x2 - x1) / len
         val uy = (y2 - y1) / len
 
-        val isHorizontal = abs(y2 - y1) < e
-        val isVertical = abs(x2 - x1) < e
-
         // The four points where a bar hands over to a corner arc. An extension
         // here pokes past the arc's outer edge; the seam overlap alone joins them.
         fun hookPoint(x: Float, y: Float): Boolean =
@@ -619,48 +605,13 @@ object TalkRpnFont {
                 (abs(x) < e && abs(y - Y_E_BOTTOM) < e) ||
                 (abs(x - X_HOOK_START) < e && abs(y - CELL_HEIGHT) < e)
 
-        val ax: Float; val ay: Float; val bx: Float; val by: Float
+        val ext1 = SEAM_OVERLAP + if (hookPoint(x1, y1)) 0f else half
+        val ext2 = SEAM_OVERLAP + if (hookPoint(x2, y2)) 0f else half
 
-        if (isHorizontal || isVertical) {
+        val ax = x1 - ux * ext1; val ay = y1 - uy * ext1
+        val bx = x2 + ux * ext2; val by = y2 + uy * ext2
 
-            val ext1 = SEAM_OVERLAP + if (hookPoint(x1, y1)) 0f else half
-            val ext2 = SEAM_OVERLAP + if (hookPoint(x2, y2)) 0f else half
-
-            ax = x1 - ux * ext1; ay = y1 - uy * ext1
-            bx = x2 + ux * ext2; by = y2 + uy * ext2
-
-        } else {
-
-            // Diagonals and tails: seam overlap only, along the run...
-            ax = x1 - ux * SEAM_OVERLAP; ay = y1 - uy * SEAM_OVERLAP
-            bx = x2 + ux * SEAM_OVERLAP; by = y2 + uy * SEAM_OVERLAP
-
-            // ...plus the vertical extrusion at outer-edge tips, the same x-span
-            // as the tip's flat face.
-            for ((tx, ty) in arrayOf(x1 to y1, x2 to y2)) {
-
-                val yFrom: Float; val yTo: Float
-
-                when {
-                    abs(ty) < 0.01f -> { yFrom = -half; yTo = SEAM_OVERLAP }
-                    abs(ty - CELL_HEIGHT) < 0.01f || abs(ty - TOTAL_HEIGHT) < 0.01f -> {
-                        yFrom = ty - SEAM_OVERLAP; yTo = ty + half
-                    }
-                    else -> continue
-                }
-
-                addWound(
-                    floatArrayOf(
-                        tx - half, yFrom,
-                        tx + half, yFrom,
-                        tx + half, yTo,
-                        tx - half, yTo
-                    )
-                )
-            }
-        }
-
-        // The nib points across the segment's dominant axis.
+        // The nib points across the bar's axis.
         val dx: Float; val dy: Float
         if (abs(bx - ax) > abs(by - ay)) { dx = 0f; dy = half } else { dx = half; dy = 0f }
 
@@ -673,6 +624,73 @@ object TalkRpnFont {
             )
         )
     }
+
+    /**
+     * A diagonal (or tail): the parallelogram a horizontal nib sweeps, with flat
+     * horizontal end faces, plus the free-end extensions described on
+     * [addAxisBar].
+     */
+    private fun Path.addDiagonal(
+        x1: Float, y1: Float, x2: Float, y2: Float, w: Float,
+        free1: Boolean, free2: Boolean
+    ) {
+        val half = w / 2f
+
+        val len = hypot(x2 - x1, y2 - y1)
+        if (len == 0f) return
+
+        val ux = (x2 - x1) / len
+        val uy = (y2 - y1) / len
+
+        // The body, with the hair of seam overlap along the run.
+        val ax = x1 - ux * SEAM_OVERLAP; val ay = y1 - uy * SEAM_OVERLAP
+        val bx = x2 + ux * SEAM_OVERLAP; val by = y2 + uy * SEAM_OVERLAP
+
+        addWound(
+            floatArrayOf(
+                ax - half, ay,
+                bx - half, by,
+                bx + half, by,
+                ax + half, ay
+            )
+        )
+
+        // Free-end extensions: continue along the slope until the end face sits
+        // on the ink line, half a stroke past the endpoint's level. The quad's
+        // sides have the diagonal's own slope, so the outline is continuous - no
+        // kink. The face is x-clamped to the ink box, which chamfers a tip into
+        // a cell corner rather than letting it poke out sideways.
+        if (abs(uy) < 0.0001f) return
+
+        val t = half / abs(uy)
+
+        for ((free, px, py, ddx, ddy) in arrayOf(
+            Quint(free1, x1, y1, -ux * t, -uy * t),
+            Quint(free2, x2, y2, ux * t, uy * t)
+        )) {
+            if (!free) continue
+
+            val tipX = px + ddx
+            val tipY = py + ddy
+
+            val lo = maxOf(tipX - half, -half)
+            val hi = minOf(tipX + half, CELL_WIDTH + half)
+
+            addWound(
+                floatArrayOf(
+                    px - half, py,
+                    px + half, py,
+                    hi, tipY,
+                    lo, tipY
+                )
+            )
+        }
+    }
+
+    /** A tuple for the two ends of a diagonal. */
+    private data class Quint(
+        val free: Boolean, val x: Float, val y: Float, val dx: Float, val dy: Float
+    )
 
     /** Add one curved run, as a ribbon of constant perpendicular thickness. */
     private fun Path.addRibbon(pts: FloatArray, w: Float) {
@@ -716,11 +734,6 @@ object TalkRpnFont {
         addWound(outline)
     }
 
-    /** Two points is a bar; more is a curve. */
-    private fun Path.addCentreline(pts: FloatArray, w: Float) {
-        if (pts.size == 4) addBar(pts[0], pts[1], pts[2], pts[3], w)
-        else addRibbon(pts, w)
-    }
 
     // ---- The corners --------------------------------------------------------
     //
@@ -884,12 +897,64 @@ object TalkRpnFont {
             val lit = Path()
             lit.fillType = PathFillType.NonZero
 
+            // Every lit segment's endpoints, for the free/shared test. An end is
+            // free if no OTHER lit segment ends at the same point.
+            val ends = ArrayList<Float>()
+
             for ((seg, pts) in CENTRELINES) {
                 if (mask and seg.bit == 0L) continue
-                lit.addCentreline(pts, strokeWidth)
+                ends.add(pts[0]); ends.add(pts[1])
+                ends.add(pts[pts.size - 2]); ends.add(pts[pts.size - 1])
             }
 
-            if (mask and Seg.COMMA.bit != 0L) lit.addCentreline(COMMA_TAIL, strokeWidth)
+            fun shared(x: Float, y: Float): Boolean {
+                var hits = 0
+                for (i in 0 until ends.size step 2) {
+                    if (abs(ends[i] - x) < 0.001f && abs(ends[i + 1] - y) < 0.001f) {
+                        hits += 1
+                        if (hits >= 2) return true
+                    }
+                }
+                return false
+            }
+
+            // Tails are diagonals too, but their tips hang in space by design and
+            // must not grow: only ends on the H..L lattice may free-extend.
+            fun onLattice(x: Float, y: Float): Boolean {
+                val xOk = abs(x) < 0.001f || abs(x - 0.5f) < 0.001f || abs(x - CELL_WIDTH) < 0.001f
+                val yOk = abs(y) < 0.001f || abs(y - CELL_HEIGHT / 2f) < 0.001f || abs(y - CELL_HEIGHT) < 0.001f
+                return xOk && yOk
+            }
+
+            fun addSegment(pts: FloatArray) {
+
+                if (pts.size > 4) {
+                    lit.addRibbon(pts, strokeWidth)
+                    return
+                }
+
+                val e = 0.0005f
+                val axisAligned = abs(pts[0] - pts[2]) < e || abs(pts[1] - pts[3]) < e
+
+                if (axisAligned) {
+                    lit.addAxisBar(pts[0], pts[1], pts[2], pts[3], strokeWidth)
+                } else {
+                    val f1 = onLattice(pts[0], pts[1]) && !shared(pts[0], pts[1])
+                    val f2 = onLattice(pts[2], pts[3]) && !shared(pts[2], pts[3])
+                    lit.addDiagonal(pts[0], pts[1], pts[2], pts[3], strokeWidth, f1, f2)
+                }
+            }
+
+            for ((seg, pts) in CENTRELINES) {
+                if (mask and seg.bit == 0L) continue
+                addSegment(pts)
+            }
+
+            if (mask and Seg.COMMA.bit != 0L)
+                lit.addDiagonal(
+                    COMMA_TAIL[0], COMMA_TAIL[1], COMMA_TAIL[2], COMMA_TAIL[3],
+                    strokeWidth, free1 = false, free2 = false
+                )
 
             // Dots are squares of side twice the stroke - a macro photograph of a
             // real HP-55 shows the decimal point as a distinct square die, and the

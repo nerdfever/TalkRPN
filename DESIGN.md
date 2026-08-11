@@ -811,7 +811,7 @@ Divergences from the DL-3422, all deliberate:
   with `D3` — otherwise the column spikes past the arc.
 - **Digits are full-width**, on `B`/`C`. Half-width digits on `P`/`Q` were tried
   — they keep `5` and `S` apart — but reverted: the HP-01 width looks right and
-  the cost is that `0` and `O` become identical, which is accepted. `1` and `l` stay distinct — the right column against the centre column.
+  `0` and `O` were briefly identical; `O` now takes the four square corners while `0` keeps the hooks. `1` and `l` stay distinct — the right column against the centre column.
 - **The decimal point and comma live inside the character cell** rather than
   consuming one of their own.
 
@@ -828,7 +828,7 @@ Divergences from the DL-3422, all deliberate:
 | **Decimal-point position** | *Half done.* The dot belongs to the **gap** between cells, not to a cell, so a fixed `DP_X = 1.48179` is only right at pitch 2.43031 — tighten the pitch and the gap shrinks underneath a dot that has not moved. `DP_GAP_FRACTION` and `dpXAt(pitch)` now express it pitch-independently, and the specimen renderer uses them. **Still to do:** `TalkRpnFont` bakes `DP_X` into its paths at object-init, so `draw()` has to take a pitch before the font itself follows suit. |
 | ~~Stroke width~~ | **Measured: 0.147** — see below. The test screen now brackets it from 0.5x to 1.5x, starting at the measurement. |
 | ~~`l` and `\|` are identical~~ | **Fixed.** `\|` is `P Q M`, running the full cell including the descender, per DL-3422 typography; `l` is `P Q` alone. |
-| **`0` and `O` are identical** | Same mask, accepted deliberately — full-width digits cost this. `1` and `l` are NOT identical, contrary to an earlier note here: `1` is the right column `B C`, `l` the centre column `P Q`. |
+| ~~`0` and `O` are identical~~ | **Fixed, 2026-08-11:** `O` now takes four square corners while `0` keeps the hooks, so the two differ. `1` and `l` remain distinct — right column against centre column. |
 | ~~Parens vs brackets~~ | **Done.** Both parens are now properly curved: `(` is the left column with both corners hooked; `)` is `RPAR`, the whole right parenthesis as ONE element (bar stub + arc + column + arc + bar stub — the right side has no shortened bars for a bare arc to join). It began as two halves, `A5` and `D5`, but nothing ever lit one without the other so they merged. 32 elements; the mask is a `Long`. What was rejected earlier was a *mismatched* pair, not curvature. |
 | **Not yet wired in** | `DisplayTestActivity` still renders with `Hp01Font`. The calculator display needs moving onto `TalkRpnFont`. |
 | **Still guessed** | `'`, `f` and `t` — the chart is ambiguous at those three. |
@@ -891,17 +891,18 @@ consequences, both now in the font:
   than a bar, which is what a fixed nib does. Curves keep a perpendicular
   thickness — they turn a bar into a column, and a fixed nib would pinch them to
   nothing at one end.
-- **The end rule, fourth design and counting:** bars extend half a stroke at
-  *every* end except the four hook handovers; diagonal tips on the cell's outer
-  edge are extruded vertically to the ink box; curves get nothing. Each clause
-  earned its place by a failure: (1) extending diagonals along their own
-  direction overshot the vertex — the stub at `M`'s apex. (2) A square patch at
-  cell corners put a nub on every lone diagonal tip and made the ticks of `"`
-  unequal. (3) Extending bars *only* at the outer boundary notched every
-  interior L-turn — the shoulders of `h`, `a`, `?` and most of lower case — and
-  left `V`/`W`'s vees half a stroke short of the columns beside them. The
-  square cap the font started with had clauses 1 and 3 right all along; what it
-  got wrong was only rotating with the pen and bumping the hooks.
+- **The end rule, fifth design:** bars extend half a stroke at every end except
+  the four hook handovers; a diagonal's **free** ends — shared with no other lit
+  segment — extend along the diagonal's own slope until the flat end face
+  reaches the ink line, x-clamped to the ink box; **shared** diagonal ends stay
+  flat; curves get nothing. The free/shared distinction is the piece every
+  earlier design lacked, and it is per-glyph information the cell renderer has
+  and the shape primitives do not: the same segment end is shared in one glyph
+  and free in another. `M`'s apex is two shared ends — flat butt. `X`'s four
+  tips are free — each extends along its own slope, sides continuous, which is
+  what the v4 vertical-sided extrusion box got wrong (a kinked boot on every
+  tip, and lowercase `v w x z` tops stopped ragged at the x-height line while
+  the columns beside them poked half a stroke above it).
 
 ### What colour were they, really?
 
