@@ -3,6 +3,7 @@
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.Path
@@ -306,6 +307,9 @@ object TalkRpnFont {
 
     // ---- Slant --------------------------------------------------------------
 
+    /** Past this ratio a mitre is cut off, so acute diagonals cannot spike. */
+    private const val MITRE_LIMIT = 2.5f
+
     private val SHEAR = tan(Math.toRadians(SLANT_DEGREES.toDouble())).toFloat()
 
     /** Added to every x so a slanted cell still starts at x = 0. */
@@ -316,6 +320,28 @@ object TalkRpnFont {
 
     /** Maps an upright cell coordinate to its slanted x. */
     private fun sx(x: Float, y: Float) = x - SHEAR * y + SHEAR_OFFSET
+
+    /**
+     * The same map as [sx], as a matrix, so it can be applied to a whole canvas
+     * rather than point by point.
+     *
+     * This is what makes the PEN slant as well as the path. A real display's
+     * segments are parallelograms - a vertical bar's ends are horizontal, a
+     * horizontal bar's ends are slanted - and you only get that by stroking
+     * upright and shearing the RESULT. Shearing the path first and stroking it
+     * after, which is what the point-by-point [sx] did on its own, leaves a
+     * round or square pen in device space and every end cut at the wrong angle.
+     *
+     * Column-major, so index 4 is the x-from-y skew and 12 the x translation.
+     */
+    private val SHEAR_MATRIX = Matrix().apply {
+        // Set by NAME rather than by [row, column]. Compose indexes that operator
+        // row-major into a column-major array, so the obvious-looking [0, 1] and
+        // [0, 3] land on SkewY and a perspective term instead - which renders as
+        // a cell that is sheared the wrong way and shifted out of its own bounds.
+        values[Matrix.SkewX] = -SHEAR              // x picks up -SHEAR per unit of y
+        values[Matrix.TranslateX] = SHEAR_OFFSET   // shifted so the cell starts at 0
+    }
 
     // ---- Segment identity ---------------------------------------------------
 
@@ -358,28 +384,38 @@ object TalkRpnFont {
      * much is part of the point.
      */
     val CELL_OUTLINE: Path = path {
-        moveToCell(X_LEFT, Y_TOP)
-        lineToCell(X_RIGHT, Y_TOP)
-        lineToCell(X_RIGHT, Y_DESC)
-        lineToCell(X_LEFT, Y_DESC)
+        moveToSlanted(X_LEFT, Y_TOP)
+        lineToSlanted(X_RIGHT, Y_TOP)
+        lineToSlanted(X_RIGHT, Y_DESC)
+        lineToSlanted(X_LEFT, Y_DESC)
         close()
     }
 
     /** Where the baseline sits inside those bounds - the descender hangs below. */
     val CELL_BASELINE: Path = path {
-        moveToCell(X_LEFT, Y_BASE)
-        lineToCell(X_RIGHT, Y_BASE)
+        moveToSlanted(X_LEFT, Y_BASE)
+        lineToSlanted(X_RIGHT, Y_BASE)
     }
 
     // ---- Path construction --------------------------------------------------
+    //
+    // Segment paths are built UPRIGHT and sheared by [SHEAR_MATRIX] at draw time,
+    // so the pen is sheared along with them and every segment end is cut at the
+    // slant, as a real display's is.
+    //
+    // The two diagnostic overlays are the exception: callers draw them straight,
+    // outside that transform, so they carry the shear in their own coordinates.
 
     private fun path(build: Path.() -> Unit) = Path().apply(build)
 
-    private fun Path.moveToCell(x: Float, y: Float) = moveTo(sx(x, y), y)
-    private fun Path.lineToCell(x: Float, y: Float) = lineTo(sx(x, y), y)
+    private fun Path.moveToCell(x: Float, y: Float) = moveTo(x, y)
+    private fun Path.lineToCell(x: Float, y: Float) = lineTo(x, y)
     private fun Path.cubicToCell(
         x1: Float, y1: Float, x2: Float, y2: Float, x3: Float, y3: Float
-    ) = cubicTo(sx(x1, y1), y1, sx(x2, y2), y2, sx(x3, y3), y3)
+    ) = cubicTo(x1, y1, x2, y2, x3, y3)
+
+    private fun Path.moveToSlanted(x: Float, y: Float) = moveTo(sx(x, y), y)
+    private fun Path.lineToSlanted(x: Float, y: Float) = lineTo(sx(x, y), y)
 
     private fun line(x1: Float, y1: Float, x2: Float, y2: Float) = path {
         moveToCell(x1, y1)
@@ -594,8 +630,11 @@ object TalkRpnFont {
             // segmented LED, not a pixel display: every edge soft, including
             // where a diagonal crosses a stair-step boundary.
             //
-            // Round caps everywhere: with segments meeting flush, a butt cap
-            // leaves a notch wherever a diagonal meets a bar at an angle.
+            // SQUARE caps and MITRE joins, because a real segment is a rectangular
+            // die with square ends, not a rounded stroke. Round was the earlier
+            // choice, on the grounds that a butt cap notches where a diagonal
+            // meets a bar - but square is not butt: it projects half a stroke past
+            // the endpoint, which fills that notch and leaves the flat end.
             drawIntoCanvas { canvas ->
 
                 val paint = Paint().apply {
@@ -603,13 +642,26 @@ object TalkRpnFont {
                     this.color = color
                     style = PaintingStyle.Stroke
                     this.strokeWidth = strokeWidth
-                    strokeCap = StrokeCap.Round
-                    strokeJoin = StrokeJoin.Round
+                    strokeCap = StrokeCap.Square
+                    strokeJoin = StrokeJoin.Miter
+                    strokeMiterLimit = MITRE_LIMIT
                 }
 
-                if (!lit.isEmpty) canvas.drawPath(lit, paint)
+                // Stroked INSIDE the shear, so the pen shears too. That is what
+                // makes a vertical bar's ends horizontal and a horizontal bar's
+                // ends slanted - the parallelograms a real display is built from.
+                // Stroking outside it would give square ends cut square to each
+                // bar, which is wrong by the slant angle at every one of them.
+                if (!lit.isEmpty) {
+                    canvas.save()
+                    canvas.concat(SHEAR_MATRIX)
+                    canvas.drawPath(lit, paint)
+                    canvas.restore()
+                }
 
-                // Dots are filled, not stroked, and never overlap a bar.
+                // Dots are filled, not stroked, and never overlap a bar. Drawn
+                // OUTSIDE the shear, from centres that already carry it, so they
+                // stay square instead of becoming parallelograms.
                 paint.style = PaintingStyle.Fill
 
                 // SQUARE, not round. A macro photograph of a real HP-55 shows the
