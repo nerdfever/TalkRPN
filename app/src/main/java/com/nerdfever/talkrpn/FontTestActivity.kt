@@ -78,11 +78,12 @@ private const val INITIAL_SIZE_INDEX = 3
  * one that has been judged on the watch, unrounded. The nominal 0.15888 is the
  * HP-01's, and it is visibly too heavy here, because seven segments had room in
  * this width and twenty-six do not. Expect the answer to be nearer the middle of
- * this list; 0.09407 has read best so far, and 0.07953 is exactly half nominal.
+ * this list. 0.07953 - exactly half nominal - is the default, being what a macro
+ * photograph of a real HP-55 measures out at.
  */
 private val STROKE_CHOICES =
     listOf(3.0f, 4.0f, 4.65f, 5.5f, 6.5f, 7.5f, 9.29f, 11.0f).map { it / 58.47f }
-private const val INITIAL_STROKE_INDEX = 3
+private const val INITIAL_STROKE_INDEX = 2      // 4.65/58.47 = 0.0795, the measured weight
 
 /**
  * The lit-segment colour: the display's reddest red.

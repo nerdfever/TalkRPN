@@ -29,8 +29,8 @@ $CELL_HEIGHT = 100.0 / $GRID_CELL_WIDTH    # 1.71028, segment D to segment A
 $DESCENDER_FRACTION = 0.44                 # 144 against 100 on the old grid, exactly
 $TOTAL_HEIGHT = $CELL_HEIGHT * (1.0 + $DESCENDER_FRACTION)   # 2.46280
 
-# The review weight; the nominal 0.15888 is too heavy at this bar count.
-$STROKE = 5.5 / $GRID_CELL_WIDTH           # 0.09407
+# The measured weight - half the HP-01's 9.29, which is too heavy at this bar count.
+$STROKE = 4.65 / $GRID_CELL_WIDTH          # 0.07953
 $SLANT_DEG = 7.5
 
 $HOOK_R = 7.92 / $GRID_CELL_WIDTH          # 0.13545

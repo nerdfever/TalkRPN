@@ -50,7 +50,7 @@ import kotlin.math.tan
  *     20.49 / 58.47 = 0.35044  the upper colon dot
  *     80.60 / 58.47 = 1.37848  the lower colon dot
  *     7.92 / 58.47 = 0.13545   the hook radius
- *     9.29 / 58.47 = 0.15888   the stroke
+ *     4.65 / 58.47 = 0.07953   the stroke (half the HP-01's 9.29 - see STROKE)
  *     142.08 / 58.47 = 2.43031 the pitch
  *
  * The payoff for reading it: since the cell is 1 wide, pitch minus 1 IS the
@@ -148,13 +148,38 @@ object TalkRpnFont {
     /** Including the descender: segment A down to the N/O bar. */
     const val TOTAL_HEIGHT = CELL_HEIGHT * (1f + DESCENDER_FRACTION)   // 2.46280
 
-    /** Rendered stroke width. */
-    const val STROKE = 9.29f / GRID_CELL_WIDTH             // 0.15888
+    /**
+     * Rendered stroke width.
+     *
+     * Half the HP-01's own 9.29, and NOT an arbitrary halving: a macro photograph
+     * of a real HP-55 bubble display puts the stroke at about 0.045 of the cap
+     * height, which is 0.077 here, and an earlier measurement off HP's own part
+     * gave 0.0445. Two independent routes landing either side of this.
+     *
+     * The HP-01's figure is roughly twice that. It is not wrong for the HP-01 -
+     * seven segments had room to be bold - but this cell carries 26 bars in the
+     * same width, and at 0.159 they crowd into each other.
+     *
+     * The photograph can only bound this from above: every measurement of a LIT
+     * segment includes the bloom, which adds to each edge. So if this still looks
+     * heavy on the watch, thinner is the direction the evidence points.
+     */
+    const val STROKE = 4.65f / GRID_CELL_WIDTH             // 0.07953
 
     /** Rightward lean, in degrees. */
     const val SLANT_DEGREES = 7.5f
 
-    /** Dot diameter is twice the stroke, as on the HP-01. */
+    /**
+     * Dot diameter is twice the stroke, as on the HP-01.
+     *
+     * NOTE this is tied to [STROKE], so halving the stroke halved the decimal
+     * point, the colon and the comma's head with it. That is faithful to the
+     * relation, but it is a real change to how prominent a decimal point is, and
+     * it was a consequence of the stroke decision rather than a decision of its
+     * own. If the dots come out too small on the watch, pinning this to its own
+     * constant is a one-line change - the relation is an observation about the
+     * HP-01, not a rule this font has to obey.
+     */
     const val DOT_RADIUS = STROKE
 
     /**
@@ -168,7 +193,7 @@ object TalkRpnFont {
      * Reading it is now direct: pitch minus 1 IS the clearance between cells,
      * since the cell is exactly 1 wide. The floor is set by ink, not by taste -
      * neighbours clear each other while that clearance exceeds one stroke, so
-     * pitch >= 1.15888. The slant makes it LOOK tight well before then, because
+     * pitch >= 1.07953. The slant makes it LOOK tight well before then, because
      * one cell's top-right passes close to the next cell's bottom-left, but those
      * are at different heights and never actually touch.
      */
@@ -184,7 +209,7 @@ object TalkRpnFont {
      * the REFERENCE row, so a half-size row does not carry half-size units.
      *
      * The floor here is the descender: ink runs from STROKE/2 above segment A to
-     * STROKE/2 below the descender bar, which is [INK_HEIGHT] = 2.62 tall, so
+     * STROKE/2 below the descender bar, which is [INK_HEIGHT] = 2.54 tall, so
      * anything under that overlaps the row beneath. 2.75 leaves a little air. A
      * digits-only display could go far tighter - a seven-segment font has no
      * descenders at all - but this font has them and letters will use them.
@@ -192,7 +217,7 @@ object TalkRpnFont {
     const val VPITCH = 2.75f
 
     /** Top of segment A's ink to the bottom of the descender bar's ink. */
-    const val INK_HEIGHT = TOTAL_HEIGHT + STROKE           // 2.62169
+    const val INK_HEIGHT = TOTAL_HEIGHT + STROKE           // 2.54233
 
     /** Radius of the two hooks, measured on their centreline. */
     const val HOOK_R = 7.92f / GRID_CELL_WIDTH             // 0.13545

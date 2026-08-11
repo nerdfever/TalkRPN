@@ -33,7 +33,7 @@ $CANDIDATES = @(
        Note = "deltaE2000 17.0 - genuinely 655 nm, but at 63% purity" }
 
     @{ Hex = "E81810"; R = 232; G =  24; B = 16
-       Name = "#E81810   what the code uses today"
+       Name = "#E81810   what the code used before this was settled"
        Note = "a little green and blue mixed in, so slightly duller and browner" }
 )
 

@@ -758,10 +758,10 @@ already corrected glyph by glyph should be given.
 | centre axis | 0.5 exactly | 29.235 / 58.47 |
 | cap height, D to A | 1.71028 | 100 / 58.47 |
 | hook radius | 0.13545 | 7.92 / 58.47 |
-| stroke, nominal | 0.15888 | 9.29 / 58.47 |
+| stroke | 0.07953 | 4.65 / 58.47 |
 | `PITCH` — cell to cell, HP-01's own | 2.43031 | 142.08 / 58.47 |
 | full height including descenders | 2.46280 | cap × 1.44 |
-| ink height, top of `A` to bottom of the descender bar | 2.62169 | + one stroke |
+| ink height, top of `A` to bottom of the descender bar | 2.54233 | + one stroke |
 | `VPITCH` — baseline to baseline | 2.75 | chosen |
 
 The payoff in reading it: since the cell is exactly 1 wide, **pitch minus 1 *is*
@@ -792,12 +792,12 @@ scales by it rather than assuming.
 
 Two floors fall out of this, both from ink rather than taste:
 
-- **pitch ≥ 1.15888** — cell width plus one stroke, below which neighbours
+- **pitch ≥ 1.07953** — cell width plus one stroke, below which neighbours
   overlap outright. The slant makes it *look* tight well before that, because
   one cell's top-right passes close to the next cell's bottom-left, but those
   sit at different heights and never actually touch. All caps read well from
   about 1.45 to 1.80.
-- **vpitch ≥ 2.62169** — the ink height, below which descenders reach the row
+- **vpitch ≥ 2.54233** — the ink height, below which descenders reach the row
   beneath. A digits-only display could go far tighter; a seven-segment font has
   no descenders at all, which is why `DisplayTestActivity` still sits at 1.96682.
 
@@ -826,13 +826,60 @@ Divergences from the DL-3422, all deliberate:
 | **Segment `M` (the descender stem) is too tall** | Not the letter M. `DESCENDER_FRACTION` is 0.44 of the cap height, against an x-height of half of it, so `g q y j` tails plunge nearly as deep as their bowls are tall. Now one number: lower `DESCENDER_FRACTION` and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all follow. |
 | ~~`P`/`Q` shift~~ | **Decided against, 2026-08-09.** They looked as though they wanted to move left a little in `B` and `D`. Leaving them where they are. |
 | **Decimal-point position** | *Half done.* The dot belongs to the **gap** between cells, not to a cell, so a fixed `DP_X = 1.48179` is only right at pitch 2.43031 — tighten the pitch and the gap shrinks underneath a dot that has not moved. `DP_GAP_FRACTION` and `dpXAt(pitch)` now express it pitch-independently, and the specimen renderer uses them. **Still to do:** `TalkRpnFont` bakes `DP_X` into its paths at object-init, so `draw()` has to take a pitch before the font itself follows suit. |
-| **Stroke width** | The HP-01's 0.15888 is too heavy for 26 bars. Around 0.09 reads well; not yet fixed. Dave wants to chase the bubble-LED look here — a very thin stroke at high brightness with diffuse scatter around it — which argues for going thinner still. |
+| ~~Stroke width~~ | **Set to 0.07953**, half the HP-01's 9.29 — see below. Adjustable if it reads wrong on the watch, and the evidence points thinner rather than thicker. |
 | ~~`l` and `\|` are identical~~ | **Fixed.** `\|` is `P Q M`, running the full cell including the descender, per DL-3422 typography; `l` is `P Q` alone. |
 | **`0` and `O` are identical** | Same mask, accepted deliberately — full-width digits cost this. `1` and `l` are NOT identical, contrary to an earlier note here: `1` is the right column `B C`, `l` the centre column `P Q`. |
 | ~~Parens vs brackets~~ | **Done.** Both parens are now properly curved: `(` is the left column with both corners hooked; `)` is `RPAR`, the whole right parenthesis as ONE element (bar stub + arc + column + arc + bar stub — the right side has no shortened bars for a bare arc to join). It began as two halves, `A5` and `D5`, but nothing ever lit one without the other so they merged. 32 elements; the mask is a `Long`. What was rejected earlier was a *mismatched* pair, not curvature. |
 | **Not yet wired in** | `DisplayTestActivity` still renders with `Hp01Font`. The calculator display needs moving onto `TalkRpnFont`. |
 | **Still guessed** | `'`, `f` and `t` — the chart is ambiguous at those three. |
 | **Final LED colour** | *Answered on the physics; still to be judged on the watch.* See below — the emitter is 655–660 nm and the closest sRGB is **`#FF0000`**. |
+
+### How wide was the stroke, really?
+
+Dave photographed a real HP-55 through its bubble lens (`PXL_20260811_140140318.jpg`),
+which settles a question DESIGN.md had been carrying as "probably twice what it
+should be".
+
+The photograph can only bound the stroke **from above**, and for the reason Dave
+spotted: every measurement of a *lit* segment includes the bloom. Three methods,
+one of which had to be thrown out:
+
+| method | result | verdict |
+|---|---|---|
+| threshold sweep | ratio 0.047–0.053 | slides with the threshold |
+| full-width-at-half-maximum | ratio 0.062 | **invalid** — FWHM assumes an unsaturated profile, and the core is clipped, so half-max lands out in the halo |
+| bloom-cancelling identity | see below | sound, but only for ratios |
+
+**The identity.** Bloom adds the same margin to every lit edge, pushing outer
+edges out and inner edges *in*. So across a `0`, whose two vertical strokes give
+an outer width and a counter gap, `(outer + gap) / 2` is the **centreline** width
+with the bloom cancelled exactly. The same trick works vertically.
+
+That yields an independent check on the whole reconstruction:
+
+| | HP-55 photograph | TalkRpnFont |
+|---|---|---|
+| cell width / cap height | **0.554** | **0.585** (−5.3%) |
+
+Our proportions match a real HP part to within 5%, from a source that had no
+part in deriving them. That is the strongest confirmation the 53.5 × 91.5 box has
+had.
+
+For the stroke there is no such identity — observed = true + 2δ with δ unknown —
+so the photograph gives 0.097 cell widths as a hard ceiling and about 0.058–0.077
+for plausible δ. What settles it is that **an earlier measurement off HP's own
+part, already recorded here as 4.45% of digit height, is 0.076** — landing in the
+middle of that range by a completely separate route.
+
+Hence **0.07953**, which is exactly half the HP-01's 9.29 and was already the
+"half nominal" entry in the test screen's list. The HP-01's own figure is not
+wrong *for the HP-01* — seven segments had room to be bold — but this cell carries
+26 bars in the same width.
+
+One consequence worth watching: `DOT_RADIUS` is defined as `STROKE`, so the
+decimal point, colon and comma head all halved with it. Faithful to the HP-01's
+relation, but it fell out of the stroke decision rather than being decided. If the
+dots read too small on the watch, pinning them to their own constant is one line.
 
 ### What colour were they, really?
 
