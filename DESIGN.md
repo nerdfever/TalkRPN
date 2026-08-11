@@ -891,10 +891,14 @@ consequences, both now in the font:
   than a bar, which is what a fixed nib does. Curves keep a perpendicular
   thickness — they turn a bar into a column, and a fixed nib would pinch them to
   nothing at one end.
-- **Segments extend half a stroke past each end**, along their own direction.
-  Without it the corners notch: a bar ending at x = 1 stops dead there while the
-  column beside it starts at y = 0, leaving the square outside both empty. This
-  is the old square cap restored, with the end *face* staying axis-aligned.
+- **Axis-aligned bars extend half a stroke past each end**, along their own
+  direction; diagonals do not. Without the extension the corners notch — a bar
+  ending at x = 1 stops dead there while the column beside it starts at y = 0,
+  leaving the square outside both empty. But a diagonal ends at a *junction*,
+  where it already shares its flat end face with whatever it meets: two diagonals
+  meeting at the apex of `M` or `W` have the **same** end face. Extending those
+  only pushed them through and out the other side, which left a notch and a stub
+  at exactly those vertices.
 
 ### What colour were they, really?
 

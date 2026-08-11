@@ -80,23 +80,27 @@ function Add-Bar($path, $x1, $y1, $x2, $y2, $w) {
 
     $half = $w / 2.0
 
-    # Extend half a stroke past each end, along the segment's own direction.
+    # Extend half a stroke past each end, along the segment's own direction -
+    # but ONLY for bars that run square to the axes.
     #
-    # Without this the corners notch: a top bar ending at x = 1 spans y either
-    # side of the centreline but stops dead, while the column beside it starts at
-    # y = 0, so the square OUTSIDE both is empty. The old square cap filled that;
-    # a fixed nib on its own does not, because it adds no length.
+    # The extension exists to close the cell's corners, and those are formed by
+    # horizontal and vertical bars: one ending at x = 1 stops dead there while the
+    # column beside it starts at y = 0, leaving the square outside both empty.
     #
-    # This is that cap restored, with the difference that the end FACE stays
-    # axis-aligned rather than turning with the segment - so the corners come back
-    # flush without the angled ends coming back with them.
-    $len = [Math]::Sqrt(($x2 - $x1) * ($x2 - $x1) + ($y2 - $y1) * ($y2 - $y1))
+    # A diagonal needs none of that. It ends at a junction where it already shares
+    # its flat end face with whatever it meets - two diagonals meeting at the apex
+    # of M or W have the SAME end face - so extending it only pushes it through and
+    # out the other side. That is what left a notch and a stub at those vertices.
+    $axisAligned = ($x1 -eq $x2) -or ($y1 -eq $y2)
 
-    if ($len -gt 0) {
-        $ux = ($x2 - $x1) / $len
-        $uy = ($y2 - $y1) / $len
-        $x1 = $x1 - $ux * $half;  $y1 = $y1 - $uy * $half
-        $x2 = $x2 + $ux * $half;  $y2 = $y2 + $uy * $half
+    if ($axisAligned) {
+        $len = [Math]::Sqrt(($x2 - $x1) * ($x2 - $x1) + ($y2 - $y1) * ($y2 - $y1))
+        if ($len -gt 0) {
+            $ux = ($x2 - $x1) / $len
+            $uy = ($y2 - $y1) / $len
+            $x1 = $x1 - $ux * $half;  $y1 = $y1 - $uy * $half
+            $x2 = $x2 + $ux * $half;  $y2 = $y2 + $uy * $half
+        }
     }
 
     # Which way does the nib point? Across the segment's dominant axis, so a

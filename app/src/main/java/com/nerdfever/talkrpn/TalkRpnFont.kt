@@ -538,13 +538,23 @@ object TalkRpnFont {
         val len = hypot(x2 - x1, y2 - y1)
         if (len == 0f) return
 
-        // Half a stroke past each end, along the segment's own direction.
-        // Without it the corners notch: a bar ending at x = 1 stops dead there
+        // Half a stroke past each end, along the segment's own direction - but
+        // ONLY for bars that run square to the axes.
+        //
+        // The extension exists to close the cell's corners, and those are formed
+        // by horizontal and vertical bars: one ending at x = 1 stops dead there
         // while the column beside it starts at y = 0, leaving the square outside
-        // both empty. This is the old square cap restored - the difference being
-        // that the end FACE stays axis-aligned instead of turning with the bar.
-        val ux = (x2 - x1) / len * half
-        val uy = (y2 - y1) / len * half
+        // both empty.
+        //
+        // A diagonal needs none of it. It ends at a junction where it already
+        // shares its flat end face with whatever it meets - two diagonals meeting
+        // at the apex of M or W have the SAME end face - so extending it only
+        // pushes it through and out the other side, which is what left a notch
+        // and a stub at those vertices.
+        val axisAligned = x1 == x2 || y1 == y2
+
+        val ux = if (axisAligned) (x2 - x1) / len * half else 0f
+        val uy = if (axisAligned) (y2 - y1) / len * half else 0f
 
         val ax = x1 - ux; val ay = y1 - uy
         val bx = x2 + ux; val by = y2 + uy
