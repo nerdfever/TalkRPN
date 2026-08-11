@@ -811,7 +811,7 @@ Divergences from the DL-3422, all deliberate:
   with `D3` — otherwise the column spikes past the arc.
 - **Digits are full-width**, on `B`/`C`. Half-width digits on `P`/`Q` were tried
   — they keep `5` and `S` apart — but reverted: the HP-01 width looks right and
-  the cost is that `0`/`O` and `1`/`l` become identical, which is accepted.
+  the cost is that `0` and `O` become identical, which is accepted. `1` and `l` stay distinct — the right column against the centre column.
 - **The decimal point and comma live inside the character cell** rather than
   consuming one of their own.
 
@@ -820,15 +820,16 @@ Divergences from the DL-3422, all deliberate:
 | | |
 |---|---|
 | **Horizontal placement** | Half-width glyphs sit in different halves of the cell — digits and most lower case on the left, `p` on the right, `i j l` in the centre. At a fixed pitch that reads as uneven spacing even though the pitch is exact. Needs one rule, applied throughout. |
-| **`I` and `L` to the corners** | Both stop short of the cell corner; extending them would close the diagonals against the columns. |
-| ~~Semicolon~~ | **Done.** `COL2_TAIL`, the 31st element: the comma's tail hung off the lower colon dot, so a semicolon is a colon whose lower dot grew a tail. One bit left in the `Int`. |
+| ~~Diagonals to the corners~~ | **Done.** Segments H, I, K and L all reach the exact cell corners now. Moving segment H's and segment L's LEFT ends there was the change that mattered — it improved about fifteen glyphs (`/ \ X * M N Y V W v`) and cost reverting `&` to `A4` and `a e` to `D4`. |
+| ~~Semicolon~~ | **Done.** `COL2_TAIL`, the 31st element: the comma's tail hung off the lower colon dot, so a semicolon is a colon whose lower dot grew a tail. |
 | ~~Comma taper~~ | **Decided: keep the constant-width tail.** More period-correct — though the real LED calculators drew no commas at all. |
 | **Segment `M` (the descender stem) is too tall** | Not the letter M. `DESCENDER_FRACTION` is 0.44 of the cap height, against an x-height of half of it, so `g q y j` tails plunge nearly as deep as their bowls are tall. Now one number: lower `DESCENDER_FRACTION` and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all follow. |
-| **`P`/`Q` shift** | Both may want to move left a little; `B` and `D` are what show it. |
+| ~~`P`/`Q` shift~~ | **Decided against, 2026-08-09.** They looked as though they wanted to move left a little in `B` and `D`. Leaving them where they are. |
 | **Decimal-point position** | *Half done.* The dot belongs to the **gap** between cells, not to a cell, so a fixed `DP_X = 1.48179` is only right at pitch 2.43031 — tighten the pitch and the gap shrinks underneath a dot that has not moved. `DP_GAP_FRACTION` and `dpXAt(pitch)` now express it pitch-independently, and the specimen renderer uses them. **Still to do:** `TalkRpnFont` bakes `DP_X` into its paths at object-init, so `draw()` has to take a pitch before the font itself follows suit. |
 | **Stroke width** | The HP-01's 0.15888 is too heavy for 26 bars. Around 0.09 reads well; not yet fixed. Dave wants to chase the bubble-LED look here — a very thin stroke at high brightness with diffuse scatter around it — which argues for going thinner still. |
-| **`l` and `\|` are identical** | Both are `P Q`. Fine or not, but it should be a decision rather than an accident. |
-| ~~Parens vs brackets~~ | **Done.** Both parens are now properly curved: `(` is the left column with both corners hooked; `)` got `A5` and `D5`, each half of the right parenthesis as one bundled element (bar stub + arc + column stub — the right side has no shortened bars for a bare arc to join). This crossed the `Int` ceiling deliberately: 33 elements, the mask is now a `Long`. What was rejected earlier was a *mismatched* pair, not curvature. |
+| ~~`l` and `\|` are identical~~ | **Fixed.** `\|` is `P Q M`, running the full cell including the descender, per DL-3422 typography; `l` is `P Q` alone. |
+| **`0` and `O` are identical** | Same mask, accepted deliberately — full-width digits cost this. `1` and `l` are NOT identical, contrary to an earlier note here: `1` is the right column `B C`, `l` the centre column `P Q`. |
+| ~~Parens vs brackets~~ | **Done.** Both parens are now properly curved: `(` is the left column with both corners hooked; `)` is `RPAR`, the whole right parenthesis as ONE element (bar stub + arc + column + arc + bar stub — the right side has no shortened bars for a bare arc to join). It began as two halves, `A5` and `D5`, but nothing ever lit one without the other so they merged. 32 elements; the mask is a `Long`. What was rejected earlier was a *mismatched* pair, not curvature. |
 | **Not yet wired in** | `DisplayTestActivity` still renders with `Hp01Font`. The calculator display needs moving onto `TalkRpnFont`. |
 | **Still guessed** | `'`, `f` and `t` — the chart is ambiguous at those three. |
 | **Final LED colour** | Three candidate reds are cycled in the test screens; the choice has to be made on the watch, not the emulator. |
