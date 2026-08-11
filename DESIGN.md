@@ -882,12 +882,19 @@ every segment is **beaded out of small rectangular dies** strung end to end. Two
 consequences, both now in the font:
 
 - **Dots are square**, `DOT_SIDE = 2 × STROKE`, not round.
-- **The pen is a slanted square.** A segment is a rectangle: a vertical bar's
-  ends are horizontal, a horizontal bar's ends are cut at the slant. That
-  requires stroking in upright coordinates and shearing the *stroked geometry* —
-  shearing the path first and stroking after leaves a round pen in device space
-  and every end cut at the wrong angle. Caps are square, joins mitred at a 2.5
-  limit so acute diagonals cannot spike.
+- **The pen does not rotate.** Stroking cuts every end square to the direction
+  that path happens to run, so a diagonal gets an end sliced at 30° while the bar
+  beside it gets one cut flat — put an `X` next to a `Y` and it is obvious — and
+  mitred joins throw spikes. Each straight segment is instead a **polygon swept
+  by a fixed-orientation nib**: horizontal bars get a vertical nib, everything
+  else a horizontal one. A diagonal ends up ~14% thinner measured perpendicular
+  than a bar, which is what a fixed nib does. Curves keep a perpendicular
+  thickness — they turn a bar into a column, and a fixed nib would pinch them to
+  nothing at one end.
+- **Segments extend half a stroke past each end**, along their own direction.
+  Without it the corners notch: a bar ending at x = 1 stops dead there while the
+  column beside it starts at y = 0, leaving the square outside both empty. This
+  is the old square cap restored, with the end *face* staying axis-aligned.
 
 ### What colour were they, really?
 

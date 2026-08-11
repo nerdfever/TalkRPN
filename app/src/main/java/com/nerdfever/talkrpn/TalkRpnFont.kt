@@ -12,7 +12,10 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.PathFillType
+import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
 import kotlin.math.tan
 
@@ -185,7 +188,8 @@ object TalkRpnFont {
     const val STROKE = 16f / 108.5f                        // 0.14747
 
     /** Rightward lean, in degrees. */
-    const val SLANT_DEGREES = 7.5f
+    /** Dave's compromise between HP's datasheet 5.0 and the 7.5 first used. */
+    const val SLANT_DEGREES = 6.0f
 
     /**
      * Side of the square dots - the decimal point, the colon dots and the comma's
@@ -433,10 +437,14 @@ object TalkRpnFont {
     private fun Path.moveToSlanted(x: Float, y: Float) = moveTo(sx(x, y), y)
     private fun Path.lineToSlanted(x: Float, y: Float) = lineTo(sx(x, y), y)
 
-    private fun line(x1: Float, y1: Float, x2: Float, y2: Float) = path {
-        moveToCell(x1, y1)
-        lineToCell(x2, y2)
-    }
+    /**
+     * A straight segment's centreline: just its two ends.
+     *
+     * Two points marks it as a BAR, which gets a fixed-orientation nib. Anything
+     * longer is a curve, and gets a perpendicular one. See [outlineOf].
+     */
+    private fun line(x1: Float, y1: Float, x2: Float, y2: Float) =
+        floatArrayOf(x1, y1, x2, y2)
 
     /**
      * A circular arc as a single cubic Bezier.
@@ -451,7 +459,7 @@ object TalkRpnFont {
     private fun arc(
         centreX: Float, centreY: Float, radius: Float,
         fromAngle: Float, toAngle: Float
-    ) = path {
+    ): FloatArray = run {
 
         val sweep = toAngle - fromAngle
 
@@ -469,8 +477,126 @@ object TalkRpnFont {
         val x2 = x3 + k * sin(toAngle)
         val y2 = y3 - k * cos(toAngle)
 
-        moveToCell(x0, y0)
-        cubicToCell(x1, y1, x2, y2, x3, y3)
+        // Sampled, because the outline is built at draw time and a ribbon needs
+        // points to offset. ARC_STEPS is plenty for a 90-degree turn this small.
+        val out = FloatArray((ARC_STEPS + 1) * 2)
+
+        for (i in 0..ARC_STEPS) {
+            val t = i.toFloat() / ARC_STEPS
+            val u = 1f - t
+            out[i * 2] = u * u * u * x0 + 3f * u * u * t * x1 + 3f * u * t * t * x2 + t * t * t * x3
+            out[i * 2 + 1] = u * u * u * y0 + 3f * u * u * t * y1 + 3f * u * t * t * y2 + t * t * t * y3
+        }
+
+        out
+    }
+
+    /** How finely the curves are sampled. */
+    private const val ARC_STEPS = 16
+
+
+    /** A cubic sampled into points, excluding its first (the caller already has it). */
+    private fun cubicPoints(
+        x0: Float, y0: Float, x1: Float, y1: Float,
+        x2: Float, y2: Float, x3: Float, y3: Float
+    ): FloatArray {
+
+        val out = FloatArray(ARC_STEPS * 2)
+
+        for (i in 1..ARC_STEPS) {
+            val t = i.toFloat() / ARC_STEPS
+            val u = 1f - t
+            out[(i - 1) * 2] = u * u * u * x0 + 3f * u * u * t * x1 + 3f * u * t * t * x2 + t * t * t * x3
+            out[(i - 1) * 2 + 1] = u * u * u * y0 + 3f * u * u * t * y1 + 3f * u * t * t * y2 + t * t * t * y3
+        }
+
+        return out
+    }
+
+    // ---- Turning a centreline into ink --------------------------------------
+    //
+    // THE PEN DOES NOT ROTATE.
+    //
+    // Stroking a path cuts every end square to the direction that path happens to
+    // run, so a diagonal gets an end sliced at 30 degrees while the bar beside it
+    // gets one cut flat - put an X next to a Y and it is obvious - and where two
+    // segments meet at an angle the mitre throws a spike.
+    //
+    // A real display has neither, because a segment is a die on a rectangular
+    // grid. So a straight segment becomes a POLYGON swept by a nib of fixed
+    // orientation: horizontal bars get a vertical nib, everything else a
+    // horizontal one. A diagonal ends up about 14% thinner measured perpendicular
+    // than a bar is, which is what a fixed nib does.
+    //
+    // Curves keep a perpendicular thickness. They are corner pieces turning a bar
+    // into a column, and a fixed nib would pinch them to nothing at one end.
+
+    /** Add one straight segment, as the parallelogram a fixed nib sweeps. */
+    private fun Path.addBar(x1: Float, y1: Float, x2: Float, y2: Float, w: Float) {
+
+        val half = w / 2f
+        val len = hypot(x2 - x1, y2 - y1)
+        if (len == 0f) return
+
+        // Half a stroke past each end, along the segment's own direction.
+        // Without it the corners notch: a bar ending at x = 1 stops dead there
+        // while the column beside it starts at y = 0, leaving the square outside
+        // both empty. This is the old square cap restored - the difference being
+        // that the end FACE stays axis-aligned instead of turning with the bar.
+        val ux = (x2 - x1) / len * half
+        val uy = (y2 - y1) / len * half
+
+        val ax = x1 - ux; val ay = y1 - uy
+        val bx = x2 + ux; val by = y2 + uy
+
+        // The nib points across the segment's dominant axis.
+        val dx: Float; val dy: Float
+        if (abs(bx - ax) > abs(by - ay)) { dx = 0f; dy = half } else { dx = half; dy = 0f }
+
+        moveTo(ax - dx, ay - dy)
+        lineTo(bx - dx, by - dy)
+        lineTo(bx + dx, by + dy)
+        lineTo(ax + dx, ay + dy)
+        close()
+    }
+
+    /** Add one curved run, as a ribbon of constant perpendicular thickness. */
+    private fun Path.addRibbon(pts: FloatArray, w: Float) {
+
+        val half = w / 2f
+        val n = pts.size / 2
+        if (n < 2) return
+
+        val left = FloatArray(n * 2)
+        val right = FloatArray(n * 2)
+
+        for (i in 0 until n) {
+
+            val a = maxOf(0, i - 1)
+            val b = minOf(n - 1, i + 1)
+
+            val dx = pts[b * 2] - pts[a * 2]
+            val dy = pts[b * 2 + 1] - pts[a * 2 + 1]
+            val len = hypot(dx, dy)
+            if (len == 0f) continue
+
+            val nx = -dy / len * half
+            val ny = dx / len * half
+
+            left[i * 2] = pts[i * 2] + nx;      left[i * 2 + 1] = pts[i * 2 + 1] + ny
+            right[i * 2] = pts[i * 2] - nx;     right[i * 2 + 1] = pts[i * 2 + 1] - ny
+        }
+
+        moveTo(left[0], left[1])
+        for (i in 1 until n) lineTo(left[i * 2], left[i * 2 + 1])
+        for (i in n - 1 downTo 0) lineTo(right[i * 2], right[i * 2 + 1])
+        close()
+    }
+
+    /** Two points is a bar; more is a curve. */
+    private fun Path.addCentreline(pts: FloatArray, w: Float) {
+        if (pts.size == 4) addBar(pts[0], pts[1], pts[2], pts[3], w)
+        else addRibbon(pts, w)
     }
 
     // ---- The corners --------------------------------------------------------
@@ -487,7 +613,7 @@ object TalkRpnFont {
     private const val ANGLE_DOWN = (Math.PI / 2).toFloat()
     private const val ANGLE_LEFT = Math.PI.toFloat()
 
-    private val PATHS: Map<Seg, Path> = mapOf(
+    private val CENTRELINES: Map<Seg, FloatArray> = mapOf(
 
         // Top bar, and the two ways to finish its left corner.
         Seg.A1 to line(X_MID, Y_TOP, X_HOOK_START, Y_TOP),
@@ -538,22 +664,23 @@ object TalkRpnFont {
 
         // The right parenthesis, whole: bar stub, corner arc, column, corner
         // arc, bar stub - one continuous figure, so every join is seamless.
-        Seg.RPAR to path {
-            moveToCell(X_MID, Y_TOP)
-            lineToCell(X_HOOK_END_R, Y_TOP)
-            cubicToCell(
-                X_HOOK_END_R + HOOK_K, Y_TOP,
-                X_RIGHT, Y_F_TOP - HOOK_K,
-                X_RIGHT, Y_F_TOP
-            )
-            lineToCell(X_RIGHT, Y_E_BOTTOM)
-            cubicToCell(
-                X_RIGHT, Y_E_BOTTOM + HOOK_K,
-                X_HOOK_END_R + HOOK_K, Y_BASE,
-                X_HOOK_END_R, Y_BASE
-            )
-            lineToCell(X_MID, Y_BASE)
-        },
+        Seg.RPAR to (
+            floatArrayOf(X_MID, Y_TOP, X_HOOK_END_R, Y_TOP) +
+                cubicPoints(
+                    X_HOOK_END_R, Y_TOP,
+                    X_HOOK_END_R + HOOK_K, Y_TOP,
+                    X_RIGHT, Y_F_TOP - HOOK_K,
+                    X_RIGHT, Y_F_TOP
+                ) +
+                floatArrayOf(X_RIGHT, Y_E_BOTTOM) +
+                cubicPoints(
+                    X_RIGHT, Y_E_BOTTOM,
+                    X_RIGHT, Y_E_BOTTOM + HOOK_K,
+                    X_HOOK_END_R + HOOK_K, Y_BASE,
+                    X_HOOK_END_R, Y_BASE
+                ) +
+                floatArrayOf(X_MID, Y_BASE)
+            ),
 
         // The semicolon's tail.
         //
@@ -587,14 +714,11 @@ object TalkRpnFont {
         Seg.COMMA to Offset(DP_X, DP_Y),
     )
 
-    /** The comma's tail: a taper from the dot down and to the left. */
-    private val COMMA_TAIL: Path = path {
-        val tipX = DP_X - COMMA_TAIL_LEFT
-        val tipY = DP_Y + COMMA_TAIL_DROP
-
-        moveToCell(DP_X, DP_Y)
-        lineToCell(tipX, tipY)
-    }
+    /** The comma's tail: a bar from the dot down and to the left. */
+    private val COMMA_TAIL: FloatArray = floatArrayOf(
+        DP_X, DP_Y,
+        DP_X - COMMA_TAIL_LEFT, DP_Y + COMMA_TAIL_DROP
+    )
 
     // ---- Drawing ------------------------------------------------------------
 
@@ -623,84 +747,57 @@ object TalkRpnFont {
             scale(scale, scale, pivot = Offset.Zero)
         }) {
 
-            // Every lit bar goes into ONE path, stroked once.
+            // Every lit segment goes into ONE path, filled once.
             //
-            // Drawing them one at a time looked right at heavy strokes and wrong
-            // at light ones: where two segments overlap, the second stroke's
-            // antialiased edge blends over the first, and the doubled coverage
-            // reads as a brighter line. A real display has no such seam. Unioned
-            // into a single path, Skia strokes the outline and fills it once, so
-            // an overlap is painted exactly as often as anything else.
+            // Drawing them one at a time looked right at heavy weights and wrong
+            // at light ones: where two overlap, the second shape's antialiased
+            // edge blends over the first and the doubled coverage reads as a
+            // brighter line. A real display has no such seam. Unioned into a
+            // single path and filled once, an overlap is painted exactly as
+            // often as anything else.
+            //
+            // NonZero winding, and every polygon wound the same way by
+            // construction, so overlaps add rather than cancelling into holes.
             val lit = Path()
+            lit.fillType = PathFillType.NonZero
 
-            for ((seg, p) in PATHS) {
+            for ((seg, pts) in CENTRELINES) {
                 if (mask and seg.bit == 0L) continue
-                lit.addPath(p)
+                lit.addCentreline(pts, strokeWidth)
             }
 
-            // The comma's tail is a bar like any other, so it joins the union.
-            if (mask and Seg.COMMA.bit != 0L) lit.addPath(COMMA_TAIL)
+            if (mask and Seg.COMMA.bit != 0L) lit.addCentreline(COMMA_TAIL, strokeWidth)
 
-            // Drawn through an explicitly configured Paint so that antialiasing
-            // is a stated property, not an assumed default. The aim is a real
-            // segmented LED, not a pixel display: every edge soft, including
-            // where a diagonal crosses a stair-step boundary.
-            //
-            // SQUARE caps and MITRE joins, because a real segment is a rectangular
-            // die with square ends, not a rounded stroke. Round was the earlier
-            // choice, on the grounds that a butt cap notches where a diagonal
-            // meets a bar - but square is not butt: it projects half a stroke past
-            // the endpoint, which fills that notch and leaves the flat end.
+            // Dots are squares of side twice the stroke - a macro photograph of a
+            // real HP-55 shows the decimal point as a distinct square die, and the
+            // same photograph shows every segment beaded out of small rectangular
+            // dies. Sheared with everything else, so they lean rather than sitting
+            // upright among leaning bars.
+            for ((seg, centre) in DOT_CENTRES) {
+
+                if (mask and seg.bit == 0L) continue
+
+                lit.moveTo(centre.x - strokeWidth, centre.y - strokeWidth)
+                lit.lineTo(centre.x + strokeWidth, centre.y - strokeWidth)
+                lit.lineTo(centre.x + strokeWidth, centre.y + strokeWidth)
+                lit.lineTo(centre.x - strokeWidth, centre.y + strokeWidth)
+                lit.close()
+            }
+
+            if (lit.isEmpty) return@withTransform
+
             drawIntoCanvas { canvas ->
 
                 val paint = Paint().apply {
                     isAntiAlias = true
                     this.color = color
-                    style = PaintingStyle.Stroke
-                    this.strokeWidth = strokeWidth
-                    strokeCap = StrokeCap.Square
-                    strokeJoin = StrokeJoin.Miter
-                    strokeMiterLimit = MITRE_LIMIT
+                    style = PaintingStyle.Fill
                 }
 
-                // Everything is stroked and filled INSIDE the shear, so the pen
-                // shears too. That is what makes a vertical bar's ends horizontal
-                // and a horizontal bar's ends slanted - the parallelograms a real
-                // display is built from. Stroking outside it would give square
-                // ends cut square to each bar, wrong by the slant at every one.
+                // Filled INSIDE the shear, so the whole outline leans together.
                 canvas.save()
                 canvas.concat(SHEAR_MATRIX)
-
-                if (!lit.isEmpty) canvas.drawPath(lit, paint)
-
-                // Dots are filled, not stroked, and never overlap a bar.
-                //
-                // Square, because a macro photograph of a real HP-55 shows the
-                // decimal point as a distinct square die - the same photograph
-                // shows every segment beaded out of small rectangular dies.
-                //
-                // Sheared along with everything else, so they come out as leaning
-                // parallelograms. They were briefly drawn outside the shear, on
-                // the theory that a square die stays square; but the whole array
-                // is one piece of silicon laid out on the slant, and an upright
-                // dot among leaning bars reads as a mistake.
-                paint.style = PaintingStyle.Fill
-
-                val half = strokeWidth
-
-                for ((seg, centre) in DOT_CENTRES) {
-
-                    if (mask and seg.bit == 0L) continue
-
-                    canvas.drawRect(
-                        Rect(
-                            centre.x - half, centre.y - half,
-                            centre.x + half, centre.y + half
-                        ),
-                        paint
-                    )
-                }
-
+                canvas.drawPath(lit, paint)
                 canvas.restore()
             }
         }
