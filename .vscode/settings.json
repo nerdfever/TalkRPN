@@ -36,4 +36,7 @@
         "**/.gradle": true,
         "**/.kotlin": true
     }
+
+    // Spell checking lives in cspell.json at the project root, not here - that is
+    // cSpell's own config file, so the CLI can check the same list the editor does.
 }

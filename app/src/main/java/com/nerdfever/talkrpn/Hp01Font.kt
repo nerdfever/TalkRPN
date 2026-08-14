@@ -59,26 +59,14 @@ object Hp01Font {
     // ---- Cell metrics, in cell units (cell height == 100) -------------------
     //
     // CAREFUL: these are OUTER ink dimensions - edge of segment to edge of
-    // segment - so they carry a STROKE/2 at each end. TalkRpnFont's coordinates
-    // are CENTRELINES, and its unit is the E/F-to-B/C span rather than the cell
-    // box. A length copied between the two fonts unchanged will be wrong.
-    //
-    // Anything that lays out either font should work in E/F-to-B/C units and scale
-    // by UNIT_SPAN, which states the difference rather than hiding it.
+    // segment - so they carry a STROKE/2 at each end, and the cell is 100 tall
+    // rather than 1 wide. TalkRpnFont's coordinates are CENTRELINES in cell
+    // widths. A length copied between the two fonts unchanged will be wrong;
+    // the mapping is talkRpn = (hp01 - STROKE/2) / 53.5.
 
     const val CELL_HEIGHT = 100f
     const val CELL_WIDTH = 62f
     const val STROKE = 8.5f
-
-    /**
-     * How many of this font's cell units span segment E/F to segment B/C - the
-     * display's unit of length.
-     *
-     * The 62-wide box less a half-stroke at each side, which is the HP-01's own
-     * 53.5. The mirror of TalkRpnFont.UNIT_SPAN, which is a plain 1 because that
-     * font defines the unit; here the two differ and the layout has to know it.
-     */
-    const val UNIT_SPAN = CELL_WIDTH - STROKE          // 53.5
 
     /**
      * Default slant, in degrees from vertical.
@@ -140,7 +128,7 @@ object Hp01Font {
     private const val KAPPA = 0.5522848f
 
     // Hook control-point offset along each tangent.
-    private const val HOOK_K = KAPPA * HOOK_R      // 4.004
+    private const val HOOK_K = KAPPA * HOOK_R
 
     /**
      * Where the middle bar sits, as a fraction of the way from a's centreline to

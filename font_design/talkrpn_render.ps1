@@ -91,7 +91,7 @@ function Add-Wound($path, $pts) {
 # ink edges; same at h's shoulder. Where there is no such partner the end is a
 # die edge: a lone 1 really is half a stroke shorter than the 0 beside it, v's
 # foot is flat with the diagonal melding into it, and lowercase tops sit dead
-# on the x-height line - all as on the real part.
+# on the x-height line - all as on the real hardware.
 #
 # Rejected on the way here, each after Dave caught its artefact: blanket
 # extension (eaves hanging past diagonals, spurs on n), boundary extension

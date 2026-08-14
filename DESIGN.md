@@ -12,6 +12,10 @@ Decisions settled in discussion, with the reasoning. Written down because the
 reasoning is the part that gets forgotten, and several of these look arbitrary
 without it.
 
+**Where a value came from is not here** — it is in [HISTORY.md](HISTORY.md),
+along with what it used to be and what was rejected. This file says what was
+decided; the code says what a value is.
+
 Nothing here is built yet except the speech layer and the display font.
 
 ---
@@ -49,14 +53,14 @@ automatic mode switch converts stored values or only changes the default.
 
 **Display**
 
-- **Stroke width is probably twice what it should be.** Measured 4.45% of digit
-  height on HP's own part against the 8.5% in use. To be judged on the watch.
-- **The 130 advance and the 62 cell width are reconstruction figures** with no
-  corroboration, and both look wrong in the same direction.
-- **The 22-segment design** — merging HP-01 hooks, the Woodstock in-cell decimal
-  point, and DL-3422 segment count. In progress.
-- **Showing an error word needs letters**, which the seven-segment font does not
-  have. This couples the error policy to the font work.
+- **Stroke, gap, vpitch and colour are all still to be judged on the watch.** The
+  values in `TalkRpnFont` are measurements and starting points; the test screens
+  bracket each one.
+- **`Hp01Font`'s 130 advance and 62 cell width are reconstruction figures** with
+  no corroboration. `TalkRpnFont` no longer depends on either.
+- **Segment `M` is too deep** — `DESCENDER_DEPTH` is 0.753 against an x-height of
+  0.855, so tails plunge nearly as deep as their bowls are tall.
+- **`'`, `f` and `t` are still guessed** — the Litronix chart is ambiguous there.
 
 **Deferred by decision, not open** — programs, units, integer/base mode.
 
@@ -738,45 +742,46 @@ Litronix's published set and then corrected glyph by glyph against it.
 
 ### Units: segment E/F to segment B/C is 1
 
-One unit, used for everything, horizontally and vertically alike. It is the left
-column's centreline to the right column's — the cell width, measured where the
-ink's *middle* is, not where its edge is. Pitch, vpitch, stroke, cap height, the
-decimal point's offset: all in that unit, all directly comparable.
+**One unit, and every length in the font is a plain length in it.** The unit is
+the left column's centreline to the right column's — the cell width, measured
+where the ink's *middle* is, not where its edge is. Gap, vpitch, stroke, cap
+height, descender depth, the decimal point's offset: all in that unit, all
+directly comparable, all absolute.
 
-The geometry was drawn on a working grid where the cap height was 100 — the
-HP-01's centreline box scaled by 100/91.5. Every figure is its value on **that**
-grid divided by **58.47**, the cell width there.
+Nothing is expressed as a fraction of anything else. A descender that is "0.44 of
+the cap height" forces the reader to hold a second reference in their head and
+makes two numbers that look alike incomparable, so those are written as lengths:
+`DESCENDER_DEPTH = 0.753`, not `0.44 × cap`.
 
-That matters: it is a pure rescale, so **not one vertex moves**. Re-deriving the
-numbers afresh from the HP-01's own 53.5 would have been prettier by a digit or
-two and would have shifted points by up to 0.04% — which is not a licence a font
-already corrected glyph by glyph should be given.
+Every constant is stated to **four significant figures**, which is far finer than
+anything measurable here: the worst rounding shift is 5×10⁻⁵ of a cell, or about
+a thousandth of a pixel on the watch.
 
-| | units | from |
-|---|---|---|
-| cell width (the definition) | 1 | 58.47 / 58.47 |
-| centre axis | 0.5 exactly | 29.235 / 58.47 |
-| cap height, D to A | 1.71028 | 100 / 58.47 |
-| hook radius | 0.13545 | 7.92 / 58.47 |
-| stroke | 0.14747 | 16 / 108.5, measured |
-| `PITCH` — cell to cell, HP-01's own | 2.43031 | 142.08 / 58.47 |
-| full height including descenders | 2.46280 | cap × 1.44 |
-| ink height, top of `A` to bottom of the descender bar | 2.61027 | + one stroke |
-| `VPITCH` — baseline to baseline | 2.75 | chosen |
+| | in cell widths |
+|---|---|
+| cell width — the definition | 1 |
+| centre axis | 0.5 exactly |
+| cap height, segment D to segment A | 1.710 |
+| x-height, segment G to segment D | 0.855 |
+| hook radius | 0.1355 |
+| stroke | 0.1475 |
+| descender depth, below the baseline | 0.7525 |
+| full height, cap plus descender | 2.463 |
+| ink height, top of `A` to bottom of the descender bar | 2.610 |
+| `GAP` — last centreline of one glyph to the first of the next | 0.85 |
+| `VPITCH` — baseline to baseline, = 1.117 × total height | 2.751 |
+| `SPACE_WIDTH` — a space, ink-free | 0.6 |
 
-The payoff in reading it: since the cell is exactly 1 wide, **pitch minus 1 *is*
-the clearance** between neighbouring cells, and the ink meets at pitch = 1 +
-stroke. No arithmetic needed to see whether a pitch is viable.
-
-The constants are written in code as the division rather than as decimals, so the
-grid figure stays visible and no digit is invented in the conversion.
+The payoff in reading it: since the cell is exactly 1 wide, the gap **is** the
+clearance between neighbouring glyphs, and the ink of two full-width glyphs meets
+at a gap of one stroke. No arithmetic needed to see whether a setting is viable.
 
 Millimetres enter at exactly **one** place: whoever draws the font picks a size,
 and that fixes everything else. So the display's *shape* is fully specified by
-the numbers above and only its *size* depends on hardware. That was not true
-before — row spacing used to be a fraction of the screen diameter while pitch was
-a multiplier on the advance, two incompatible units that could not be compared
-and did not transfer together.
+the numbers above and only its *size* depends on hardware. Nothing in the layout
+may be expressed as a fraction of the screen or as a multiplier on something
+else: two units that cannot be compared also cannot be transferred together from
+the emulator to the watch.
 
 `vpitch` is baseline-to-baseline rather than gap-between-rows, so it keeps
 meaning the same thing when adjacent rows are different sizes — which they are,
@@ -785,103 +790,115 @@ puts the baselines at unequal distances, and the baselines are what the eye
 reads. Making the pitch uniform means the gaps now differ, which is the way round
 that looks even.
 
-**`Hp01Font` does not share the unit.** Its coordinates are the *outer* ink box,
-so its E/F-to-B/C span is 53.5 of its own 62 — a length copied between the two
-fonts unchanged is wrong. Both fonts now declare `UNIT_SPAN`, and layout code
-scales by it rather than assuming.
+**`Hp01Font` does not share the unit.** Its coordinates are the *outer* ink box
+on a grid 100 tall, so a length copied between the two fonts unchanged is wrong.
+The mapping is `talkRpn = (hp01 − STROKE/2) / 53.5`. Nothing lays out both fonts,
+so no code converts between them.
 
 Two floors fall out of this, both from ink rather than taste:
 
-- **pitch ≥ 1.14747** — cell width plus one stroke, below which neighbours
-  overlap outright. The slant makes it *look* tight well before that, because
-  one cell's top-right passes close to the next cell's bottom-left, but those
-  sit at different heights and never actually touch. All caps read well from
-  about 1.45 to 1.80.
+- **gap ≥ 0.14747** — one stroke, below which neighbours overlap outright.
+  (Equivalently pitch ≥ 1.14747, when both glyphs are full width.) The slant
+  makes it *look* tight well before that, because one cell's top-right passes
+  close to the next cell's bottom-left, but those sit at different heights and
+  never actually touch. All caps read well from a gap of about 0.45 to 0.80;
+  mixed case wants 0.76 to 0.92.
 - **vpitch ≥ 2.61027** — the ink height, below which descenders reach the row
-  beneath. A digits-only display could go far tighter; a seven-segment font has
-  no descenders at all, which is why `DisplayTestActivity` still sits at 1.96682.
+  beneath. A digits-only display could go far tighter, since a seven-segment font
+  has no descenders at all, but this font has them and letters will use them.
 
 Divergences from the DL-3422, all deliberate:
 
 - **Most of the set takes the HP-01's hooked corners** — digits `0 2 3 5 7 8 9`,
   letters `A C G O Q S`, the lowercase bowls, `( & @` — and `4` its short left
-  side. `A3`/`A4` and `D3`/`D4` are alternative corner pieces, never both lit.
-  (`&` briefly lit both, until the corner review settled on the hook alone.)
+  side. `A3`/`A4` and `D3`/`D4` are alternative corner pieces, **never both lit**.
 - **When a corner is hooked, the column stub goes dark.** `F2` with `A3`, `E2`
   with `D3` — otherwise the column spikes past the arc.
-- **Digits are full-width**, on `B`/`C`. Half-width digits on `P`/`Q` were tried
-  — they keep `5` and `S` apart — but reverted: the HP-01 width looks right and
-  `0` and `O` were briefly identical; `O` now takes the four square corners while `0` keeps the hooks. `1` and `l` stay distinct — the right column against the centre column.
-- **The decimal point and comma live inside the character cell** rather than
-  consuming one of their own.
+- **Digits are full-width**, on `B`/`C`, which is the HP-01 proportion. Half-width
+  digits on `P`/`Q` would hold `5` and `S` further apart, at the cost of the look.
+- **`0` and `O` differ only in their corners** — hooked for the digit, square for
+  the letter. **`1` and `l` differ only in their column** — right for the digit,
+  centre for the letter. Both pairs are one edit away from colliding.
+- **`|` carries the descender** (`P Q M`, the full cell) where `l` is `P Q`
+  alone, per DL-3422 typography. That is what keeps those two apart.
+- **Both parens are curved.** `(` is the left column with both corners hooked;
+  `)` is `RPAR`, one bespoke element. A mismatched pair — curved one side, square
+  the other — is the thing to avoid, not curvature itself.
+- **The comma's tail is constant width**, not tapered. More period-correct,
+  though the real LED calculators drew no commas at all.
+- **The decimal point and comma live in the gap after the cell** rather than
+  consuming a cell of their own.
+
+### Spacing is proportional, by ink
+
+Each glyph takes the width of its own ink; every glyph is separated from the next
+by the same clear space, `GAP`. Two full-width glyphs sit `1 + gap` apart, which
+is the widest any pair gets, so all caps are spaced as though on a grid.
+
+A fixed pitch does not work here because the *glyphs* are not uniform even though
+the hardware's cells were. `1` is two right-hand verticals with **zero** ink
+width; `i j l` a single centre column, also zero; `o x` and most lower case half a
+cell. On a fixed pitch that spreads a single number over a 3× range of gaps:
+
+| neighbours | fixed pitch (1.48) | proportional (gap 0.92) |
+|---|---|---|
+| full digit — full digit | 0.480 | 0.920 |
+| full digit — `1` | 0.980 | 0.920 |
+| `1` — `1` | 1.480 | 0.920 |
+
+`11,190.11` on a fixed pitch reads as `1 1,190. 1 1`; `2,345.67` at the same
+setting has its digits nearly touching.
+
+Consequences, accepted:
+
+- **Decimal points do not line up down the X/Y/Z/T stack**, since `11,190.11`
+  sets much shorter than `22,290.22`. X is always bigger than Y, Z and T anyway.
+- **No kerning table.** Spacing is by ink extent alone, so a pair whose ink hugs
+  the facing edges of both cells gets the same gap as any other. This is where
+  hand-tuning would go if it is ever needed.
+- **There is no "word space" concept.** A space is an ordinary cell with no ink,
+  `SPACE_WIDTH = 0.6` cell widths, taking a gap on each side like anything else.
+
+`font_design/make_spacing_matched.ps1` renders proportional against fixed pitch at
+**matched line lengths**, which is the fair comparison — at equal gap the
+proportional line is simply shorter. A test string must contain both a `11` run
+and an adjacent pair of full-width digits, or the two policies look identical.
 
 ### Open font work
 
 | | |
 |---|---|
-| **Horizontal placement** | Half-width glyphs sit in different halves of the cell — digits and most lower case on the left, `p` on the right, `i j l` in the centre. At a fixed pitch that reads as uneven spacing even though the pitch is exact. Needs one rule, applied throughout. |
-| ~~Diagonals to the corners~~ | **Done.** Segments H, I, K and L all reach the exact cell corners now. Moving segment H's and segment L's LEFT ends there was the change that mattered — it improved about fifteen glyphs (`/ \ X * M N Y V W v`) and cost reverting `&` to `A4` and `a e` to `D4`. |
-| ~~Semicolon~~ | **Done.** `COL2_TAIL`, the 31st element: the comma's tail hung off the lower colon dot, so a semicolon is a colon whose lower dot grew a tail. |
-| ~~Comma taper~~ | **Decided: keep the constant-width tail.** More period-correct — though the real LED calculators drew no commas at all. |
-| **Segment `M` (the descender stem) is too tall** | Not the letter M. `DESCENDER_FRACTION` is 0.44 of the cap height, against an x-height of half of it, so `g q y j` tails plunge nearly as deep as their bowls are tall. Now one number: lower `DESCENDER_FRACTION` and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all follow. |
-| ~~`P`/`Q` shift~~ | **Decided against, 2026-08-09.** They looked as though they wanted to move left a little in `B` and `D`. Leaving them where they are. |
-| ~~Decimal-point position~~ | **Done.** `drawTalkRpnCell` takes a `pitch` parameter and shifts the DP/COMMA elements by `dpXAt(pitch)`, so the dot holds its fraction of the gap at any pitch. The colon dots stay on the cell axis, unmoved. |
-| ~~Stroke width~~ | **Measured: 0.147** — see below. The test screen now brackets it from 0.5x to 1.5x, starting at the measurement. |
-| ~~`l` and `\|` are identical~~ | **Fixed.** `\|` is `P Q M`, running the full cell including the descender, per DL-3422 typography; `l` is `P Q` alone. |
-| ~~`0` and `O` are identical~~ | **Fixed, 2026-08-11:** `O` now takes four square corners while `0` keeps the hooks, so the two differ. `1` and `l` remain distinct — right column against centre column. |
-| ~~Parens vs brackets~~ | **Done.** Both parens are now properly curved: `(` is the left column with both corners hooked; `)` is `RPAR`, the whole right parenthesis as ONE element (bar stub + arc + column + arc + bar stub — the right side has no shortened bars for a bare arc to join). It began as two halves, `A5` and `D5`, but nothing ever lit one without the other so they merged. 32 elements; the mask is a `Long`. What was rejected earlier was a *mismatched* pair, not curvature. |
-| ~~Not yet wired in~~ | **Done.** `DisplayTestActivity` renders with `TalkRpnFont` — pitch, vpitch, slant and stroke controls all drive the real font, and text layout merges `.`/`,` into the preceding cell via `TalkRpnFont.cellMasks`. `Hp01Font` remains only in `FontCompareActivity`, as the comparison reference. |
-| **Still guessed** | `'`, `f` and `t` — the chart is ambiguous at those three. |
-| **Final LED colour** | *Answered on the physics; still to be judged on the watch.* See below — the emitter is 655–660 nm and the closest sRGB is **`#FF0000`**. |
+| **Segment `M` is too deep** | Not the letter M — the descender stem. `DESCENDER_DEPTH` is 0.753 against an x-height of 0.855, so `g q y j` tails plunge nearly as deep as their bowls are tall. One number: lower it and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all follow. |
+| **`'`, `f` and `t` are guessed** | The source is ambiguous at those three. Flagged orange on the reference sheet. |
+| **Gap, stroke, vpitch and colour** | Answered on paper; each still to be judged on the watch. The test screens bracket every one. |
+| **Bubble-LED glow** | Thin core plus a diffuse scatter, to imitate the epoxy lens. Parked. Interacts with the stroke: with a glow the core probably wants to be under 0.147. |
+| **`Hp01Font` can be retired** | It survives only in `FontCompareActivity` as the comparison reference. |
 
-### How wide was the stroke, really?
+What is already settled is in the sections above; what it replaced is in
+[HISTORY.md](HISTORY.md).
 
-**0.147** — a 16 px stroke against 108.5 px centre-to-centre, measured in GIMP off
-a microscope photograph of a real HP-55 (`PXL_20260811_140126781.jpg`).
+### Stroke width: 0.147
 
-That corrects a value of 0.0795 recorded here earlier, and the correction is
-worth keeping because the wrong number came from two things that both looked
-sound:
+A 16 px stroke against 108.5 px centre-to-centre, measured off a microscope
+photograph of a real HP-55.
 
-- **A note claiming 4.45% of digit height on HP's own part.** Whatever that
-  measured, the photographs do not support it.
-- **My own threshold measurement of a second, sharper photograph**, which read
-  5 px on a 49 px cell — about 0.10. The threshold was cutting *inside* the
-  stroke: run on the microscope frame, the same method reads 21–26 px where the
-  edge is visibly at 16.
+**Measure the denominator centre-to-centre, never outer-to-outer.** Outer width
+already contains one stroke, so using it double-counts — the same two
+measurements give 0.128 that way and 0.147 correctly. `outer − stroke =
+centre-to-centre` is the identity, and it has the useful property that bloom
+cancels in it exactly, since bloom pushes outer edges out and inner edges in by
+the same amount. Widths measured from two photographs at 2.2× different
+magnification agree to within 0.1%; their strokes disagree by 45%.
 
-Two mistakes on the way, both mine, both instructive:
-
-- **FWHM was tried and is invalid** on the *sharper* frame, where the core is
-  clipped: it assumes an unsaturated profile, so the half-max point sits out in
-  the halo. It read high, at 0.062 of cap height, which looked like evidence and
-  was noise.
-- **I argued the measurement down as "bloomed" and was wrong.** An edge profile
-  across the microscope frame's left column settles it: the plateau is 190 of a
-  ~210 range, so nothing is railed, and the top is flat over ~9 px. That is not
-  an overexposed image. The 90% width is 12 px and the half-max width ~23, so a
-  visual reading of 16 sits sensibly between them. Whatever softness there is
-  comes from the epoxy bubble lens, and being symmetric it does not bias fat.
-
-So the HP-01's own 9.29 — 0.159 in this unit — was close to right all along, and
-the claim that it was "twice what it should be" was simply wrong.
-
-**Measure the denominator centre-to-centre.** The first attempt paired a 16 px
-stroke with a 124.5 px *outer* width, which double-counts: outer width already
-contains one stroke, so the ratio comes out 0.128 when the same two numbers
-actually say 0.147. `outer − stroke = centre-to-centre` is the identity, and it
-has the useful property that bloom cancels in it exactly — bloom pushes outer
-edges out and inner edges in by the same amount. That is why the *widths* from
-two photographs at 2.2× different magnification agree to within 0.1%, while
-their strokes disagree by 45%.
+Bloom argues the truth is at or below this rather than above it. Still to be
+judged on the watch; the test screen brackets it 0.5× to 1.5×.
 
 ### What the segments are actually made of
 
-Magnifying the same photograph shows the decimal point is a **square die**, and
-every segment is **beaded out of small rectangular dies** strung end to end. Two
-consequences, both now in the font:
+The decimal point is a **square die**, and every segment is **beaded out of small
+rectangular dies** strung end to end. Two consequences, both in the font:
 
-- **Dots are square**, `DOT_SIDE = 2 × STROKE`, not round.
+- **Dots are square**, twice the stroke across, not round.
 - **The pen does not rotate.** Stroking cuts every end square to the direction
   that path happens to run, so a diagonal gets an end sliced at 30° while the bar
   beside it gets one cut flat — put an `X` next to a `Y` and it is obvious — and
@@ -891,30 +908,26 @@ consequences, both now in the font:
   than a bar, which is what a fixed nib does. Curves keep a perpendicular
   thickness — they turn a bar into a column, and a fixed nib would pinch them to
   nothing at one end.
-- **The end rule, final — the DIE policy, chosen 2026-08-11:** an end extends
-  half a stroke **only when a perpendicular axis-aligned segment shares the
-  endpoint**; everything else ends flat at the centreline, exactly as the
-  separate dies on a real DL-3422 do; hooks never take an extension; curves get
-  nothing. One addendum, caught by Dave on the first review of the die policy:
-  **where a horizontal bar and a diagonal share an endpoint, a mitre diamond
-  spanning both end faces fills the wedge between them.** A horizontal bar's end
-  face is vertical and a diagonal's is horizontal, so they touch only at the
-  centre and the diagonal's shoulder pokes half a stroke past the bar's flat end
-  — the corners of `Z z s e a` and the top-left of `&`. The diamond's 45° upper
-  edge chamfers the bar corner into the shoulder; its lower half is buried under
-  the diagonal. Only this pairing needs it — a vertical bar's end face is
-  horizontal, identical to the diagonal's, so column-diagonal and
-  diagonal-diagonal junctions already meet flush. The support case fills every corner and L-turn — `7`'s top-right,
-  `h`'s shoulder — with the two overshoots landing exactly flush. Everywhere
-  else the end is a die edge: a lone `1` really is half a stroke shorter than
-  the `0` beside it, `v`'s foot is flat with the diagonal melding in, lowercase
-  tops sit dead on the x-height line. Chosen over the “ink box” alternative
-  (uniform outer rectangle, but heel kinks where diagonals meld into extended
-  feet) from a side-by-side. Five earlier designs each died on an artefact Dave
-  caught: blanket extension (eaves past diagonals, spurs on `n`), boundary
-  extension (heels under `v w`), corner patches (nubs on lone tips, unequal `"`
-  ticks), slope-extension of free tips (kinked boots), and the original
-  rotating pen (angled ends, bumped hooks).
+- **The end rule — the die policy:** an end extends half a stroke **only when a
+  perpendicular axis-aligned segment shares the endpoint**. Everything else ends
+  flat at the centreline, as the separate dies on a real part do; hooks never
+  take an extension, and curves get nothing. The support case fills every corner
+  and L-turn — `7`'s top-right, `h`'s shoulder — with the two overshoots landing
+  exactly flush. Everywhere else the end is a die edge: a lone `1` really is half
+  a stroke shorter than the `0` beside it, `v`'s foot is flat with the diagonal
+  melding in, lowercase tops sit dead on the x-height line.
+- **The mitre diamond**, the one addendum to that rule: where a horizontal bar
+  and a diagonal share an endpoint, a diamond spanning both end faces fills the
+  wedge between them. A horizontal bar's end face is vertical and a diagonal's is
+  horizontal, so they touch only at the centre and the diagonal's shoulder pokes
+  half a stroke past the bar's flat end — the corners of `Z z s e a` and the
+  top-left of `&`. Only this pairing needs it: a vertical bar's end face is
+  horizontal, identical to the diagonal's, so column–diagonal and
+  diagonal–diagonal junctions already meet flush.
+- **Judge any change to this on the full character sheet.** Every end rule tried
+  so far looked right on the glyphs it was designed for and broke others;
+  `font_design/make_pen_diagnostic.ps1` exists for the close-up, but the sheet is
+  what decides.
 
 ### What colour were they, really?
 
@@ -949,11 +962,9 @@ gamut through the **magenta** edge, so it lands on pink — and against a black
 background, saturation carries the impression far more than dominant wavelength
 does. CIEDE2000 agrees, at less than half the error.
 
-**So: pure `#FF0000`.** The current `LED_RED` is `#E81810`, which mixes in a
-little green and blue and so reads slightly duller and browner than the emitter
-did. Worth noting the watch's OLED covers P3 — rendering in a wide-gamut space
-would get the red primary from x = 0.64 to x = 0.68, which is a real step closer
-and free.
+**So: pure `#FF0000`**, which is what `LedPalette.LIT` is set to. Worth noting the
+watch's OLED covers P3 — rendering in a wide-gamut space would get the red
+primary from x = 0.64 to x = 0.68, which is a real step closer and free.
 
 Two caveats before treating this as settled. The emitter is only part of what the
 eye saw: light left these parts through a moulded epoxy bubble lens, and at the
@@ -1015,26 +1026,20 @@ Two corrections to what was first written here, both worth keeping:
   `A4` (square stub), `A3` (arc), `F2` (column stub). The right side has no
   stubs: `A2` and `B` run straight to the corner, so an arc there would sit
   inside square ink and round nothing. Making the right corner *choosable* means
-  splitting `A2`, `B`, `D2` and `C` into main + stub too: **+6, so 36 elements,
-  and the mask becomes a `Long`.**
-- **Going fully round would have been *cheaper*, not dearer** — drop
-  `A4 D4 F2 E2`, add two arcs, and the font falls to 28 elements. The
-  square-or-hooked *choice* is what costs; the curves are nearly free. Cost and
-  boldness pointed in opposite directions here, and the look decided it.
+  splitting `A2`, `B`, `D2` and `C` into main + stub too — **+6 elements.**
+- **Going fully round is *cheaper*, not dearer** — drop `A4 D4 F2 E2`, add two
+  arcs, and the font falls to 28 elements. The square-or-hooked *choice* is what
+  costs; the curves are nearly free. Cost and boldness point in opposite
+  directions here, and the look decides it.
 
-A method note, since it cost a round trip. The mismatched `(` `)` pair was
-described accurately in three places and still shipped. *"No hook exists on the
-right"* is a fact about the segment table; *"that pair looks broken"* is a fact
-about the glyph. Reasoning carefully about the first is not a substitute for
-rendering the second and looking at it.
+A method note, because it is easy to repeat. *"No hook exists on the right"* is a
+fact about the segment table; *"that pair looks broken"* is a fact about the
+glyph. Reasoning carefully about the first is not a substitute for rendering the
+second and looking at it.
 
-**The `Int` ceiling was crossed on 2026-08-07, deliberately, for the parens.**
-The mask is now a `Long`: 33 elements, 31 bits spare. The earlier framing —
-"their budget was pins, ours is bits, both land at about the same number" —
-stays true in spirit: the discipline of paying for each element is what keeps
-the kit legible, and the rule for spending stands (legibility failures yes,
-fidelity failures no). The parens qualified: an unmatched pair is a legibility
-failure, and `A5`/`D5` were the cheapest matched fix.
+The mask is a `Long`: 32 elements, 32 bits spare. Their budget was pins and ours
+is bits, but the discipline of paying for each element is what keeps the kit
+legible — so the spending rule stands even with room to spare.
 
 ### The cell outline might be a feature, not just a tool
 
@@ -1045,14 +1050,13 @@ contrast against the red is worth trying on the calculator display itself. Judge
 it on the watch before committing: a hairline that looks crisp on a 1700 px page
 may not survive at 2 px on the wrist.
 
-### A rendering bug worth remembering
+### Every lit segment goes into ONE path, filled once
 
-Segments were drawn one stroke at a time, which looked right at heavy strokes and
-wrong at light ones: where two overlap, the second stroke's antialiased edge
-blends over the first, and the doubled coverage reads as a **brighter** line. A
-real display has no such seam. Every lit bar now goes into one `Path`, stroked
-once, so an overlap is painted exactly as often as anything else. The PDF
-renderer had the same bug and the same fix.
+Drawing them one at a time looks right at heavy strokes and wrong at light ones:
+where two overlap, the second shape's antialiased edge blends over the first and
+the doubled coverage reads as a **brighter** line. A real display has no such
+seam. Unioned and filled once, an overlap is painted exactly as often as anything
+else. This applies to the PDF renderer equally.
 
 ### Reviewing it
 

@@ -18,57 +18,59 @@ $OUT = "$PSScriptRoot\talkrpn_font_reference.pdf"
 # ---- geometry, in cell widths (must match TalkRpnFont.kt) -------------------
 #
 # THE UNIT: segment E/F to segment B/C is 1. Every length below is in that unit,
-# horizontally and vertically alike. Each is its value on the working grid the
-# geometry was drawn on - the grid where the cap height was 100 - divided by the
-# cell width there. A pure rescale, so no vertex moves.
+# horizontally and vertically alike, to four significant figures.
 
-$GRID_CELL_WIDTH = 58.47
+$CELL_WIDTH = 1.0            # by definition
+$CELL_HEIGHT = 1.710         # cap height, segment D to segment A
+$DESCENDER_DEPTH = 0.7525    # how far the N/O bar hangs below the baseline
+$TOTAL_HEIGHT = $CELL_HEIGHT + $DESCENDER_DEPTH
 
-$CELL_WIDTH = 1.0                          # by definition
-$CELL_HEIGHT = 100.0 / $GRID_CELL_WIDTH    # 1.71028, segment D to segment A
-$DESCENDER_FRACTION = 0.44                 # 144 against 100 on the old grid, exactly
-$TOTAL_HEIGHT = $CELL_HEIGHT * (1.0 + $DESCENDER_FRACTION)   # 2.46280
-
-# Measured off a microscope photograph of a real HP-55: a 16 px stroke against
-# 108.5 px from the left column's centre to the right's.
-$STROKE = 16.0 / 108.5                     # 0.14747
-# Dave's compromise between HP's datasheet 5.0 and the 7.5 first used.
+$STROKE = 0.1475
 $SLANT_DEG = 6.0
 
-$HOOK_R = 7.92 / $GRID_CELL_WIDTH          # 0.13545
+$HOOK_R = 0.1355
 
 # The grid every segment endpoint hangs from.
 $XL = 0.0
-$XM = $CELL_WIDTH / 2.0                  # 0.5 exactly
-$XR = $CELL_WIDTH                        # 1 exactly
+$XM = $CELL_WIDTH / 2.0
+$XR = $CELL_WIDTH
 
 $YT = 0.0
-$YM = $CELL_HEIGHT / 2.0                 # 0.85514
-$YB = $CELL_HEIGHT                       # 1.71028
-$YD = $TOTAL_HEIGHT                      # 2.46280
+$YM = $CELL_HEIGHT / 2.0
+$YB = $CELL_HEIGHT
+$YD = $TOTAL_HEIGHT
 
 $Y_F_TOP = $HOOK_R                       # where the top hook lands on the column
 $Y_E_BOT = $YB - $HOOK_R                 # where the bottom hook leaves it
 $X_HOOK_END_R = $XR - $HOOK_R            # the parenthesis arcs' turning point
 
-# The descender bar, inset from both columns. The two differ by 0.0002 - rounding
-# left over from the old grid, not an asymmetry worth moving a vertex to fix.
-$XN = 3.74 / $GRID_CELL_WIDTH            # 0.06396
-$XO = 54.72 / $GRID_CELL_WIDTH           # 0.93586
+# The descender bar, inset from both columns - very slightly asymmetrically.
+$XN = 0.06396
+$XO = 0.9359
 
 # Dots.
-$COL1_Y = 20.49 / $GRID_CELL_WIDTH       # 0.35044
-$COL2_Y = 80.60 / $GRID_CELL_WIDTH       # 1.37848
+$COL1_Y = 0.3504
+$COL2_Y = 1.378
 
-$PITCH = 142.08 / $GRID_CELL_WIDTH       # 2.43031, the HP-01's own
-$DP_X = 86.64 / $GRID_CELL_WIDTH         # 1.48179
-$DP_Y = $CELL_HEIGHT * (1.0 + 0.1908)    # 2.03660, 119.08 / 100 exactly
+$DP_DROP = 0.3263            # how far the decimal point sits below the baseline
+$DP_Y = $CELL_HEIGHT + $DP_DROP
 
-# Derived from DP_X, so it carries no rounding of its own.
-$DP_GAP_FRACTION = ($DP_X - $CELL_WIDTH) / ($PITCH - $CELL_WIDTH)   # 0.33692
+# From the last lit centreline of one glyph to the first of the next, and how far across it
+# the decimal point sits. Both mirror TalkRpnFont.
+$GAP = 0.85
+$DP_GAP_FRACTION = 0.337
 
-$COMMA_TAIL_DROP = 20.76 / $GRID_CELL_WIDTH   # 0.35505
-$COMMA_TAIL_LEFT = 7.65 / $GRID_CELL_WIDTH    # 0.13084
+# Where the dot lands after a full-width cell - which is every cell on the
+# reference sheet, since each glyph is drawn in a box of its own.
+$DP_X = $CELL_WIDTH + $DP_GAP_FRACTION * $GAP
+
+# What two FULL-WIDTH glyphs sit apart at that gap - the widest any pair gets.
+# The app spaces proportionally and has no fixed pitch; the comparison sheets
+# that set all-caps text still lay out on this.
+$PITCH = $CELL_WIDTH + $GAP
+
+$COMMA_TAIL_DROP = 0.3551
+$COMMA_TAIL_LEFT = 0.1308
 
 # ---- page setup -------------------------------------------------------------
 
@@ -80,13 +82,14 @@ $LANDSCAPE_W = 2200; $LANDSCAPE_H = 1700
 $MARGIN = 50.0
 $HEADER_H = 60.0
 
-# The traditional chart: 16 columns, code-point order, 0x20 to 0x7E.
+# The traditional chart: 16 columns, code-point order, 0x20 to 0x7F - exactly
+# six full rows of sixteen.
 $COLUMNS = 16
 
 # One glyph box in cell widths: wide enough for the sheared cell plus the decimal
 # point hanging off to the right, tall enough for the descender.
-$GLYPH_W_UNITS = 97.0 / $GRID_CELL_WIDTH    # 1.65897
-$GLYPH_H_UNITS = 155.0 / $GRID_CELL_WIDTH   # 2.65094
+$GLYPH_W_UNITS = 1.659
+$GLYPH_H_UNITS = 2.651
 
 # Vertical space under each glyph for its character and segment listing. Pixels,
 # not units - it holds text set in a system font, which has no cell to scale to.
@@ -157,7 +160,6 @@ $ALL_SEGMENTS = @($SEG_LINES.Keys) + @($SEG_ARCS.Keys) + @($SEG_POLYS.Keys) + @(
 $TOP = @("A4", "A1", "A2");  $TOP_HOOK = @("A3", "A1", "A2")
 $TOP_LEFT = @("A4", "A1");   $TOP_LEFT_HOOK = @("A3", "A1")
 $BOT = @("D4", "D1", "D2");  $BOT_HOOK = @("D3", "D1", "D2")
-$BOT_LEFT = @("D4", "D1");   $BOT_LEFT_HOOK = @("D3", "D1")
 $UL = @("F2", "F1");         $LL = @("E1", "E2")
 $MID = @("G1", "G2");        $STEM = @("P", "Q")
 
@@ -257,6 +259,11 @@ $GLYPHS = @(
     @{ C = '|';  S = $STEM + @("M") }
     @{ C = '}';  S = @("A1", "P", "G2", "Q", "M", "N") }
     @{ C = '~';  S = @("F1", "A3", "A1", "P", "G2", "B") }
+
+    # DEL lights every segment - the display self-test pattern, and the worst
+    # case for legibility. Taken from $ALL_SEGMENTS rather than listed, so it
+    # cannot fall behind the segment tables above.
+    @{ C = [char]0x7F;  S = $ALL_SEGMENTS }
 )
 
 # ---- drawing ----------------------------------------------------------------
@@ -321,7 +328,7 @@ $g.Clear([System.Drawing.Color]::White)
 
 $g.DrawString("TalkRPN character set", $titleFont, $BLACK, $MARGIN, 8)
 $g.DrawString(
-    ("16 per row, code-point order 0x20-0x7E.  Stroke {0:F3}, slant {1:F1} deg.  Red = lit, grey = unlit, cyan = cell bounds and baseline.  Orange ? = low confidence: ' f t" -f $STROKE, $SLANT_DEG),
+    ("16 per row, code-point order 0x20-0x7F.  Stroke {0:F3}, slant {1:F1} deg.  Red = lit, grey = unlit, cyan = cell bounds and baseline.  Orange ? = low confidence: ' f t" -f $STROKE, $SLANT_DEG),
     $subFont, $GREY, ($MARGIN + 330), 18)
 
 # The datasheet furniture: a light grid, hex column labels 0-F along the top,
@@ -372,15 +379,21 @@ for ($i = 0; $i -lt $GLYPHS.Count; $i++) {
     Draw-Glyph $g $ALL_SEGMENTS $ox $oy $k $GHOST
     Draw-Glyph $g $entry.S $ox $oy $k $LIT
 
+    # The two characters that cannot print themselves get a name instead.
     $labelY = $oy + $GLYPH_H_UNITS * $k - 2
-    $shown = if ($ch -eq ' ') { "sp" } else { $ch }
+    $shown = switch ([int][char]$entry.C) {
+        0x20 { "sp" }
+        0x7F { "DEL" }
+        default { $ch }
+    }
     $g.DrawString($shown, $charFont, $BLACK, ($ox - 4), $labelY)
 
     if ($LOW_CONFIDENCE -ccontains $ch) {
         $g.DrawString("?", $charFont, $ORANGE, ($ox + 14), $labelY)
     }
 
-    $names = $entry.S -join " "
+    # Listing all 32 names for DEL would overflow the box and say nothing.
+    $names = if ($entry.S.Count -eq $ALL_SEGMENTS.Count) { "all segments" } else { $entry.S -join " " }
     $wrapped = [System.Drawing.RectangleF]::new(($ox + 30), ($labelY + 3), ($cellW - 32), ($LABEL_H - 4))
     $g.DrawString($names, $segFont, $GREY, $wrapped)
 }

@@ -1,14 +1,11 @@
 ﻿package com.nerdfever.talkrpn
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -20,11 +17,12 @@ import kotlin.math.sin
 import kotlin.math.tan
 
 /*
- * TalkRpnFont - the 28-element display cell.
+ * TalkRpnFont - a 32-element display cell.
  *
- * Styled after the HP-01 (1977), but with the segment count of a DL-3422 rather
- * than the HP-01's seven, so the display can show text as well as digits. Drawn
- * from Dave's dimensioned sketch, "TalkRPN font (not to scale).pdf".
+ * A 1970s bubble-LED look: HP-01 styling (rounded left corners) on a modified
+ * DL-3422 segment set, so the display can show text as well as digits.
+ * Identical to neither part. Where the numbers came from is recorded in
+ * HISTORY.md.
  *
  * ---------------------------------------------------------------------------
  * Coordinate system
@@ -36,7 +34,7 @@ import kotlin.math.tan
  * THE UNIT: segment E/F to segment B/C is exactly 1. That is the left column's
  * centreline to the right column's - the cell width, measured where the ink's
  * middle is, not where its edge is. Every length in this font and in everything
- * that lays it out - pitch, vpitch, stroke, the lot - is in that one unit,
+ * that lays it out - gap, vpitch, stroke, the lot - is in that one unit,
  * horizontally and vertically alike. There is no second unit anywhere, and
  * nothing here is in pixels, dp or millimetres.
  *
@@ -44,39 +42,17 @@ import kotlin.math.tan
  * and that fixes the scale for everything else. So the display's shape is fully
  * specified by the numbers here, and only its SIZE depends on hardware.
  *
- * The geometry was drawn on a working grid where the cap height was 100 - the
- * HP-01's centreline box, a 53.5 x 91.5, scaled by 100/91.5. Every figure here
- * is its value on that grid divided by 58.47, the cell width there. That is a
- * pure rescale, so no vertex has moved and the glyphs are the reviewed ones.
- *
- *     58.47 / 58.47 = 1        the cell width, by definition
- *     29.235 / 58.47 = 0.5     the centre axis, exactly
- *     100 / 58.47 = 1.71028    the cap height
- *     20.49 / 58.47 = 0.35044  the upper colon dot
- *     80.60 / 58.47 = 1.37848  the lower colon dot
- *     7.92 / 58.47 = 0.13545   the hook radius
- *     16 / 108.5 = 0.14747     the stroke, measured off the real part - see STROKE
- *     142.08 / 58.47 = 2.43031 the pitch
- *
- * The payoff for reading it: since the cell is 1 wide, pitch minus 1 IS the
- * clearance between neighbouring cells, and the ink meets at pitch = 1 + STROKE.
- *
- * Note this differs from Hp01Font, whose coordinates are ink-box based and so
- * carry an extra STROKE/2 on every axis. The mapping is
- *
- *     talkRpn = (hp01 - STROKE/2) / 53.5
+ * SCALE IS THE CALLER'S. Nothing here has a physical size: the drawing calls
+ * take a cellHeight in pixels and everything is scaled from it, so the same
+ * geometry serves a 2 mm watch row and a 300 mm reference sheet unchanged.
  *
  * ---------------------------------------------------------------------------
  * What the defaults here are for
  * ---------------------------------------------------------------------------
- * Every default in this file records the REAL PART as measured - stroke, slant,
- * dot shape, proportions. It is a description of 1970s bubble LEDs, not a set of
- * choices about how the calculator should look.
- *
- * What the app finally renders is a separate question, to be settled by eye on
- * the watch. That is what the test screens' controls are for, and why they
- * bracket these values rather than replacing them. If a tuned value ends up
- * differing, this file still says what the hardware did.
+ * Stroke, slant and the cell proportions describe the hardware. What the app
+ * finally renders is a separate question, to be settled by eye on the watch -
+ * which is what the test screens' controls are for, and why they bracket these
+ * values rather than replacing them.
  *
  * ---------------------------------------------------------------------------
  * Segments
@@ -84,7 +60,7 @@ import kotlin.math.tan
  *  A1 A2   top bar, split at the centre axis
  *  A3 A4   ALTERNATIVE top-left corners, never both. A4 runs the bar straight on
  *          to x = 0, giving a square corner. A3 instead turns it through 90
- *          degrees down into the left column - the HP-01's signature, which is
+ *          degrees down into the left column, giving a rounded one - which is
  *          why a 7 carries a downward flag at its top left.
  *  B  C    right column, upper and lower
  *  D1 D2   bottom bar, split
@@ -92,7 +68,7 @@ import kotlin.math.tan
  *  F1 F2   upper-left column. F1 is the main run, stopping where A3 lands. F2 is
  *          the short stub above it, carrying the column to y = 0 - lit when the
  *          corner is square, dark when it is hooked, and dark for a 4 so that its
- *          left side sits lower than its right, as on the HP-01.
+ *          left side sits lower than its right.
  *  E1 E2   lower-left column, mirroring F1/F2. E2 is dark for a 2, the one hooked
  *          digit that also lights E.
  *  G1 G2   middle bar, split
@@ -103,35 +79,28 @@ import kotlin.math.tan
  *  M       centre descender
  *  N  O    descender bar, split
  *  P  Q    centre column, upper and lower
+ *  RPAR    the whole right parenthesis as ONE element - bar stub, corner arc,
+ *          column, corner arc, bar stub, drawn as a single continuous figure
  *  COL1    upper colon dot; also dots a lower-case i
  *  COL2    lower colon dot, used only by the colon
- *  DP      decimal point
+ *  COL2_TAIL  the semicolon's tail, hung off COL2 on the cell axis
+ *  DP      decimal point, out in the gap after the cell
  *  COMMA   comma, a dot with a tail, at the decimal point's position
+ *
+ * Thirty-two in all, which is why the mask is a Long - 32 would exactly fill an
+ * Int with no headroom.
  *
  * ---------------------------------------------------------------------------
  * No gaps
  * ---------------------------------------------------------------------------
- * Unlike the sketch and unlike a real DL-3422, adjacent segments meet flush.
- * Every endpoint below is shared with its neighbours, so a lit run reads as one
- * continuous stroke.
+ * Adjacent segments meet FLUSH, where real hardware leaves a dark line between
+ * them. Every endpoint below is shared with its neighbours, so a lit run reads
+ * as one continuous stroke.
  */
 
 object TalkRpnFont {
 
     // ---- Cell metrics, in cell units ----------------------------------------
-
-    /**
-     * The cell width in the working grid this geometry was drawn on - the grid
-     * where the cap height was 100. Dividing by it is the whole of the unit
-     * change, so it appears exactly once, here.
-     *
-     * Every figure below is its value on THAT grid over this. That is a pure
-     * rescale: not one vertex moves, and the glyphs that were reviewed and
-     * corrected one by one are the same glyphs. Deriving them afresh from the
-     * HP-01's own 53.5 would have been prettier by a few digits and would have
-     * shifted points by up to 0.04% - which is not a licence this file has.
-     */
-    private const val GRID_CELL_WIDTH = 58.47f
 
     /**
      * Segment E/F to segment B/C - the left column to the right column, centre to
@@ -141,132 +110,124 @@ object TalkRpnFont {
     const val CELL_WIDTH = 1f
 
     /**
-     * How many of this font's own coordinates make one display unit.
+     * CAP HEIGHT - the height of a capital letter, baseline to the top of a flat
+     * cap. Here that is segment D to segment A, centreline to centreline.
      *
-     * Trivially 1 here, because this font defines the unit. It exists so layout
-     * code can be written against any font's E/F-to-B/C span rather than against
-     * its cell width - the two are NOT the same in Hp01Font, whose coordinates
-     * are ink-box based and whose E/F-to-B/C span is 53.5 of its own 62.
+     * In a segment font every capital is exactly this tall, so it doubles as the
+     * cell's height above the baseline. Two other heights are NOT this one: the
+     * x-height, which is half of it (segment G to segment D), and [TOTAL_HEIGHT],
+     * which adds the descender below the baseline.
      */
-    const val UNIT_SPAN = CELL_WIDTH
-
-    /** Segment D to segment A, centreline to centreline. */
-    const val CELL_HEIGHT = 100f / GRID_CELL_WIDTH         // 1.71028
+    const val CELL_HEIGHT = 1.710f
 
     /**
-     * How far the descender bar hangs below the baseline, as a fraction of the
-     * cap height. This is the one number behind "segment M is too tall".
+     * How far the descender bar hangs below the baseline.
      *
-     * Exactly 0.44 on the old grid too - 144 against 100 - so naming it moves
-     * nothing.
+     * The single number controlling how deep g q y j reach: lower it and
+     * [TOTAL_HEIGHT], the N/O bar and segment M's endpoint all follow.
      */
-    private const val DESCENDER_FRACTION = 0.44f
+    private const val DESCENDER_DEPTH = 0.7525f
 
-    /** Including the descender: segment A down to the N/O bar. */
-    const val TOTAL_HEIGHT = CELL_HEIGHT * (1f + DESCENDER_FRACTION)   // 2.46280
+    /** Segment A down to the N/O bar - the cap plus the descender. */
+    const val TOTAL_HEIGHT = CELL_HEIGHT + DESCENDER_DEPTH
 
     /**
-     * Rendered stroke width, measured off the real part.
+     * Rendered stroke width, as a fraction of the cell width.
      *
-     * Dave measured a microscope photograph of an HP-55 bubble display in GIMP:
-     * a 16 px stroke against 108.5 px from the left column's centre to the
-     * right's. Written as that division so the two measurements stay visible.
-     *
-     * This CORRECTS an earlier value of 0.0795, which was half the HP-01's own
-     * 9.29 and too thin. That came from a note claiming 4.45% of digit height on
-     * HP's own part, and from my own threshold measurement of a second, sharper
-     * photograph - both of which the microscope shot contradicts. The threshold
-     * was cutting inside the stroke: the same method reads 21-26 px on the frame
-     * where the edge is visibly at 16.
-     *
-     * So the HP-01's 9.29 was close to right all along - 0.159 against the 0.147
-     * measured here, an 8% difference - and the claim that it was "twice what it
-     * should be" was wrong.
-     *
-     * Bloom still argues the truth is at or below this rather than above it.
+     * If this is ever re-measured off a photograph, measure the denominator
+     * CENTRE TO CENTRE, never as the outer ink width: outer width already
+     * contains one stroke, so using it understates the ratio. Centre-to-centre
+     * also makes the measurement robust, since bloom pushes outer edges out and
+     * inner edges in by the same amount and cancels exactly.
      */
-    const val STROKE = 16f / 108.5f                        // 0.14747
+    const val STROKE = 0.1475f
 
     /** Rightward lean, in degrees. */
-    /** Dave's compromise between HP's datasheet 5.0 and the 7.5 first used. */
     const val SLANT_DEGREES = 6.0f
 
     /**
-     * Side of the square dots - the decimal point, the colon dots and the comma's
-     * head - at twice the stroke.
+     * The default gap: from the LAST lit centreline of one glyph to the FIRST lit
+     * centreline of the next, in cell widths. The layout's one horizontal knob,
+     * and a parameter on every call that lays out text - this is only its default.
      *
-     * SQUARE, because that is what the real part has: a macro photograph of an
-     * HP-55 shows the decimal point as a distinct square die, and the same
-     * photograph shows every segment beaded out of small rectangular dies. Round
-     * was the earlier guess and it was wrong.
+     * Named DEFAULT_GAP rather than GAP so it cannot be mistaken for the `gap`
+     * parameter it seeds. PowerShell, which mirrors this font, treats $GAP and
+     * $gap as the SAME variable.
      *
-     * Tied to [STROKE], so a change there moves the dots with it. That is the
-     * HP-01's own relation, but it is an observation rather than a rule this font
-     * has to obey - if the dots read wrong on the watch, giving this its own
-     * constant is a one-line change.
+     * Both ends are centrelines, like every other length in this font. That is
+     * NOT the dark space a reader sees: each glyph's ink overhangs its own
+     * centreline by half a stroke, so the visible dark band is gap - [STROKE].
+     * At the default, 0.85 - 0.1475 = 0.70.
+     *
+     * Measuring centre to centre is what makes the floor fall out directly: the
+     * two inks touch when the gap equals one stroke, so anything above [STROKE]
+     * is physically legal.
+     *
+     * The slant makes it LOOK tight well before that, because one glyph's
+     * top-right passes close to the next one's bottom-left - but those are at
+     * different heights and never actually touch.
+     *
+     * Mixed-case text reads well from about 0.76 to 0.92; all caps takes rather
+     * less. Still to be judged on the watch.
      */
-    const val DOT_SIDE = 2f * STROKE
+    const val DEFAULT_GAP = 0.85f
 
     /**
-     * PITCH - horizontal distance between successive cell origins, in cell widths.
+     * How wide a space is, in cell widths.
      *
-     * The HP-01's own 130. It is very wide, because on the real instrument every
-     * character occupied a full digit position: at 2.43 cell widths, well over
-     * half the pitch is empty and the space between digits exceeds the digits.
-     * Expect to tighten it - all caps read well from about 1.45 to 1.80.
-     *
-     * Reading it is now direct: pitch minus 1 IS the clearance between cells,
-     * since the cell is exactly 1 wide. The floor is set by ink, not by taste -
-     * neighbours clear each other while that clearance exceeds one stroke, so
-     * pitch >= 1.14747. The slant makes it LOOK tight well before then, because
-     * one cell's top-right passes close to the next cell's bottom-left, but those
-     * are at different heights and never actually touch.
+     * A space is an ordinary cell that happens to have no ink, so it takes a gap
+     * on each side like any other. Nothing about it is special-cased and there is
+     * no separate notion of a word space.
      */
-    const val PITCH = 142.08f / GRID_CELL_WIDTH            // 2.43031
+    const val SPACE_WIDTH = 0.6f
+
+    /** Top of segment A's ink to the bottom of the descender bar's ink. */
+    const val INK_HEIGHT = TOTAL_HEIGHT + STROKE
+
+    /**
+     * Row spacing as a multiple of [TOTAL_HEIGHT], so that shortening the
+     * descender closes the rows up by itself rather than needing a second edit.
+     *
+     * The floor is [INK_HEIGHT] / [TOTAL_HEIGHT] = 1.060, below which one row's
+     * descenders reach into the row beneath. 1.117 leaves about 5% air above
+     * that.
+     */
+    private const val VPITCH_OF_TOTAL_HEIGHT = 1.117f
 
     /**
      * VPITCH - vertical distance between successive rows, baseline to baseline,
-     * in the same cell widths as [PITCH].
+     * in cell widths.
      *
      * Baseline to baseline - segment D of one row to segment D of the next -
      * rather than gap-between-rows, so that it means the same thing when two
      * adjacent rows are different sizes. It is always measured in the units of
      * the REFERENCE row, so a half-size row does not carry half-size units.
-     *
-     * The floor here is the descender: ink runs from STROKE/2 above segment A to
-     * STROKE/2 below the descender bar, which is [INK_HEIGHT] = 2.61 tall, so
-     * anything under that overlaps the row beneath. 2.75 leaves a little air. A
-     * digits-only display could go far tighter - a seven-segment font has no
-     * descenders at all - but this font has them and letters will use them.
      */
-    const val VPITCH = 2.75f
-
-    /** Top of segment A's ink to the bottom of the descender bar's ink. */
-    const val INK_HEIGHT = TOTAL_HEIGHT + STROKE           // 2.61027
+    const val VPITCH = TOTAL_HEIGHT * VPITCH_OF_TOTAL_HEIGHT
 
     /** Radius of the two hooks, measured on their centreline. */
-    const val HOOK_R = 7.92f / GRID_CELL_WIDTH             // 0.13545
+    const val HOOK_R = 0.1355f
 
     // ---- The grid the segments hang from ------------------------------------
 
     private const val X_LEFT = 0f
-    private const val X_MID = CELL_WIDTH / 2f          // 0.5 exactly
-    private const val X_RIGHT = CELL_WIDTH             // 1 exactly
+    private const val X_MID = CELL_WIDTH / 2f
+    private const val X_RIGHT = CELL_WIDTH
 
     private const val Y_TOP = 0f
-    private const val Y_MID = CELL_HEIGHT / 2f         // 0.85514
-    private const val Y_BASE = CELL_HEIGHT             // 1.71028
-    private const val Y_DESC = TOTAL_HEIGHT            // 2.46280
+    private const val Y_MID = CELL_HEIGHT / 2f
+    private const val Y_BASE = CELL_HEIGHT
+    private const val Y_DESC = TOTAL_HEIGHT
 
     /** Where the top hook lands on the left column, and where the bottom one leaves it. */
-    private const val Y_F_TOP = HOOK_R                 // 0.13545
-    private const val Y_E_BOTTOM = Y_BASE - HOOK_R     // 1.57483
+    private const val Y_F_TOP = HOOK_R
+    private const val Y_E_BOTTOM = Y_BASE - HOOK_R
 
     /** Where each horizontal bar's straight run ends and its hook begins. */
-    private const val X_HOOK_START = HOOK_R            // 0.13545
+    private const val X_HOOK_START = HOOK_R
 
     /** The mirror point on the right, where the parenthesis arcs turn. */
-    private const val X_HOOK_END_R = CELL_WIDTH - HOOK_R   // 0.86455
+    private const val X_HOOK_END_R = CELL_WIDTH - HOOK_R
 
     /**
      * Control-point offset for a quarter-circle as one cubic Bezier:
@@ -275,60 +236,53 @@ object TalkRpnFont {
     private val HOOK_K = (4.0 / 3.0 * tan(Math.PI / 8.0)).toFloat() * HOOK_R
 
     /**
-     * The descender bar is inset from the columns, symmetrically.
-     *
-     * The two figures differ by 0.0002, which is the rounding left over from the
-     * grid they were drawn on. It is not worth "correcting": doing so would move
-     * a vertex, and nothing here is measured well enough to justify that.
+     * The descender bar is inset from the columns, symmetrically. The two figures
+     * differ by 0.0002 - measurement rounding, and below what anything here is
+     * measured well enough to justify correcting.
      */
-    private const val X_N_LEFT = 3.74f / GRID_CELL_WIDTH    // 0.06396
-    private const val X_O_RIGHT = 54.72f / GRID_CELL_WIDTH  // 0.93586
+    private const val X_N_LEFT = 0.06396f
+    private const val X_O_RIGHT = 0.9359f
 
     // ---- Dots ---------------------------------------------------------------
 
-    private const val DOT_AXIS_X = X_MID                    // 0.5 exactly
-    private const val COL1_Y = 20.49f / GRID_CELL_WIDTH     // 0.35044
-    private const val COL2_Y = 80.60f / GRID_CELL_WIDTH     // 1.37848
+    private const val DOT_AXIS_X = X_MID
+    private const val COL1_Y = 0.3504f
+    private const val COL2_Y = 1.378f
+
+    /** How far the dot sits below the baseline. */
+    private const val DP_DROP = 0.3263f
+
+    private const val DP_Y = CELL_HEIGHT + DP_DROP
 
     /**
-     * The decimal point and comma sit outside the cell, in the gap to its right.
+     * How far across the gap the decimal point and comma sit, as a fraction of
+     * that gap.
      *
-     * Taken from an HP datasheet, at the authentic pitch. Note what that means:
-     * the dot does not belong to its cell, it belongs to the GAP, so a fixed x is
-     * only right at one pitch. Tighten the pitch and the gap shrinks underneath a
-     * dot that has not moved, until it is standing inside the next character.
+     * They belong to the GAP, not to the cell - which is why this is a fraction
+     * rather than an x. Give it a fixed x instead and tightening the gap leaves
+     * the dot standing inside the next character.
      */
-    private const val DP_X = 86.64f / GRID_CELL_WIDTH       // 1.48179
-
-    /** How far the dot sits below the baseline, as a fraction of the cap height. */
-    private const val DP_DROP_FRACTION = 0.1908f            // 119.08 / 100, exactly
-
-    private const val DP_Y = CELL_HEIGHT * (1f + DP_DROP_FRACTION)   // 2.03660
+    const val DP_GAP_FRACTION = 0.337f
 
     /**
-     * Where the decimal point sits across the gap between two cells, as a
-     * fraction of that gap.
+     * Where the dot goes after a glyph whose ink ends at [inkRight], at [gap].
      *
-     * Derived from [DP_X] rather than stated, so it carries no rounding of its
-     * own: [dpXAt] reproduces the datasheet position exactly at [PITCH] and stays
-     * sensible either side of it.
+     * A third of the way into the gap, so it stays clear of both neighbours as
+     * the gap changes - and so it follows a NARROW glyph in, rather than sitting
+     * out at a fixed x where a full-width cell would have put it. The dot beside
+     * a 1 belongs beside the 1.
+     *
+     * The dot is 2 x [STROKE] across, so its right edge lands
+     * 0.663 x gap - STROKE/2 clear of the next glyph's ink: positive for any gap
+     * above 0.11, which is tighter than the ink itself allows.
      */
-    const val DP_GAP_FRACTION = (DP_X - CELL_WIDTH) / (PITCH - CELL_WIDTH)   // 0.33692
-
-    /**
-     * The decimal point's x at a given pitch. Callers rendering at anything other
-     * than [PITCH] should shift the DP and COMMA elements by dpXAt(pitch) - DP_X.
-     */
-    fun dpXAt(pitch: Float) = CELL_WIDTH + DP_GAP_FRACTION * (pitch - CELL_WIDTH)
+    fun dpXAfter(inkRight: Float, gap: Float) = inkRight + DP_GAP_FRACTION * gap
 
     /** The comma's tail, relative to its dot. */
-    private const val COMMA_TAIL_DROP = 20.76f / GRID_CELL_WIDTH   // 0.35505
-    private const val COMMA_TAIL_LEFT = 7.65f / GRID_CELL_WIDTH    // 0.13084
+    private const val COMMA_TAIL_DROP = 0.3551f
+    private const val COMMA_TAIL_LEFT = 0.1308f
 
     // ---- Slant --------------------------------------------------------------
-
-    /** Past this ratio a mitre is cut off, so acute diagonals cannot spike. */
-    private const val MITRE_LIMIT = 2.5f
 
     private val SHEAR = tan(Math.toRadians(SLANT_DEGREES.toDouble())).toFloat()
 
@@ -348,17 +302,15 @@ object TalkRpnFont {
      * This is what makes the PEN slant as well as the path. A real display's
      * segments are parallelograms - a vertical bar's ends are horizontal, a
      * horizontal bar's ends are slanted - and you only get that by stroking
-     * upright and shearing the RESULT. Shearing the path first and stroking it
-     * after, which is what the point-by-point [sx] did on its own, leaves a
-     * round or square pen in device space and every end cut at the wrong angle.
-     *
-     * Column-major, so index 4 is the x-from-y skew and 12 the x translation.
+     * upright and shearing the RESULT. Shear the path first and stroke it after,
+     * which is what the point-by-point [sx] does on its own, and the pen stays
+     * round or square in device space with every end cut at the wrong angle.
      */
     private val SHEAR_MATRIX = Matrix().apply {
-        // Set by NAME rather than by [row, column]. Compose indexes that operator
+        // Set by NAME, not by [row, column]. Compose indexes that operator
         // row-major into a column-major array, so the obvious-looking [0, 1] and
         // [0, 3] land on SkewY and a perspective term instead - which renders as
-        // a cell that is sheared the wrong way and shifted out of its own bounds.
+        // a cell sheared the wrong way and shifted out of its own bounds.
         values[Matrix.SkewX] = -SHEAR              // x picks up -SHEAR per unit of y
         values[Matrix.TranslateX] = SHEAR_OFFSET   // shifted so the cell starts at 0
     }
@@ -366,16 +318,14 @@ object TalkRpnFont {
     // ---- Segment identity ---------------------------------------------------
 
     /**
-     * 32 elements. The mask is a Long: 32 would exactly fill an Int with no
-     * headroom, so it stays wide.
+     * 32 elements, so the mask is a Long - 32 would exactly fill an Int with no
+     * headroom.
      *
-     * RPAR is the whole right parenthesis as ONE element - bar stub, corner
-     * arc, column, corner arc, bar stub, drawn as a single continuous figure.
-     * It began life as two halves (A5 and D5), but nothing ever lit one without
-     * the other, so they merged. It is bespoke because the right side has no
-     * shortened bars or columns for bare arcs to join - A2, B, C and D2 all run
-     * square into the corner, and splitting them properly would cost six
-     * elements where this costs one.
+     * RPAR is the whole right parenthesis as ONE element - bar stub, corner arc,
+     * column, corner arc, bar stub, drawn as a single continuous figure. It is
+     * bespoke because the right side has no shortened bars or columns for a bare
+     * arc to join: A2, B, C and D2 all run square into the corner, and splitting
+     * them properly would cost six elements where this costs one.
      */
     enum class Seg {
         A1, A2, A3, A4,
@@ -570,23 +520,22 @@ object TalkRpnFont {
     /**
      * An axis-aligned bar, as the rectangle a fixed nib sweeps.
      *
-     * END RULE, final - Dave chose the DIE policy (2026-08-11):
+     * THE END RULE - the die policy:
      *
      *   An end extends half a stroke ONLY when a perpendicular axis-aligned lit
      *   segment shares the endpoint. Everything else ends flat at the
-     *   centreline, exactly as the separate dies on a real DL-3422 do.
+     *   centreline, exactly as the separate dies on a real display do.
      *
-     * The support case is what fills every corner and L-turn: at 7's top-right,
-     * A2 and B each overshoot half a stroke and land exactly flush with each
-     * other's ink edges; same at h's shoulder. Where there is no such partner
-     * the end is a die edge: a lone 1 really is half a stroke shorter than the
-     * 0 beside it, v's foot is flat with the diagonal melding into it, and
-     * lowercase tops sit dead on the x-height line - all as on the real part.
+     * The support case fills every corner and L-turn: at 7's top-right, A2 and B
+     * each overshoot half a stroke and land exactly flush with each other's ink
+     * edges; same at h's shoulder. Where there is no such partner the end is a
+     * die edge - a lone 1 really is half a stroke shorter than the 0 beside it,
+     * v's foot is flat with the diagonal melding into it, and lowercase tops sit
+     * dead on the x-height line.
      *
-     * Rejected on the way here, each after Dave caught its artefact: blanket
-     * extension (eaves hanging past diagonals, spurs on n), boundary extension
-     * (heels under v and w), corner patches (nubs on lone tips), slope
-     * extension of free diagonal tips (kinked boots).
+     * Any change here must be judged on the FULL character sheet, not on a few
+     * glyphs: every end rule that has been tried looked right on the letters it
+     * was designed for and broke others.
      */
     private fun Path.addAxisBar(
         x1: Float, y1: Float, x2: Float, y2: Float, w: Float,
@@ -737,12 +686,10 @@ object TalkRpnFont {
         // Diagonals. H+K make one through-line, I+L the other; J is the extra,
         // with no mirror on the right because no ASCII glyph needs one.
         //
-        // H and L run to the EXACT corners (changed 2026-08-08). They used to
-        // stop at the hook landings, (0, 7.92) and (0, 92.08), which suited the
-        // glyphs that join a diagonal to an arc - but it left every slash short
-        // of its corner. The full slash and backslash are corner-to-corner now,
-        // and the glyphs that used the old junctions (& a e) went back to square
-        // corners instead.
+        // All four run to the EXACT cell corners, so / and \ are corner-to-corner.
+        // That is why the glyphs joining a diagonal to the left column (& a e)
+        // take square corners rather than hooks: a diagonal arriving at the corner
+        // has no arc to meet.
         Seg.H to line(X_LEFT, Y_TOP, X_MID, Y_MID),
         Seg.I to line(X_RIGHT, Y_TOP, X_MID, Y_MID),
         Seg.K to line(X_MID, Y_MID, X_RIGHT, Y_BASE),
@@ -793,22 +740,15 @@ object TalkRpnFont {
     )
 
     /**
-     * Dot centres.
+     * The colon dots, which sit on the cell's own axis.
      *
-     * Positioned by the slant but NOT shaped by it: these are true circles.
-     * Shearing a circle turns it into an ellipse, which is visibly wrong.
+     * The decimal point and comma are deliberately NOT here. They live in the gap
+     * after the cell rather than in it, so their x is the layout's to decide and
+     * arrives as [drawTalkRpnCell]'s dpX.
      */
     private val DOT_CENTRES: Map<Seg, Offset> = mapOf(
         Seg.COL1 to Offset(DOT_AXIS_X, COL1_Y),
         Seg.COL2 to Offset(DOT_AXIS_X, COL2_Y),
-        Seg.DP to Offset(DP_X, DP_Y),
-        Seg.COMMA to Offset(DP_X, DP_Y),
-    )
-
-    /** The comma's tail: a bar from the dot down and to the left. */
-    private val COMMA_TAIL: FloatArray = floatArrayOf(
-        DP_X, DP_Y,
-        DP_X - COMMA_TAIL_LEFT, DP_Y + COMMA_TAIL_DROP
     )
 
     /**
@@ -834,14 +774,78 @@ object TalkRpnFont {
 
     // ---- Text layout ---------------------------------------------------------
     //
-    // The one convention the layer above needs: a '.' or ',' does NOT take a
-    // cell. It merges into the PRECEDING cell's DP or COMMA element - that is
-    // the whole point of those elements - so "42.9" is three cells, not four.
+    // PROPORTIONAL, not fixed pitch. Cells do not sit on a grid: each glyph takes
+    // the width of its own ink, and every glyph is separated from the next by the
+    // same clear space, [DEFAULT_GAP].
+    //
+    // Why not a grid, when the hardware this font records plainly had one: a real
+    // display's cells are all the same width because each is a physical digit
+    // position, but its GLYPHS are not - a 1 is two verticals on the right-hand
+    // edge with no width at all, and i, l and most lower case are narrower than
+    // the cell. Give each of those a whole cell and the spacing swings over a 3x
+    // range inside a single number: 11,190 sets its 1s three times further apart
+    // than its 190. Spacing by ink instead makes every gap equal, which is what
+    // the eye is actually reading.
+    //
+    // Two conventions the layer above needs:
+    //
+    //   - a '.' or ',' does NOT take a cell. It merges into the PRECEDING cell's
+    //     DP or COMMA element - that is the whole point of those elements - so
+    //     "42.9" is three cells, not four.
+    //   - a ' ' is an ordinary cell that happens to have no ink, [SPACE_WIDTH]
+    //     wide. It takes a gap on each side like anything else.
+    //
+    // ---------------------------------------------------------------------------
+    // The rule, in full
+    // ---------------------------------------------------------------------------
+    //
+    //     parse text into cells:
+    //         '.' or ','  ->  merge into the previous cell, no cell of its own
+    //         ' '         ->  a cell with no ink
+    //         no glyph    ->  DROPPED, as though it had not been in the string
+    //         anything else -> a cell holding that glyph's segment mask
+    //
+    //     for each cell:
+    //         inkLeft, inkRight = leftmost and rightmost LIT CENTRELINE
+    //                             (the dot and comma excluded - they live in
+    //                              the gap, not in the glyph)
+    //         width = if it is a space:      SPACE_WIDTH
+    //                 if it has no ink:      CELL_WIDTH   (a lone leading dot)
+    //                 otherwise:             inkRight - inkLeft
+    //
+    //     pen = width(first) / 2                       # start on the first centre
+    //     for each cell after the first:
+    //         pen += width(previous)/2 + gap + width(this)/2
+    //
+    //     place each cell so its INK CENTRE lands on the pen:
+    //         cellOrigin = pen - (inkLeft + inkRight)/2
+    //
+    //     its dot, if any, goes at
+    //         dpX = inkRight + DP_GAP_FRACTION * gap
+    //
+    // Two full-width glyphs therefore sit 1 + gap apart, which is the widest any
+    // pair gets - all-caps text is spaced as though it were on a grid. It is only
+    // the narrow glyphs that come in closer.
 
-    /** The text as cell masks, with '.' and ',' merged into their predecessors. */
-    fun cellMasks(text: String): List<Long> {
+    /** One parsed cell: its segments, and whether it is a word space. */
+    class TextCell(val mask: Long, val isSpace: Boolean)
 
-        val cells = ArrayList<Long>(text.length)
+    /** One placed cell: its segments, where its origin goes, where its dot goes. */
+    class PlacedCell(val mask: Long, val originUnits: Float, val dpXUnits: Float)
+
+    /** Left and right ends of a glyph's ink, on the centreline, in cell units. */
+    class InkExtent(val left: Float, val right: Float) {
+        val width get() = right - left
+        val centre get() = (left + right) / 2f
+    }
+
+    /** The two elements that belong to the gap rather than to the glyph. */
+    private val GAP_DWELLERS = Seg.DP.bit or Seg.COMMA.bit
+
+    /** The text as cells, with '.' and ',' merged into their predecessors. */
+    fun textCells(text: String): List<TextCell> {
+
+        val cells = ArrayList<TextCell>(text.length)
 
         for (ch in text) {
 
@@ -854,63 +858,205 @@ object TalkRpnFont {
             if (punct != 0L) {
                 // Into the cell before it - or a cell of its own at the start of
                 // the string, exactly as a leading ".5" shows on a real display.
-                if (cells.isNotEmpty()) cells[cells.size - 1] = cells.last() or punct
-                else cells.add(punct)
+                if (cells.isNotEmpty() && !cells.last().isSpace) {
+                    val last = cells.removeAt(cells.size - 1)
+                    cells.add(TextCell(last.mask or punct, false))
+                } else {
+                    cells.add(TextCell(punct, false))
+                }
                 continue
             }
 
-            // Unknown characters get a blank cell rather than vanishing: a gap
-            // that holds its place reads as a missing glyph, not a layout bug.
-            cells.add(TalkRpnGlyphs.maskFor(ch) ?: 0L)
+            if (ch == ' ') { cells.add(TextCell(0L, true)); continue }
+
+            // Anything the font has no glyph for is DROPPED - no cell, no
+            // advance, as though it had not been in the string. The font covers
+            // 0x20 to 0x7F with no gaps, so this only ever fires on a character
+            // outside that range, and there is nothing sensible to draw for one.
+            val mask = TalkRpnGlyphs.maskFor(ch) ?: continue
+
+            cells.add(TextCell(mask, false))
         }
 
         return cells
     }
 
     /**
-     * Ink width of [text] in pixels: cells at [pitch], the last cell's sheared
-     * ink, and the decimal point's overhang past the right column if the final
-     * cell carries one.
+     * How far a mask's lit ink reaches left and right, on the centreline.
+     *
+     * The decimal point and comma are excluded deliberately: they sit outside the
+     * cell in the gap that follows it, so counting them would make every glyph
+     * carrying one measure a third of a gap wider than it sets, and would push
+     * the next glyph away from a dot that is supposed to nestle beside it.
+     *
+     * Null when nothing is lit - a space, or a character with no glyph.
+     */
+    fun inkExtentOf(mask: Long): InkExtent? {
+
+        var left = Float.POSITIVE_INFINITY
+        var right = Float.NEGATIVE_INFINITY
+
+        // Every lit centreline's points. Bars carry two, curves carry many; the
+        // extreme is always at a sampled point either way.
+        for ((seg, pts) in CENTRELINES) {
+
+            if (mask and seg.bit == 0L) continue
+
+            var i = 0
+            while (i < pts.size) {
+                if (pts[i] < left) left = pts[i]
+                if (pts[i] > right) right = pts[i]
+                i += 2
+            }
+        }
+
+        // The colon dots, by their centres - the same convention as the bars
+        // above, which are measured on their centrelines rather than their edges.
+        // The decimal point and comma are not in DOT_CENTRES at all, which is
+        // what keeps them out of the glyph's width.
+        for ((seg, centre) in DOT_CENTRES) {
+
+            if (mask and seg.bit == 0L) continue
+
+            if (centre.x < left) left = centre.x
+            if (centre.x > right) right = centre.x
+        }
+
+        if (left > right) return null
+
+        return InkExtent(left, right)
+    }
+
+    /**
+     * [text] laid out at [gap], as cells ready to draw.
+     *
+     * Origins are in CELL UNITS, relative to the leftmost lit centreline of the
+     * first glyph, which is zero. So a caller places the returned x's against the
+     * left edge of the ink - not against a notional cell boundary, which under
+     * proportional spacing is not a thing the eye can see anyway.
+     *
+     * A leading space contributes nothing, since there is no ink before it for
+     * its blank to separate from.
+     */
+    fun layout(text: String, gap: Float = DEFAULT_GAP): List<PlacedCell> {
+
+        val placed = ArrayList<PlacedCell>(text.length)
+
+        var pen = 0f
+        var previousHalfWidth: Float? = null
+
+        for (cell in textCells(text)) {
+
+            val extent = inkExtentOf(cell.mask)
+
+            // What this cell claims of the line: its own ink, a scaled blank for
+            // a space, or a whole cell for a lone leading dot with no ink at all.
+            val width = when {
+                cell.isSpace -> SPACE_WIDTH
+                extent == null -> CELL_WIDTH
+                else -> extent.width
+            }
+
+            // Walk the pen to this cell's ink centre. The first cell simply
+            // starts half its own width in, which puts its left ink at zero.
+            pen += if (previousHalfWidth == null) width / 2f
+            else previousHalfWidth + gap + width / 2f
+
+            previousHalfWidth = width / 2f
+
+            if (cell.isSpace) continue
+
+            // No ink to centre on. The only cell that can reach here is a
+            // leading '.' or ',', which has nothing to merge backward into and
+            // so becomes a cell of nothing but its dot - exactly as ".5" shows
+            // on a real display. Give it a whole cell's worth of room and hang
+            // the dot off the right of it.
+            val centre = extent?.centre ?: (CELL_WIDTH / 2f)
+            val inkRight = extent?.right ?: CELL_WIDTH
+
+            placed.add(
+                PlacedCell(
+                    mask = cell.mask,
+                    originUnits = pen - centre,
+                    dpXUnits = dpXAfter(inkRight, gap)
+                )
+            )
+        }
+
+        return placed
+    }
+
+    /**
+     * Full ink width of [text] in pixels - left ink edge to right ink edge, with
+     * the stroke's overhang at both ends and the slant's lean included.
+     *
+     * This is what [drawTalkRpnText] draws into, so `origin.x = right - this`
+     * right-aligns exactly.
      */
     fun measureWidth(
         text: String,
         cellHeight: Float,
-        pitch: Float = PITCH,
+        gap: Float = DEFAULT_GAP,
         slantDegrees: Float = SLANT_DEGREES
     ): Float {
 
-        val cells = cellMasks(text)
+        val cells = layout(text, gap)
         if (cells.isEmpty()) return 0f
 
-        val scale = cellHeight / CELL_HEIGHT
+        var rightmost = 0f
 
-        var units = (cells.size - 1) * pitch + shearedWidth(slantDegrees) + STROKE
+        for (cell in cells) {
 
-        // A trailing dot pokes into the gap beyond its own cell.
-        val punctBits = Seg.DP.bit or Seg.COMMA.bit
-        if (cells.last() and punctBits != 0L) {
-            units = maxOf(units, (cells.size - 1) * pitch + dpXAt(pitch) + STROKE)
+            val extent = inkExtentOf(cell.mask)
+            if (extent != null) rightmost = maxOf(rightmost, cell.originUnits + extent.right)
+
+            // A dot pokes into the gap beyond its own glyph, and on the last
+            // cell there is nothing after it to hide behind.
+            if (cell.mask and GAP_DWELLERS != 0L) {
+                rightmost = maxOf(rightmost, cell.originUnits + cell.dpXUnits + STROKE)
+            }
         }
 
-        return units * scale
+        // The slant leans the top of the ink rightward by the full shear offset;
+        // the stroke overhangs half a width at each end.
+        val units = rightmost + (shearedWidth(slantDegrees) - CELL_WIDTH) + STROKE
+
+        return units * cellHeight / CELL_HEIGHT
     }
 
-    /** Draws [text] with its cells' top-left centreline corners on [origin]'s row. */
+    /**
+     * Draws [text] with the TOP LEFT CORNER OF ITS INK at [inkOrigin].
+     *
+     * Note that this is an ink box, not a cell origin - unlike [drawTalkRpnCell],
+     * which takes the cell's own coordinate origin and lets the stroke overhang
+     * it. Here the caller gets a box it can measure with [measureWidth] and
+     * position without knowing anything about where the centrelines fall.
+     */
     fun DrawScope.drawTalkRpnText(
         text: String,
-        origin: Offset,
+        inkOrigin: Offset,
         cellHeight: Float,
         color: Color,
-        pitch: Float = PITCH,
+        gap: Float = DEFAULT_GAP,
         slantDegrees: Float = SLANT_DEGREES,
         strokeWidth: Float = STROKE
     ) {
         val scale = cellHeight / CELL_HEIGHT
-        var x = origin.x
 
-        for (mask in cellMasks(text)) {
-            drawTalkRpnCell(mask, Offset(x, origin.y), cellHeight, color, strokeWidth, pitch, slantDegrees)
-            x += pitch * scale
+        // In from the ink's corner to the first centreline, on both axes.
+        val overhang = strokeWidth / 2f * scale
+
+        for (cell in layout(text, gap)) {
+
+            drawTalkRpnCell(
+                mask = cell.mask,
+                origin = Offset(inkOrigin.x + overhang + cell.originUnits * scale, inkOrigin.y + overhang),
+                cellHeight = cellHeight,
+                color = color,
+                strokeWidth = strokeWidth,
+                dpX = cell.dpXUnits,
+                slantDegrees = slantDegrees
+            )
         }
     }
 
@@ -931,17 +1077,12 @@ object TalkRpnFont {
         cellHeight: Float,
         color: Color,
         strokeWidth: Float = STROKE,
-        pitch: Float = PITCH,
+        dpX: Float = dpXAfter(CELL_WIDTH, DEFAULT_GAP),
         slantDegrees: Float = SLANT_DEGREES
     ) {
         if (mask == 0L) return
 
         val scale = cellHeight / CELL_HEIGHT
-
-        // The decimal point and comma live in the GAP between cells, so their x
-        // depends on the pitch - a fixed position is only right at one pitch.
-        // Zero at the design pitch, so nothing moves where nothing should.
-        val dpShift = dpXAt(pitch) - dpXAt(PITCH)
 
         withTransform({
             translate(origin.x, origin.y)
@@ -1057,33 +1198,35 @@ object TalkRpnFont {
                 }
             }
 
+            // The comma's tail, hanging down and to the left of its dot.
             if (mask and Seg.COMMA.bit != 0L)
                 lit.addDiagonal(
-                    COMMA_TAIL[0] + dpShift, COMMA_TAIL[1],
-                    COMMA_TAIL[2] + dpShift, COMMA_TAIL[3],
+                    dpX, DP_Y,
+                    dpX - COMMA_TAIL_LEFT, DP_Y + COMMA_TAIL_DROP,
                     strokeWidth
                 )
 
-            // Dots are squares of side twice the stroke - a macro photograph of a
-            // real HP-55 shows the decimal point as a distinct square die, and the
-            // same photograph shows every segment beaded out of small rectangular
-            // dies. Sheared with everything else, so they lean rather than sitting
+            // Dots are squares of side twice the stroke, matching the separate
+            // rectangular dies a real display's segments are beaded out of.
+            // Sheared with everything else, so they lean rather than sitting
             // upright among leaning bars.
-            for ((seg, centre) in DOT_CENTRES) {
-
-                if (mask and seg.bit == 0L) continue
-
-                // Only the two gap-dwellers move with the pitch; the colon dots
-                // live on the cell axis and stay put.
-                val cx = centre.x +
-                    if (seg == Seg.DP || seg == Seg.COMMA) dpShift else 0f
-
-                lit.moveTo(cx - strokeWidth, centre.y - strokeWidth)
-                lit.lineTo(cx + strokeWidth, centre.y - strokeWidth)
-                lit.lineTo(cx + strokeWidth, centre.y + strokeWidth)
-                lit.lineTo(cx - strokeWidth, centre.y + strokeWidth)
+            fun addDot(cx: Float, cy: Float) {
+                lit.moveTo(cx - strokeWidth, cy - strokeWidth)
+                lit.lineTo(cx + strokeWidth, cy - strokeWidth)
+                lit.lineTo(cx + strokeWidth, cy + strokeWidth)
+                lit.lineTo(cx - strokeWidth, cy + strokeWidth)
                 lit.close()
             }
+
+            // The colon dots, on the cell's own axis.
+            for ((seg, centre) in DOT_CENTRES) {
+                if (mask and seg.bit == 0L) continue
+                addDot(centre.x, centre.y)
+            }
+
+            // The decimal point and comma, out in the gap where the layout put
+            // them. Both draw the same dot; only the comma adds a tail.
+            if (mask and GAP_DWELLERS != 0L) addDot(dpX, DP_Y)
 
             if (lit.isEmpty) return@withTransform
 
@@ -1104,6 +1247,3 @@ object TalkRpnFont {
         }
     }
 }
-
-
-

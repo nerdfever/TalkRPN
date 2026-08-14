@@ -62,27 +62,27 @@ import kotlin.math.floor
 // Tweakables.
 //
 // Cell heights are millimetres, because "how big does it need to be" is a
-// physical question and dp is not a physical unit. Stroke is in the font's own
-// cell units, where the cap height is 100. Anything in device pixels carries
-// "Px" in its name.
+// physical question and dp is not a physical unit. Everything else is in the
+// font's own cell widths. Anything in device pixels carries "Px" in its name.
 // ---------------------------------------------------------------------------
 
 /** Cell heights offered, smallest first. Cap height, not including the descender. */
 private val CELL_HEIGHTS_MM = listOf(1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 6.0f, 8.0f, 10.0f)
-private const val INITIAL_SIZE_INDEX = 3
+
+/** Which one to start on, named by its value so reordering the list cannot break it. */
+private const val INITIAL_CELL_HEIGHT_MM = 3.0f
+private val INITIAL_SIZE_INDEX = CELL_HEIGHTS_MM.indexOf(INITIAL_CELL_HEIGHT_MM)
 
 /**
- * Stroke widths offered, as multiples of the measured value.
- *
- * Centred on TalkRpnFont.STROKE rather than on a fixed list, so the control
- * brackets what the real part actually does and the middle entry is the
- * measurement itself. The old list was absolute figures carried over from a
- * grid where the cap height was 100, which stopped meaning anything once the
- * stroke was measured properly.
+ * Stroke widths offered, as multiples of the font's own value, so the control
+ * brackets the measurement rather than a list of absolute figures that would
+ * stop meaning anything the moment the measurement changed.
  */
 private val STROKE_MULTIPLES = listOf(0.5f, 0.65f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f, 1.5f)
 private val STROKE_CHOICES = STROKE_MULTIPLES.map { it * TalkRpnFont.STROKE }
-private const val INITIAL_STROKE_INDEX = 4      // the 1.0, so it starts as measured
+
+/** Start on the font's own stroke - found by value, not by a hand-counted index. */
+private val INITIAL_STROKE_INDEX = STROKE_MULTIPLES.indexOf(1.0f)
 
 /**
  * The lit-segment colour: the display's reddest red.
@@ -91,23 +91,18 @@ private const val INITIAL_STROKE_INDEX = 4      // the 1.0, so it starts as meas
  * which is outside every display gamut, and clipping to maximum saturation is the
  * closest reachable colour by a factor of two in dE2000.
  */
-private val LED_RED = Color(0xFFFF0000)
 
 /** Unlit segments, drawn faintly in step mode so the cell keeps its shape. */
-private val LED_GHOST = Color(0xFF2A0A08)
 
 /**
- * The cell boundary, for diagnosing where ink sits inside its fixed pitch.
+ * The cell boundary, for diagnosing where a glyph's ink sits inside its cell.
  *
  * Cyan rather than a shade of red so it cannot be mistaken for a segment.
  */
-private val CELL_BOUNDS = Color(0xFF3D8B96)
 
 /** Boundary line width, in cell widths, so it scales with the glyph. */
-private const val BOUNDS_STROKE = 1.2f / 58.47f    // 0.02052
+private const val BOUNDS_STROKE = 0.02052f
 
-private val DISPLAY_BACKGROUND = Color(0xFF000000)
-private val LABEL = Color(0xFF9A9A9A)
 private val CONTROL_BORDER = Color(0xFF5A5A5A)
 
 /**
@@ -169,7 +164,6 @@ private val TEXT_READOUT = 9.sp
 private val TEXT_BUTTON = 8.sp
 
 /** Millimetres per inch. */
-private const val MM_PER_INCH = 25.4f
 
 class FontTestActivity : ComponentActivity() {
 
@@ -207,7 +201,7 @@ private fun FontTestScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DISPLAY_BACKGROUND)
+            .background(LedPalette.BACKGROUND)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -249,7 +243,7 @@ private fun FontTestScreen() {
 
             Text(
                 text = caption,
-                color = LABEL,
+                color = LedPalette.LABEL,
                 fontSize = TEXT_READOUT,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -395,11 +389,11 @@ private fun SegmentView(stepIndex: Int, stroke: Float, showGhost: Boolean, showB
                 if (stepIndex >= 0 && showGhost) {
                     drawTalkRpnCell(
                         TalkRpnFont.ALL_SEGMENTS, Offset(originX, originY),
-                        cellHeightPx, LED_GHOST, stroke
+                        cellHeightPx, LedPalette.GHOST, stroke
                     )
                 }
 
-                drawTalkRpnCell(mask, Offset(originX, originY), cellHeightPx, LED_RED, stroke)
+                drawTalkRpnCell(mask, Offset(originX, originY), cellHeightPx, LedPalette.LIT, stroke)
             }
         }
     }
@@ -423,7 +417,7 @@ private fun CharacterGrid(page: Int, sizeIndex: Int, stroke: Float, showBounds: 
     val density = LocalDensity.current
 
     val metrics = context.resources.displayMetrics
-    val pixelsPerMm = metrics.xdpi / MM_PER_INCH
+    val pixelsPerMm = metrics.pixelsPerMm()
 
     val cellHeightPx = CELL_HEIGHTS_MM[sizeIndex] * pixelsPerMm
     val scale = cellHeightPx / TalkRpnFont.CELL_HEIGHT
@@ -512,7 +506,7 @@ private fun GlyphCell(ch: Char, cellHeightPx: Float, stroke: Float, showBounds: 
                     mask = mask,
                     origin = glyphOrigin,
                     cellHeight = cellHeightPx,
-                    color = LED_RED,
+                    color = LedPalette.LIT,
                     strokeWidth = stroke
                 )
             }
@@ -520,7 +514,7 @@ private fun GlyphCell(ch: Char, cellHeightPx: Float, stroke: Float, showBounds: 
 
         Text(
             text = if (ch == ' ') "sp" else ch.toString(),
-            color = LABEL,
+            color = LedPalette.LABEL,
             fontSize = TEXT_GLYPH_LABEL
         )
     }
@@ -542,8 +536,8 @@ private fun DrawScope.drawCellBounds(origin: Offset, cellHeightPx: Float) {
         translate(origin.x, origin.y)
         scale(scale, scale, pivot = Offset.Zero)
     }) {
-        drawPath(TalkRpnFont.CELL_OUTLINE, CELL_BOUNDS, style = Stroke(width = BOUNDS_STROKE))
-        drawPath(TalkRpnFont.CELL_BASELINE, CELL_BOUNDS, style = Stroke(width = BOUNDS_STROKE))
+        drawPath(TalkRpnFont.CELL_OUTLINE, LedPalette.CELL_BOUNDS, style = Stroke(width = BOUNDS_STROKE))
+        drawPath(TalkRpnFont.CELL_BASELINE, LedPalette.CELL_BOUNDS, style = Stroke(width = BOUNDS_STROKE))
     }
 }
 
@@ -587,7 +581,7 @@ private fun CompactControl(label: String, modifier: Modifier = Modifier, onClick
             .padding(vertical = CONTROL_PAD_V),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = LABEL, fontSize = TEXT_BUTTON)
+        Text(label, color = LedPalette.LABEL, fontSize = TEXT_BUTTON)
     }
 }
 

@@ -1,0 +1,82 @@
+// Spell checking for this project.
+//
+// Here rather than in .vscode/settings.json because this is cSpell's own config
+// file: the extension reads it directly, and so does the CLI, so the same list
+// can be checked from a terminal:
+//
+//     npx cspell lint "app/src/main/java/**/*.kt" "*.md" "font_design/*.ps1"
+{
+    "version": "0.2",
+
+    // British spelling throughout the comments - centreline, millimetre, colour,
+    // normalise. Both locales are listed so American spellings stay valid too and
+    // a mixed file does not start complaining in the other direction.
+    "language": "en,en-GB",
+
+    // Words no dictionary carries. Every entry below is a real name, a part
+    // number, an API identifier or a term this project coined - not a spelling
+    // this file is papering over.
+    "words": [
+        // Android, Compose and the toolchain
+        "adbd",
+        "androidx",
+        "Argb",
+        "drawscope",
+        "gradlew",
+        "javap",
+        "keyevent",
+        "kotlinx",
+        "LOCALAPPDATA",
+        "logcat",
+        "recents",
+        "recompositions",
+        "screencap",
+        "sdcard",
+        "sharedpref",
+
+        // Speech recognition
+        "endpointer",
+        "googletts",
+        "intellivoiceservice",
+        "Kaldi",
+        "relistening",
+        "rmsd",
+        "Vosk",
+
+        // The display, the font and the hardware behind them
+        "Beziers",
+        "Bugseye",
+        "CIEDE",
+        "datasheet",
+        "datasheets",
+        "EDID",
+        "FWHM",
+        "Litronix",
+        "Panamatik",
+        "QDSP",
+        "unsheared",
+        "vpitch",
+
+        // This project's own vocabulary
+        "LASTX",
+        "nerdfever",
+        "talkrpn",
+        "Tweakables",
+        "Unioned",
+
+        // Typefaces named in the rendering scripts
+        "Consolas",
+        "fonttools",
+        "Segoe",
+
+        // PDF syntax written by the generator scripts, where a preceding \n in a
+        // PowerShell string runs into the keyword: \nendobj, \nstream and so on.
+        "nendobj",
+        "nendstream",
+        "nstartxref",
+        "nstream",
+
+        // Windows / display plumbing
+        "xdpi"
+    ]
+}

@@ -22,24 +22,20 @@ $OUT = "$PSScriptRoot\$OutputName"
 
 # ---- geometry, in cell widths (must match TalkRpnFont.kt) -------------------
 #
-# THE UNIT: segment E/F to segment B/C is 1. Every figure below is its value on the
-# working grid the geometry was drawn on - the grid where the cap height was 100 -
-# divided by the cell width there. A pure rescale, so no vertex moves.
-
-$GRID_CELL_WIDTH = 58.47
+# THE UNIT: segment E/F to segment B/C is 1. Every figure below is in that unit,
+# horizontally and vertically alike, to four significant figures.
 
 $CELL_WIDTH   = 1.0
-$CELL_HEIGHT  = 100.0 / $GRID_CELL_WIDTH       # 1.71028
-$DESCENDER_FRACTION = 0.44                     # 144 against 100, exactly
-$TOTAL_HEIGHT = $CELL_HEIGHT * (1.0 + $DESCENDER_FRACTION)   # 2.46280
-$STROKE       = 16.0 / 108.5                   # 0.14747, measured off a real HP-55
+$CELL_HEIGHT  = 1.710      # cap height, segment D to segment A
+$DESCENDER_DEPTH = 0.7525  # how far the N/O bar hangs below the baseline
+$TOTAL_HEIGHT = $CELL_HEIGHT + $DESCENDER_DEPTH
+$STROKE       = 0.1475
 $SLANT_DEG    = 6.0
-$HOOK_R       = 7.92 / $GRID_CELL_WIDTH        # 0.13545
-$PITCH        = 142.08 / $GRID_CELL_WIDTH      # 2.43031
+$HOOK_R       = 0.1355
 
 $X_LEFT  = 0.0
-$X_MID   = $CELL_WIDTH / 2.0                   # 0.5 exactly
-$X_RIGHT = $CELL_WIDTH                         # 1 exactly
+$X_MID   = $CELL_WIDTH / 2.0
+$X_RIGHT = $CELL_WIDTH
 
 $Y_TOP  = 0.0
 $Y_MID  = $CELL_HEIGHT / 2.0
@@ -51,32 +47,40 @@ $Y_E_BOTTOM   = $Y_BASE - $HOOK_R
 $X_HOOK_START = $HOOK_R
 $X_HOOK_END_R = $X_RIGHT - $HOOK_R
 
-# The two insets differ by 0.0002 - rounding left over from the old grid, not an
-# asymmetry worth moving a vertex to fix.
-$X_N_LEFT  = 3.74 / $GRID_CELL_WIDTH           # 0.06396
-$X_O_RIGHT = 54.72 / $GRID_CELL_WIDTH          # 0.93586
+# The descender bar, inset from both columns - very slightly asymmetrically.
+$X_N_LEFT  = 0.06396
+$X_O_RIGHT = 0.9359
 
-$COL1_Y = 20.49 / $GRID_CELL_WIDTH             # 0.35044
-$COL2_Y = 80.60 / $GRID_CELL_WIDTH             # 1.37848
+$COL1_Y = 0.3504
+$COL2_Y = 1.378
 
-$DP_X   = 86.64 / $GRID_CELL_WIDTH             # 1.48179
-$DP_Y   = $CELL_HEIGHT * (1.0 + 0.1908)        # 2.03660, 119.08 / 100 exactly
-$DP_GAP_FRACTION = ($DP_X - $CELL_WIDTH) / ($PITCH - $CELL_WIDTH)   # 0.33692
+# From the last lit centreline of one glyph to the first of the next, and how far across
+# it the decimal point sits. Both mirror TalkRpnFont.
+$GAP = 0.85
+$DP_GAP_FRACTION = 0.337
 
-$COMMA_TAIL_DROP = 20.76 / $GRID_CELL_WIDTH    # 0.35505
-$COMMA_TAIL_LEFT = 7.65 / $GRID_CELL_WIDTH     # 0.13084
-$COMMA_TAIL_TIP_X = $DP_X - $COMMA_TAIL_LEFT   # 1.35095
-$COMMA_TAIL_TIP_Y = $DP_Y + $COMMA_TAIL_DROP   # 2.39165
+$DP_DROP = 0.3263          # how far the decimal point sits below the baseline
+$DP_X   = $CELL_WIDTH + $DP_GAP_FRACTION * $GAP
+$DP_Y   = $CELL_HEIGHT + $DP_DROP
+
+# What two FULL-WIDTH glyphs sit apart at that gap - the widest any pair gets.
+$PITCH = $CELL_WIDTH + $GAP
+
+$COMMA_TAIL_DROP = 0.3551
+$COMMA_TAIL_LEFT = 0.1308
+$COMMA_TAIL_TIP_X = $DP_X - $COMMA_TAIL_LEFT
+$COMMA_TAIL_TIP_Y = $DP_Y + $COMMA_TAIL_DROP
 
 # COL2_TAIL is the same tail hung off the lower colon dot instead, which is what
 # turns a colon into a semicolon.
-$COL2_TAIL_TIP_X = $X_MID - $COMMA_TAIL_LEFT   # 0.36916
-$COL2_TAIL_TIP_Y = $COL2_Y + $COMMA_TAIL_DROP  # 1.73353
+$COL2_TAIL_TIP_X = $X_MID - $COMMA_TAIL_LEFT
+$COL2_TAIL_TIP_Y = $COL2_Y + $COMMA_TAIL_DROP
 
 # ---- page ------------------------------------------------------------------
 
-# Px per cell width. Was 5.2 per unit when a unit was a hundredth of the cap height.
-$SCALE    = 5.2 * $GRID_CELL_WIDTH             # 304.044
+# Px per cell width - the diagram's own rendering scale, nothing to do with the
+# font. Sized so the cell fills the page width left of the dimension column.
+$SCALE    = 304.0
 $ORIGIN_X = 330.0
 
 # Below the header block, which explains what this is before it draws anything.
@@ -367,16 +371,15 @@ $g.DrawString($title, $titleFont, $black, 24, 22)
 # separate sheets it used to be printed on both, which is just the same three
 # paragraphs read twice.
 $header = if ($Section -eq "listing") { @() } else { @(
-    "Inspired by the HP-01 (1977) and the Litronix DL-3422, and identical to neither. The HP-01's look - hooked corners, the slant, the proportions -",
-    "carried onto roughly the DL-3422's segment count, so the display can show letters as well as digits. Departures from both are deliberate: the",
-    "corners hook where the DL-3422's are square, the segments meet flush where a real part leaves gaps, the decimal point sits between cells rather",
-    "than taking one of its own, and there are elements here that neither part had. It is a period style, not a reproduction of any real component.",
+    "A 1970s bubble-LED look: HP-01 styling (rounded left corners) on a modified DL-3422 segment set, so the display can show text as well as digits.",
+    "Identical to neither part. Segments meet flush where real hardware leaves gaps, and the decimal point sits in the gap after the cell rather than",
+    "taking a cell of its own.",
     "",
     "THE UNIT: segment E/F to segment B/C is 1 - the left column to the right column, centre to centre. Every length here is in that unit, across and",
-    "down alike, so the centre axis is exactly 0.5 and pitch minus 1 is the clearance between neighbouring cells.",
+    "down alike, to four significant figures, so the centre axis is exactly 0.5 and the gap reads directly as the clearance between neighbours.",
     "",
     "No stroke width, no slant: these are centrelines, and both are applied at render time. Origin is the top-left centreline corner; x right, y down.",
-    "28 bars + COL1 + COL2 + DP + COMMA = 32 elements; the mask is a Long.  Blue: A3/D3 are ALTERNATIVES to A4/D4; RPAR is the whole right paren.",
+    "32 elements, so the mask is a Long.  Blue: A3/D3 are ALTERNATIVES to A4/D4, never both lit; RPAR is the whole right paren as one element.",
     "TalkRpnFont.kt is the source of truth - this sheet mirrors it."
 ) }
 
@@ -424,11 +427,11 @@ $lines += "DOT CENTRES     COL1    {0:F3}, {1:F3}      upper colon dot; also dot
 $lines += "                COL2    {0:F3}, {1:F3}      lower colon dot, colon only" -f $X_MID, $COL2_Y
 $lines += "                DP      {0:F3}, {1:F3}     decimal point, outside the cell to the right" -f $DP_X, $DP_Y
 $lines += "                COMMA   {0:F3}, {1:F3}     same centre, plus a tail down and left" -f $DP_X, $DP_Y
-$lines += "                SQUARE, side = 2 x STROKE = {0:F3} - a real HP-55's decimal point is a square die" -f (2 * $STROKE)
+$lines += "                SQUARE, side = 2 x STROKE = {0:F3}" -f (2 * $STROKE)
 $lines += ""
 $lines += "CENTRELINE BOX  {0:F3} wide x {1:F3} tall    aspect {2:F3}" -f $CELL_WIDTH, $CELL_HEIGHT, ($CELL_WIDTH / $CELL_HEIGHT)
 $lines += "                {0:F3} tall including the descender" -f $TOTAL_HEIGHT
-$lines += "PITCH           {0:F3}   origin to origin; minus 1 IS the clearance between cells" -f $PITCH
+$lines += "GAP             {0:F3}   last centreline of one glyph to the first of the next; the ink meets at one stroke" -f $GAP
 $lines += "VPITCH          floor is {0:F3}, the ink height - below that descenders reach the next row" -f ($TOTAL_HEIGHT + $STROKE)
 $lines += "SLANT           {0:F1} degrees, applied at render" -f $SLANT_DEG
 $lines += ""

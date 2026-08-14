@@ -51,14 +51,14 @@ private const val HEIGHT_FRACTION = 0.075f
 /** Pitch, as a multiple of the font's own advance. */
 private const val PITCH_FACTOR = 0.62f
 
-/** Slant, held constant across all four so it cannot confound the comparison. */
-private const val SLANT_DEGREES = 7.5f
+/** Slant, held constant across all four rows so it cannot confound the comparison. */
+private const val SLANT_DEGREES = Hp01Font.SLANT_DEGREES
 
 /**
- * The stroke the font has used so far, and the one measured off HP's QDSP-6064
- * font drawing - 4.45% of ink height against the current 8.5%.
+ * The two strokes under comparison: the font's own, and the narrower one from
+ * HP's QDSP-6064 drawing at 4.45% of ink height.
  */
-private const val STROKE_CURRENT = 8.5f
+private const val STROKE_CURRENT = Hp01Font.STROKE
 private const val STROKE_MEASURED = 4.26f
 
 /**
@@ -68,9 +68,6 @@ private const val STROKE_MEASURED = 4.26f
  * which is outside every display gamut, and clipping to maximum saturation is the
  * closest reachable colour by a factor of two in dE2000.
  */
-private val LED_RED = Color(0xFFFF0000)
-private val LABEL = Color(0xFF8A8A8A)
-private val BACKGROUND = Color(0xFF000000)
 
 /**
  * Wide, because all four rows share one inset and the outer two sit on much
@@ -119,7 +116,7 @@ private fun FontCompareScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BACKGROUND)
+            .background(LedPalette.BACKGROUND)
             .padding(horizontal = SIDE_MARGIN),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -127,7 +124,7 @@ private fun FontCompareScreen() {
 
         for (row in ROWS) {
 
-            Text(row.caption, color = LABEL, fontSize = LABEL_SIZE)
+            Text(row.caption, color = LedPalette.LABEL, fontSize = LABEL_SIZE)
 
             Canvas(
                 modifier = Modifier
@@ -144,7 +141,7 @@ private fun FontCompareScreen() {
                         text = SAMPLE,
                         origin = Offset(size.width - inkWidth, 0f),
                         cellHeight = cellHeightPx,
-                        color = LED_RED,
+                        color = LedPalette.LIT,
                         advance = advanceUnits,
                         punctuationAdvance = Hp01Font.PUNCTUATION_ADVANCE,
                         slantDegrees = SLANT_DEGREES,

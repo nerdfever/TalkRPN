@@ -5,25 +5,23 @@ import com.nerdfever.talkrpn.TalkRpnFont.Seg
 /*
  * Which segments light for each character.
  *
- * Derived from the DL-3422's published character set (the readable scan supplied
- * 2026-08-07), with these deliberate departures:
+ * A 1970s bubble-LED character set. Conventions worth knowing before reading the
+ * table:
  *
- *  - Digits 2 3 5 7 9 take the HP-01's hooked corners (A3/D3), and 4 takes the
- *    HP-01's short left side.
- *  - Digits are FULL WIDTH, on B/C, as on the HP-01. A half-width form on P/Q
- *    was tried for a day and reverted: the original proportions won, at the
- *    price of 0 sharing a mask with O and 1 with l.
- *  - The decimal point and comma live in the character cell (DP / COMMA
+ *  - Digits 2 3 5 7 9 take HOOKED corners (A3/D3); 4 takes a short left side, so
+ *    its left column sits lower than its right.
+ *  - Digits are FULL WIDTH, on B/C.
+ *  - The decimal point and comma live in the gap after the cell (DP / COMMA
  *    elements) rather than consuming a cell of their own.
+ *
+ * Covers 0x20 to 0x7F with no gaps. DEL lights every segment.
  *
  * ---------------------------------------------------------------------------
  * Confidence
  * ---------------------------------------------------------------------------
- * Digits: certain (HP-01 masks + the corner rules + the P/Q decision).
- * Upper case, most symbols: read from the chart, high confidence.
- * Flagged with "LOW CONFIDENCE" below: the chart is ambiguous at these glyphs
- * and the mask is my best reading - & ' a f l t = ~ @. Review in the PDF or on
- * the watch and correct by segment name.
+ * Digits and upper case are settled. Flagged "LOW CONFIDENCE" below - ' f t -
+ * are a best reading of an ambiguous source: review them in the PDF or on the
+ * watch and correct by segment name.
  *
  * ---------------------------------------------------------------------------
  * Why segment J exists
@@ -31,7 +29,7 @@ import com.nerdfever.talkrpn.TalkRpnFont.Seg
  * Segment J (the second lower-left diagonal, crossing segment L) is what draws
  * the letter x - the two of them ARE the x. It also serves the letters e and s.
  * There is no mirror diagonal in the lower right; the letters V and v are drawn
- * vertical-plus-slash instead, which is how the DL-3422 does it.
+ * vertical-plus-slash instead.
  *
  * Convention, per Dave: in prose, "segment J" for segments, bare letters for
  * glyphs. A bare J is ambiguous.
@@ -67,7 +65,6 @@ object TalkRpnGlyphs {
 
     private val BOT = m(Seg.D1, Seg.D4, Seg.D2)
     private val BOT_HOOK = m(Seg.D1, Seg.D3, Seg.D2)
-    private val BOT_LEFT = m(Seg.D1, Seg.D4)
     private val BOT_LEFT_HOOK = m(Seg.D1, Seg.D3)
 
     /** Upper-left column, out to the corner. */
@@ -87,6 +84,14 @@ object TalkRpnGlyphs {
     private val MID = m(Seg.G1, Seg.G2)
     private val STEM = m(Seg.P, Seg.Q)
 
+    /**
+     * DEL, the last character the font covers.
+     *
+     * Written as a code point rather than as a literal or a \u escape: the byte
+     * itself is invisible in an editor and does not survive being copied about.
+     */
+    private val DEL = Char(0x7F)
+
     // ---- The table ----------------------------------------------------------
 
     private val GLYPHS: Map<Char, Long> = mapOf(
@@ -95,10 +100,9 @@ object TalkRpnGlyphs {
 
         // ---- Digits ---------------------------------------------------------
         //
-        // FULL WIDTH, as on the HP-01: right vertical is B/C, bars run the whole
-        // cell. They were half-width on P/Q for a day, to hold 5 and S apart -
-        // reverted 2026-08-08 in favour of the original proportions, accepting
-        // that 0 and O now share a mask, as do 1 and l.
+        // FULL WIDTH: right vertical is B/C, bars run the whole cell. A
+        // half-width digit on P/Q would hold 5 and S further apart, but the full
+        // width is what gives the digits their proportions.
         //
         // Hooked corners on 0 2 3 5 7 8 9; short left side on 4; 6 stays square.
 
@@ -132,8 +136,8 @@ object TalkRpnGlyphs {
         'L' to (UL or LL or BOT),
         'M' to (UL or m(Seg.H) or m(Seg.I) or UR or LL or LR),
         'N' to (UL or m(Seg.H) or UR or m(Seg.K) or LL or LR),
-        // Square corners, unlike the hooked 0 - Dave's choice, so the two are
-        // no longer the same mask.
+        // Square corners, where 0 is hooked. That difference is the ONLY thing
+        // telling O and 0 apart - do not square the digit or hook the letter.
         'O' to (TOP or UL or UR or LL or LR or BOT),
         'P' to (TOP or UL or UR or MID or LL),
         'Q' to (TOP_HOOK or UL_SHORT or UR or LL_SHORT or BOT_HOOK or LR or m(Seg.K)),
@@ -142,11 +146,11 @@ object TalkRpnGlyphs {
         'T' to (TOP or STEM),
         // D3 rather than D4, so the bottom-left corner rounds. E2 goes dark with
         // it, per the standing hook rule - left lit it would spike past the arc
-        // down to y = 100.
+        // down to the baseline.
         'U' to (UL or UR or LL_SHORT or LR or BOT_LEFT_HOOK or m(Seg.D2)),
 
-        // Left column plus the full "/" - the two meet at the bottom left. This
-        // is how the DL-3422 draws it, there being no lower-right "/" diagonal.
+        // Left column plus the full "/" - the two meet at the bottom left. The
+        // only way to draw it, there being no lower-right "\" diagonal.
         'V' to (UL or LL or m(Seg.I, Seg.L)),
 
         // The mirror of M: the two lower diagonals peak at the centre.
@@ -164,8 +168,8 @@ object TalkRpnGlyphs {
         // the baseline. Narrow bowls close with Q, exactly like the digits.
 
         // Segment L, not segment J: it runs the way the slash in '/' does. D4
-        // rather than D3 since the corner move - segment L lands on the exact
-        // corner, which is where the square bar ends and the arc does not.
+        // rather than D3, because segment L lands on the exact corner - which is
+        // where the square bar ends and the arc does not.
         'a' to m(Seg.G1, Seg.Q, Seg.D4, Seg.D1, Seg.L),
 
         // b c d e all round their bottom-left corner: D3 in place of E2, so the
@@ -198,10 +202,10 @@ object TalkRpnGlyphs {
         'm' to (MID or LL or LR or m(Seg.Q)),
         'n' to (LL or m(Seg.J, Seg.Q)),
         'o' to (LL_SHORT or m(Seg.G1, Seg.D3, Seg.D1, Seg.Q)),
-                // Right-half bowl, deliberately: p went to the left half briefly, but
-        // with the descender only possible on the centre column that form was a
-        // tailless q. The bowl sitting RIGHT of the stem is what makes it a p,
-        // and that outweighs it being the one lowercase bowl off the left side.
+                // Right-half bowl, deliberately, and the one lowercase bowl off the left
+        // side. The descender is only possible on the centre column, so a
+        // left-half bowl here would draw a tailless q. The bowl sitting RIGHT of
+        // the stem is what makes it a p.
         'p' to (LR or m(Seg.G2, Seg.D2, Seg.Q, Seg.M)),
 
         // g and q share a bowl and differ only in which way the tail curls:
@@ -221,12 +225,12 @@ object TalkRpnGlyphs {
         // centre, so there is nothing here for it to attach to.
         't' to (STEM or MID or m(Seg.D2)),
 
-        // Experimental, matching upper-case U: D3 rounds the bottom-left corner,
-        // and E2 goes dark with it or it would spike past the arc.
+        // Matches upper-case U: D3 rounds the bottom-left corner, and E2 goes
+        // dark with it or it would spike past the arc.
         'u' to (LL_SHORT or m(Seg.D3, Seg.D1, Seg.Q)),
 
-        // Lower-left leg plus the rising diagonal. E2 lit since the corner move:
-        // the two meet at the corner itself now, so the leg must reach it.
+        // Lower-left leg plus the rising diagonal. E2 is lit because the two meet
+        // at the corner itself, so the leg has to reach it.
         'v' to (LL or m(Seg.L)),
 
         // L and K peak at the centre, columns outside - the lower-case mirror
@@ -262,8 +266,8 @@ object TalkRpnGlyphs {
         '=' to m(Seg.G1, Seg.D4, Seg.D1),
 
         '_' to BOT,
-        // Full height with the descender, per the DL-3422 - and no longer
-        // identical to 1, which is P/Q alone. (l remains identical to 1.)
+        // Full height, including the descender. That is what
+        // holds it apart from l, which is P/Q alone. (l and 1 remain identical.)
         '|' to (STEM or m(Seg.M)),
 
         // Upper centre stroke over the colon's lower dot.
@@ -287,11 +291,11 @@ object TalkRpnGlyphs {
         '(' to m(Seg.A1, Seg.A3, Seg.F1, Seg.E1, Seg.D3, Seg.D1),
         ')' to m(Seg.RPAR),
 
-        // Brackets and braces run the full cell, descender included, as on the
-        // DL-3422. Only the centre column reaches the descender zone (segment
-        // M), so all four live on the centre spine with their bars pointing the
-        // way they open - which also keeps square-tall [ apart from curved (.
-        // Braces differ from brackets by the mid tick alone.
+        // Brackets and braces run the full cell, descender included. Only the
+        // centre column reaches the descender zone (segment M), so all four live
+        // on the centre spine with their bars pointing the way they open - which
+        // also keeps square-tall [ apart from curved (. Braces differ from
+        // brackets by the mid tick alone.
         '[' to m(Seg.A2, Seg.P, Seg.Q, Seg.M, Seg.O),
         ']' to m(Seg.A1, Seg.P, Seg.Q, Seg.M, Seg.N),
         '{' to m(Seg.A2, Seg.P, Seg.G1, Seg.Q, Seg.M, Seg.O),
@@ -318,9 +322,9 @@ object TalkRpnGlyphs {
                 (m(Seg.G2) or LR or m(Seg.D2, Seg.Q))
             ),
 
-        // Square top corner (A4): segment H runs to the exact corner now, so the
-        // diagonal springs from where the square bar ends. The hooked corner was
-        // tried twice here and lost both times - first alongside A4, then alone.
+        // Square top corner (A4): segment H runs to the exact corner, so the
+        // diagonal springs from where the square bar ends. A hook here has no
+        // corner for the diagonal to spring from.
         '&' to (TOP_LEFT or m(Seg.P, Seg.H, Seg.G1) or LL_SHORT or
             m(Seg.D3, Seg.D1, Seg.D2) or LR or m(Seg.K)),
 
@@ -333,6 +337,16 @@ object TalkRpnGlyphs {
         // curling the F-to-A corner. F2 dark per the hook rule. The other two
         // bends have no arcs available, so the wave rounds only where it can.
         '~' to (UL_SHORT or TOP_LEFT_HOOK or m(Seg.P, Seg.G2) or UR),
+
+        // DEL lights EVERY segment - the display self-test pattern, and the worst
+        // case for legibility, since adjacent cells then have the least dark
+        // space between them. Putting it on a real character means a test pattern
+        // can be asked for as an ordinary string, and it closes the range: with
+        // this, the font covers 0x20 to 0x7F with no gaps at all.
+        //
+        // Written as the escape rather than the literal byte, which is invisible
+        // in an editor and does not survive being copied around.
+        DEL to TalkRpnFont.ALL_SEGMENTS,
     )
 
     /** Segment mask for a character, or null if this font has no glyph for it. */

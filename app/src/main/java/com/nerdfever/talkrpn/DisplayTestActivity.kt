@@ -29,10 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -79,7 +76,7 @@ import kotlin.math.ceil
 /**
  * How much smaller the other registers are than X, as a fraction of its cell height.
  *
- * No longer on a button: the screen has room for two adjustments and pitch and
+ * Not on a button: the screen has room for two adjustments per row, and gap and
  * height are the two that matter. Change it here.
  */
 private const val SMALL_ROW_SCALE = 0.70f
@@ -97,32 +94,37 @@ private const val HEIGHT_FRACTION_MIN = 0.03f
 private const val HEIGHT_FRACTION_MAX = 0.25f
 
 /**
- * THE UNIT for both pitches below: segment E/F to segment B/C - the cell width -
- * is 1.
+ * THE UNIT for the gap and the vpitch below: segment E/F to segment B/C - the
+ * cell width - is 1.
  *
  * TalkRpnFont's header defines it; this is the same unit, used horizontally and
- * vertically alike, so a pitch and a vpitch are directly comparable numbers. It
- * also makes the pitch read itself: the cell is 1 wide, so pitch minus 1 is the
- * clearance between neighbours.
+ * vertically alike, so a gap and a vpitch are directly comparable numbers. There
+ * is no conversion between this screen and the font - both are in cell widths.
  *
- * The screen draws TalkRpnFont, which defines the unit, so the conversion
- * factor is 1 - but it is still written through [fontUnitsPerUnit], so the
- * arithmetic stays correct for any font that states its own UNIT_SPAN.
+ * GAP - from the LAST lit centreline of one glyph to the FIRST of the next, in
+ * cell widths. Both ends are centrelines, so the visible dark band between the
+ * ink is one stroke narrower than this.
  *
- * PITCH - horizontal cell-to-cell distance, in cell widths.
+ * Spacing is PROPORTIONAL, so this is the only horizontal control there is: each
+ * glyph takes the width of its own ink and every gap is this wide. Two full-width
+ * glyphs sit 1 + gap apart; the narrow ones (1, i, l, most lower case) come in
+ * closer than that.
  *
- * 2.43 is the HP-01's own 130 expressed this way, and it is very airy: well over
- * half the pitch is empty. Two neighbours only stop overlapping while the pitch
- * exceeds 1 plus one stroke, about 1.16; the slant makes it look tight some way
- * before that without the ink ever actually meeting.
+ * Starts at the font's own default so the two cannot drift apart. The range
+ * brackets it generously - this screen exists to find the value.
  *
- * Height no longer moves when this changes. It used to, because the cell was sized
- * to make a fixed cell count fill the row exactly - so a tighter pitch bought taller
- * digits. Convenient, but it meant neither control did one thing.
+ * Independent of the height control: this moves spacing only. Sizing the cell to
+ * make a fixed cell count fill the row would let a tighter gap buy taller digits,
+ * which is convenient and means neither control does one thing.
  */
-private const val INITIAL_PITCH_UNITS = 142.08f / 58.47f    // 2.43031
-private const val PITCH_UNITS_MIN = 1.0f
-private const val PITCH_UNITS_MAX = 4.0f
+private val INITIAL_GAP_UNITS = TalkRpnFont.DEFAULT_GAP
+
+/**
+ * The floor is physical, not chosen: at a gap of one stroke the neighbouring ink
+ * touches, so there is nothing below it worth showing.
+ */
+private val GAP_UNITS_MIN = TalkRpnFont.STROKE
+private const val GAP_UNITS_MAX = 3.0f
 
 /**
  * VPITCH - vertical row-to-row distance, BASELINE TO BASELINE, in the same units.
@@ -132,23 +134,22 @@ private const val PITCH_UNITS_MAX = 4.0f
  * every row but X is scaled by [SMALL_ROW_SCALE]. Measured always in the X row's
  * units, so a smaller row does not bring smaller units with it.
  *
- * Note this is a real change from the old fixed gap: with a uniform gap, unequal
- * rows ended up unequally spaced baseline to baseline. Making the SPACING uniform
- * instead means the gaps now differ, which is the way round that reads evenly.
+ * A uniform GAP between unequal rows would put the baselines at unequal
+ * distances, and the baselines are what the eye reads. Making the spacing uniform
+ * means the gaps differ instead, which is the way round that looks even.
  *
- * The display draws TalkRpnFont now, whose ink runs 2.62 units tall with the
- * descenders, so the default is the font's own VPITCH. The old seven-segment
- * screen sat at 1.97, which would overlap rows here.
+ * Floor is the font's ink height, 2.62 units with the descenders - below that,
+ * one row's descenders reach the row beneath.
  */
 private val INITIAL_VPITCH_UNITS = TalkRpnFont.VPITCH
 private const val VPITCH_UNITS_MAX = 4.5f
 
 /**
- * Both pitches step by this, additively - they are lengths, not proportions.
- * A fortieth of a cell width, which is fine enough to tune with and coarse
- * enough that a press is always visible at a readable size.
+ * The gap and the vpitch step by this, additively - they are lengths, not
+ * proportions. A fortieth of a cell width, which is fine enough to tune with and
+ * coarse enough that a press is always visible at a readable size.
  */
-private const val PITCH_STEP_UNITS = 0.025f
+private const val SPACING_STEP_UNITS = 0.025f
 
 /** Every proportional adjustment moves by this much per press. */
 private const val ADJUST_STEP_FRACTION = 0.05f
@@ -166,12 +167,9 @@ private const val SLANT_DEGREES_MIN = -6f
 private const val SLANT_DEGREES_MAX = 24f
 
 /**
- * A press must never move the layout by less than one pixel.
- *
- * Learned the hard way when the row gap was a percentage: at about six pixels, a
- * 5% step was 0.3 px, so two to four clicks were spent crossing each pixel
- * boundary and most presses did nothing visible. That reads as a control which is
- * broken or laggy rather than one working below the display's resolution.
+ * A press must never move the layout by less than one pixel. A step that lands
+ * below the display's resolution spends several clicks crossing each pixel
+ * boundary, and reads as a control that is broken or laggy.
  *
  * Units are the right thing to STORE - they transfer to the watch, where a pixel
  * figure tuned on the emulator would not - but the wrong thing to step by blindly,
@@ -204,10 +202,8 @@ private const val MIN_STEP_PX = 1f
  * Free improvement available: this watch's OLED covers P3, so rendering in a
  * wide-gamut space would move the red primary from x = 0.64 to x = 0.68.
  */
-private val LED_RED = Color(0xFFFF0000)
 
 /** Behind everything. Black costs no power on OLED. */
-private val DISPLAY_BACKGROUND = Color(0xFF000000)
 
 /**
  * Marks where the round glass ends.
@@ -224,7 +220,6 @@ private val GLASS_EDGE = Color(0xFF5A5A5A)
 private val EDGE_RING_WIDTH = 1.dp
 
 /** Register labels and annunciator text - dimmer than the digits, and not red. */
-private val LABEL = Color(0xFF8A8A8A)
 
 /** The annunciator box outline. */
 private val ANNUNCIATOR_BORDER = Color(0xFF4A4A4A)
@@ -307,7 +302,6 @@ private val UPPER_REGISTERS = listOf("T", "Z", "Y")
 private val LOWER_REGISTERS = listOf("LASTX", "STO")
 
 /** Millimetres per inch. */
-private const val MM_PER_INCH = 25.4f
 
 /** Breathing room at each end of a register row. */
 private val SIDE_MARGIN = 6.dp
@@ -340,15 +334,13 @@ private val ANNUNCIATOR_CORNER = 3.dp
 private val CONTROL_BORDER = Color(0xFF5A5A5A)
 private val CONTROL_CORNER = 4.dp
 
-/** Panel width, as a fraction of the screen. Half what it was. */
+/** Panel width, as a fraction of the screen. Narrow enough to see past. */
 private const val CONTROL_PANEL_WIDTH_FRACTION = 0.5f
 
 /**
  * Panel backing. Translucent so the whole display stays readable underneath -
- * the point of the panel being small is being able to see past it.
- *
- * Alpha 0x70 is 44% opaque, so 56% transparent. It was 0xB8, which was 28%
- * transparent; this is that doubled.
+ * the point of the panel being small is being able to see past it. Alpha 0x70 is
+ * 44% opaque.
  */
 private val CONTROL_PANEL_BACKGROUND = Color(0x70000000)
 private val CONTROL_PAD_V = 3.dp
@@ -382,7 +374,7 @@ private fun DisplayTestScreen() {
     // about itself; it is approximate on some devices, which is why the readout
     // shows only one decimal place.
     val metrics = context.resources.displayMetrics
-    val pixelsPerMm = metrics.xdpi / MM_PER_INCH
+    val pixelsPerMm = metrics.pixelsPerMm()
 
     // The screen is round, and the layout has to know it. Taken as a circle whose
     // diameter is the narrower side.
@@ -390,7 +382,7 @@ private fun DisplayTestScreen() {
     val insetPx = BEZEL_INSET.value * metrics.density
 
     // The two independent adjustments. Neither moves the other.
-    var pitchUnits by remember { mutableStateOf(INITIAL_PITCH_UNITS) }
+    var gapUnits by remember { mutableStateOf(INITIAL_GAP_UNITS) }
     var heightFraction by remember { mutableStateOf(INITIAL_HEIGHT_FRACTION) }
 
     var vpitchUnits by remember { mutableStateOf(INITIAL_VPITCH_UNITS) }
@@ -407,23 +399,16 @@ private fun DisplayTestScreen() {
     val xCellHeightPx = heightFraction * screenPx
     val smallCellHeightPx = xCellHeightPx * SMALL_ROW_SCALE
 
-    // ---- Out of D-to-A units and into the two things that draw ---------------
+    // ---- Out of cell-width units and into pixels ------------------------------
     //
-    // Two conversions, and only two, so there is one place to look when a length
-    // is the wrong size: units -> the drawing font's own coordinates, and units
-    // -> device pixels at the X row's size.
+    // ONE conversion, so there is one place to look when a length is the wrong
+    // size. The font's coordinates are cell widths and so are this screen's, so
+    // there is nothing to convert between them.
 
-    // The drawing font's own coordinates per display unit. Trivially 1 now:
-    // this screen draws with TalkRpnFont, which DEFINES the unit. Kept as a
-    // named factor so the arithmetic below still reads correctly if a font
-    // with alien coordinates ever returns.
-    val fontUnitsPerUnit = TalkRpnFont.UNIT_SPAN
-
-    // Pixels per display unit, always at the X row's size - that is the reference
+    // Pixels per cell width, always at the X row's size - that is the reference
     // the vpitch is quoted in, so a smaller row must not redefine it.
-    val unitPx = xCellHeightPx / TalkRpnFont.CELL_HEIGHT * fontUnitsPerUnit
+    val unitPx = xCellHeightPx / TalkRpnFont.CELL_HEIGHT
 
-    val advanceUnits = pitchUnits * fontUnitsPerUnit
     val vpitchPx = vpitchUnits * unitPx
 
     // ---- Row spacing, derived from vpitch ------------------------------------
@@ -447,15 +432,21 @@ private fun DisplayTestScreen() {
 
     // One press must move the layout at least one pixel; below that the control
     // looks broken rather than fine-grained.
-    val pitchStepUnits = maxOf(PITCH_STEP_UNITS, MIN_STEP_PX / unitPx)
+    val spacingStepUnits = maxOf(SPACING_STEP_UNITS, MIN_STEP_PX / unitPx)
 
     // With both free, the cell count becomes the *result* rather than the input -
     // which is the more useful reading anyway, since the question was how many
     // digits fit at a size that can be read.
+    //
+    // A full-width glyph advances by its own cell plus one gap. That is an
+    // ESTIMATE now that spacing is proportional - a row of 1s fits far more - but
+    // the samples this sizes are all digits, where every glyph but 1 is full
+    // width, and the draw step trims anything that still overruns.
     val scale = xCellHeightPx / TalkRpnFont.CELL_HEIGHT
+    val fullCellAdvanceUnits = TalkRpnFont.CELL_WIDTH + gapUnits
     val cellsAcross =
         if (rowWidthPx <= 0 || scale <= 0f) 0
-        else ((rowWidthPx / scale - TalkRpnFont.shearedWidth(slantDegrees)) / advanceUnits).toInt() + 1
+        else ((rowWidthPx / scale - TalkRpnFont.shearedWidth(slantDegrees)) / fullCellAdvanceUnits).toInt() + 1
 
     // Fit the digits first, then punctuate: the radix and the separators are all
     // narrower than a cell, so counting them as cells would under-fill the row.
@@ -477,7 +468,7 @@ private fun DisplayTestScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DISPLAY_BACKGROUND)
+            .background(LedPalette.BACKGROUND)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -497,8 +488,8 @@ private fun DisplayTestScreen() {
             for ((index, name) in UPPER_REGISTERS.withIndex()) {
 
                 RegisterRow(
-                    name, samples[name].orEmpty(), smallCellHeightPx, advanceUnits,
-                    LED_RED, metrics.density, screenPx, insetPx, slantDegrees
+                    name, samples[name].orEmpty(), smallCellHeightPx, gapUnits,
+                    LedPalette.LIT, metrics.density, screenPx, insetPx, slantDegrees
                 )
 
                 // The last of these sits above X, which is taller, so it needs a
@@ -535,7 +526,7 @@ private fun DisplayTestScreen() {
                     chordRightEdgePx(xTopInRootPx, inkHeightPx(xCellHeightPx), screenPx, insetPx) - xLeftInRootPx
 
                 drawRegister(
-                    samples["X"].orEmpty(), xCellHeightPx, advanceUnits, LED_RED,
+                    samples["X"].orEmpty(), xCellHeightPx, gapUnits, LedPalette.LIT,
                     limit.coerceAtMost(size.width), slantDegrees
                 )
             }
@@ -547,8 +538,8 @@ private fun DisplayTestScreen() {
             for (name in LOWER_REGISTERS) {
 
                 RegisterRow(
-                    name, samples[name].orEmpty(), smallCellHeightPx, advanceUnits,
-                    LED_RED, metrics.density, screenPx, insetPx, slantDegrees
+                    name, samples[name].orEmpty(), smallCellHeightPx, gapUnits,
+                    LedPalette.LIT, metrics.density, screenPx, insetPx, slantDegrees
                 )
 
                 // The trailing one has no row beneath it - it is just the padding
@@ -574,13 +565,13 @@ private fun DisplayTestScreen() {
         if (showControls) {
 
             // Centred rather than sitting at the bottom. On a round screen the
-            // bottom is where the glass has almost run out - a panel down there
-            // loses its outer buttons to the curve, which is what happened.
+            // bottom is where the glass has almost run out, and a panel down
+            // there loses its outer buttons to the curve.
             Column(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    // Half the width it was. Two controls fit side by side, and the
-                    // display stays visible around it.
+                    // Two controls fit side by side, and the display stays
+                    // visible around it.
                     .fillMaxWidth(CONTROL_PANEL_WIDTH_FRACTION)
                     .background(CONTROL_PANEL_BACKGROUND, RoundedCornerShape(CONTROL_CORNER))
                     // Swallow taps that land on the panel but miss a button.
@@ -599,31 +590,32 @@ private fun DisplayTestScreen() {
                 // Values live here rather than on the buttons: at this size a
                 // button is only wide enough for its name.
                 Text(
-                    // Cell clearance in D-to-A units, so it can be compared with
-                    // the pitch directly: it is what is left of the pitch once the
-                    // cell has taken its share.
-                    text = "%.1f mm  %d cells  clear %.2f".format(
+                    // The ADVANCE for a full-width pair - what two full-width glyphs
+                    // sit apart at this gap, which is the widest any pair gets.
+                    // Narrow glyphs advance by less, so it is an upper bound not a grid.
+                    text = "%.1f mm  %d cells  adv %.2f".format(
                         xCellHeightPx / pixelsPerMm,
                         cellsAcross,
-                        pitchUnits - TalkRpnFont.CELL_WIDTH / fontUnitsPerUnit
+                        TalkRpnFont.CELL_WIDTH + gapUnits
                     ),
-                    color = LABEL,
+                    color = LedPalette.LABEL,
                     fontSize = TEXT_READOUT,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Text(
-                    // Both pitches in D-to-A units, so they read against each other
-                    // and against the font's own numbers. Height stays a screen
-                    // fraction: it is the one quantity that has to be physical.
-                    text = "p%.2f v%.2f h%.1f%% s%.1f".format(
-                        pitchUnits,
+                    // Gap and vpitch in cell-width units, so they read against
+                    // each other and against the font's own numbers. Height stays
+                    // a screen fraction: it is the one quantity that has to be
+                    // physical.
+                    text = "g%.2f v%.2f h%.1f%% s%.1f".format(
+                        gapUnits,
                         vpitchUnits,
                         heightFraction * 100f,
                         slantDegrees
                     ),
-                    color = LABEL,
+                    color = LedPalette.LABEL,
                     fontSize = TEXT_READOUT,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
@@ -633,14 +625,14 @@ private fun DisplayTestScreen() {
 
                 Row(modifier = Modifier.fillMaxWidth()) {
 
-                    SplitButton("pitch", Modifier.weight(1f),
+                    SplitButton("gap", Modifier.weight(1f),
                         onIncrease = {
-                            pitchUnits = (pitchUnits + pitchStepUnits)
-                                .coerceAtMost(PITCH_UNITS_MAX)
+                            gapUnits = (gapUnits + spacingStepUnits)
+                                .coerceAtMost(GAP_UNITS_MAX)
                         },
                         onDecrease = {
-                            pitchUnits = (pitchUnits - pitchStepUnits)
-                                .coerceAtLeast(PITCH_UNITS_MIN)
+                            gapUnits = (gapUnits - spacingStepUnits)
+                                .coerceAtLeast(GAP_UNITS_MIN)
                         }
                     )
 
@@ -666,13 +658,13 @@ private fun DisplayTestScreen() {
 
                     SplitButton("vpitch", Modifier.weight(1f),
                         onIncrease = {
-                            vpitchUnits = (vpitchUnits + pitchStepUnits)
+                            vpitchUnits = (vpitchUnits + spacingStepUnits)
                                 .coerceAtMost(VPITCH_UNITS_MAX)
                         },
                         onDecrease = {
                             // Stops where the rows would start to touch, rather
                             // than at a guessed constant.
-                            vpitchUnits = (vpitchUnits - pitchStepUnits)
+                            vpitchUnits = (vpitchUnits - spacingStepUnits)
                                 .coerceAtLeast(minVpitchUnits)
                         }
                     )
@@ -707,22 +699,16 @@ private fun DisplayTestScreen() {
             val radius = minOf(size.width, size.height) / 2f
             val centre = Offset(size.width / 2f, size.height / 2f)
 
-            // No attempt to fill the off-glass corners: the app cannot paint there.
-            // Tested by filling them magenta and sampling the framebuffer - every
-            // corner pixel came back #000000, so the platform's round-screen mask
-            // composites above app content. That mask is also what was slicing
-            // digits off the top register before the chord logic went in.
-            //
-            // So the boundary is marked from the inside instead.
+            // No attempt to fill the off-glass corners: the app cannot paint
+            // there. The platform's round-screen mask composites above app
+            // content, so anything drawn out there comes back black. The
+            // boundary is marked from the inside instead.
 
-            // One ring, at the glass edge, drawn just inside it so the mask does not
-            // eat it. This is the only line worth showing: content outside it does
-            // not exist on the watch.
-            //
-            // There were two - this and a fainter one at the bezel inset - and the
-            // pair read as an edge with something extra outside it rather than as a
-            // boundary and its margin. The inset is a layout detail; it does not
-            // need its own line.
+            // One ring, at the glass edge, drawn just inside it so the mask does
+            // not eat it. Only this line is worth showing - content outside it
+            // does not exist on the watch. A second ring at the bezel inset reads
+            // as an edge with something extra outside it rather than as a
+            // boundary and its margin; the inset is a layout detail.
             drawCircle(
                 color = GLASS_EDGE,
                 radius = radius - EDGE_RING_WIDTH.toPx() / 2f,
@@ -737,9 +723,9 @@ private fun DisplayTestScreen() {
  * How far right ink may go, for a row occupying [topPx] to [topPx] + [heightPx].
  *
  * The screen is a circle, so the usable width depends on how far the row sits from
- * the vertical centre - a row near the top or bottom is on a short chord. Measured
- * on the emulator before this existed: the top register's last digit was sliced in
- * half by the corner while the same digit three rows down was perfect.
+ * the vertical centre - a row near the top or bottom is on a short chord, and
+ * ignoring that slices digits off the outer registers while the middle ones look
+ * perfect.
  *
  * The binding point is whichever of the row's two edges is further from centre,
  * since that is where the circle has closed in most.
@@ -776,7 +762,7 @@ private fun RegisterRow(
     name: String,
     value: String,
     cellHeightPx: Float,
-    advanceUnits: Float,
+    gapUnits: Float,
     color: Color,
     density: Float,
     screenPx: Float,
@@ -804,7 +790,7 @@ private fun RegisterRow(
             // Convert the screen-space limit into this Canvas's own coordinates.
             val limit = chordRightEdgePx(topInRootPx, inkHeightPx(cellHeightPx), screenPx, insetPx) - leftInRootPx
 
-            drawRegister(value, cellHeightPx, advanceUnits, color, limit.coerceAtMost(size.width), slantDegrees)
+            drawRegister(value, cellHeightPx, gapUnits, color, limit.coerceAtMost(size.width), slantDegrees)
         }
 
         // The label sits over the left end of the row. A smaller register is
@@ -821,7 +807,7 @@ private fun RegisterRow(
 
         Text(
             text = name,
-            color = LABEL,
+            color = LedPalette.LABEL,
             fontSize = TEXT_REGISTER_LABEL,
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -846,7 +832,7 @@ private fun CompactButton(label: String, modifier: Modifier = Modifier, onClick:
             .padding(vertical = CONTROL_PAD_V),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = LABEL, fontSize = TEXT_BUTTON)
+        Text(label, color = LedPalette.LABEL, fontSize = TEXT_BUTTON)
     }
 }
 
@@ -877,7 +863,7 @@ private fun SplitButton(
                     .padding(horizontal = CONTROL_PAD_H, vertical = CONTROL_PAD_V),
                 contentAlignment = Alignment.CenterStart
             ) {
-                Text("+", color = LABEL, fontSize = TEXT_BUTTON)
+                Text("+", color = LedPalette.LABEL, fontSize = TEXT_BUTTON)
             }
 
             Box(
@@ -887,13 +873,13 @@ private fun SplitButton(
                     .padding(horizontal = CONTROL_PAD_H, vertical = CONTROL_PAD_V),
                 contentAlignment = Alignment.CenterEnd
             ) {
-                Text("-", color = LABEL, fontSize = TEXT_BUTTON)
+                Text("-", color = LedPalette.LABEL, fontSize = TEXT_BUTTON)
             }
         }
 
         Text(
             text = label,
-            color = LABEL,
+            color = LedPalette.LABEL,
             fontSize = TEXT_BUTTON,
             textAlign = TextAlign.Center,
             modifier = Modifier
@@ -911,7 +897,7 @@ private fun Annunciator(text: String) {
             .border(1.dp, ANNUNCIATOR_BORDER, RoundedCornerShape(ANNUNCIATOR_CORNER))
             .padding(horizontal = ANNUNCIATOR_PAD_H, vertical = ANNUNCIATOR_PAD_V)
     ) {
-        Text(text, color = LABEL, fontSize = TEXT_ANNUNCIATOR)
+        Text(text, color = LedPalette.LABEL, fontSize = TEXT_ANNUNCIATOR)
     }
 }
 
@@ -924,7 +910,7 @@ private fun Annunciator(text: String) {
 private fun DrawScope.drawRegister(
     value: String,
     cellHeightPx: Float,
-    advanceUnits: Float,
+    gapUnits: Float,
     color: Color,
     widthPx: Float,
     slantDegrees: Float
@@ -941,26 +927,24 @@ private fun DrawScope.drawRegister(
     // can be a little wider than the row. Drop from the left - the display is
     // right-aligned, so that is the end that would run off the screen anyway.
     while (drawable.isNotEmpty() &&
-        TalkRpnFont.measureWidth(drawable, cellHeightPx, advanceUnits, slantDegrees) > widthPx
+        TalkRpnFont.measureWidth(drawable, cellHeightPx, gapUnits, slantDegrees) > widthPx
     ) {
         drawable = drawable.drop(1)
     }
 
     if (drawable.isEmpty()) return
 
-    val inkWidth = TalkRpnFont.measureWidth(drawable, cellHeightPx, advanceUnits, slantDegrees)
+    val inkWidth = TalkRpnFont.measureWidth(drawable, cellHeightPx, gapUnits, slantDegrees)
 
-    // Ink rises half a stroke above the cap centreline at extended corners, so
-    // the row is drawn that far down its canvas.
-    val headroomPx = TalkRpnFont.STROKE / 2f / TalkRpnFont.CELL_HEIGHT * cellHeightPx
-
+    // The font takes the ink's own top-left corner, so the row simply hangs from
+    // the top of its canvas - the stroke's overhang is inside the measurement.
     with(TalkRpnFont) {
         drawTalkRpnText(
             text = drawable,
-            origin = Offset(widthPx - inkWidth, headroomPx),
+            inkOrigin = Offset(widthPx - inkWidth, 0f),
             cellHeight = cellHeightPx,
             color = color,
-            pitch = advanceUnits,
+            gap = gapUnits,
             slantDegrees = slantDegrees
         )
     }

@@ -44,11 +44,16 @@ $VPITCH = 3.5
 # between lines is the pitch itself.
 $PITCH_SAMPLE = "QUICK BROWN FOX 0123456789 42.9565"
 
-# In cell widths. Bracketed close around 1.45-1.85, which is where caps look
-# right, with the HP-01's own 2.43 and a deliberately-too-tight 1.35 as anchors.
+# In cell widths, loosest first. Bracketed around 1.45-1.85, which is where caps
+# look right, with a deliberately-too-tight 1.35 at the bottom end.
+#
 # The cell is exactly 1 wide, so the figure minus 1 IS the clearance between
 # neighbours: 1.35 leaves 0.35, and the ink only meets at 1.16.
-$PITCHES = @($PITCH, 2.05, 1.90, 1.80, 1.70, 1.65, 1.55, 1.45, 1.35)
+#
+# Note these are FIXED pitches, which is what an all-caps sample calls for -
+# nearly every capital is full width, so proportional spacing would come out the
+# same. Mixed-case spacing is make_spacing_matched.ps1's job.
+$PITCHES = @(2.20, 2.05, 1.90, $PITCH, 1.80, 1.70, 1.65, 1.55, 1.45, 1.35)
 
 $LINES = @()
 foreach ($p in $PITCHES) {
