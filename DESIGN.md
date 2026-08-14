@@ -417,6 +417,36 @@ Each mode takes a digit count as a following parameter — `fixed 3`, `scientifi
 which makes all three parsing words. See below for why the count follows the mode
 rather than being taken from the stack.
 
+### The register field
+
+Every register shows its value in a **15-digit-position field**. A position is one
+full-width cell plus one gap, so the field's pixel width follows the gap and the
+row's size by derivation, not by a second constant.
+
+- **The mantissa is left-justified, always, from position 1.** No right-aligned
+  values anywhere.
+- **An exponent takes the field's rightmost three positions** (blank-or-minus,
+  then two digits), per the HP convention above.
+- **Every register's field is centred on the screen's vertical axis** — X
+  included. The labels sit outside the field and are not counted in the
+  centring.
+- **Labels sit just left of the field, right-justified** against the mantissa's
+  starting edge, and **centred vertically on segment G** — the optical middle of
+  the digits — not on the baseline.
+- **X's segment G sits exactly on the screen's diameter** - the optical middle
+  of the biggest digits on the widest chord. The stack hangs from a computed
+  top spacer; centring it as a block put X wherever the labels' and
+  annunciators' heights happened to leave it.
+- **The starting digit height is derived**, not chosen: the tallest digits at
+  which the full field fits the diameter at the default gap. The height control
+  moves freely from there.
+
+A consequence the boundary ring makes visible: at the default height the topmost
+row's chord is a little narrower than its centred field, so `T`'s label — and a
+sliver of its first digit — fall outside the glass and are masked. The outer
+rows always pay for the round display first; whether that is answered by height,
+by `SMALL_ROW_SCALE`, or by accepting it is an on-watch judgement.
+
 ### The radix is always shown
 
 An integer displays as `5.`, never `5` — as HP calculators do, and including when
@@ -427,8 +457,26 @@ a reader needs to know whether they are looking at a whole number or at the lead
 digits of something longer. The trailing point is that signal. It also separates a
 displayed number from a register label or an error word at a glance.
 
-On a value carrying an exponent the radix belongs to the mantissa: `6e23` displays
-as `6.e23`, not `6e23.`.
+On a value carrying an exponent the radix belongs to the mantissa: the radix in
+`6.02 23` sits after the `6`, never at the end of the line.
+
+**Exponents display the HP way: no marker at all.** The display's three rightmost
+character positions hold a blank (or the minus, when the exponent is negative)
+and then the two exponent digits; the mantissa is left-justified in the space
+that remains. `6.02E23` therefore shows as `6.02` at the left and `23` at the
+right edge, with darkness between — exactly as an HP LED calculator did it.
+
+Input remains forgiving: `e` or `E` is accepted as the marker when typing or
+parsing, but neither character ever reaches the display.
+
+Two consequences to settle when the real number formatter is built:
+
+- Under proportional spacing there are no fixed "character positions", so the
+  rule translates to: exponent block right-justified at the display edge,
+  mantissa block left-justified, minimum one blank between them.
+- On the smaller register rows the label (`Z`, `LASTX`, …) overlays the left of
+  the row, which only works because values are right-aligned. A left-justified
+  mantissa has to start after the label, not under it.
 
 Cost is one narrow slot per integer — about a third of a digit position at the
 current `PUNCTUATION_ADVANCE`.
@@ -770,8 +818,8 @@ a thousandth of a pixel on the watch.
 | descender depth, below the baseline | 0.7525 |
 | full height, cap plus descender | 2.463 |
 | ink height, top of `A` to bottom of the descender bar | 2.610 |
-| `GAP` — last centreline of one glyph to the first of the next | 0.85 |
-| `VPITCH` — baseline to baseline, = 1.117 × total height | 2.751 |
+| `GAP` — last centreline of one glyph to the first of the next | 0.67 |
+| `VPITCH` — baseline to baseline, = 0.865 × total height | 2.13 |
 | `SPACE_WIDTH` — a space, ink-free | 0.6 |
 
 The payoff in reading it: since the cell is exactly 1 wide, the gap **is** the

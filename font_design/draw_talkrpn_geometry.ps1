@@ -56,7 +56,7 @@ $COL2_Y = 1.378
 
 # From the last lit centreline of one glyph to the first of the next, and how far across
 # it the decimal point sits. Both mirror TalkRpnFont.
-$GAP = 0.85
+$GAP = 0.67
 $DP_GAP_FRACTION = 0.337
 
 $DP_DROP = 0.3263          # how far the decimal point sits below the baseline

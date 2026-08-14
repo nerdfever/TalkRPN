@@ -32,16 +32,21 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.Text
+import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
 
 /*
  * The whole calculator display, laid out for fit.
@@ -83,12 +88,15 @@ private const val SMALL_ROW_SCALE = 0.70f
 /**
  * Digit height, as a fraction of the screen's diameter.
  *
- * Expressed against the screen rather than in millimetres deliberately. The tuning
- * happens on an emulator that thinks it is a physically larger watch, so a value in
+ * A screen fraction rather than millimetres deliberately: the tuning happens on
+ * an emulator that thinks it is a physically larger watch, so a value in
  * millimetres dialled in there would not carry across - a fraction of the screen
  * does, and lands on the real watch looking the same.
+ *
+ * There is no INITIAL constant: the starting height is DERIVED as the tallest
+ * digits at which the full field still fits the widest chord, so the field's
+ * size and the gap decide it. See the derivation in [DisplayTestScreen].
  */
-private const val INITIAL_HEIGHT_FRACTION = 0.076f
 private const val HEIGHT_FRACTION_MIN = 0.03f
 private const val HEIGHT_FRACTION_MAX = 0.25f
 
@@ -141,6 +149,13 @@ private const val GAP_UNITS_MAX = 3.0f
  * one row's descenders reach the row beneath.
  */
 private val INITIAL_VPITCH_UNITS = TalkRpnFont.VPITCH
+/**
+ * The vpitch control's range. The floor is deliberately BELOW the point where
+ * rows touch (about 2.36 at the derived default height): on a measuring
+ * instrument, seeing the overlap is more useful than being protected from it.
+ * Zero puts every baseline in the same place.
+ */
+private const val VPITCH_UNITS_MIN = 0f
 private const val VPITCH_UNITS_MAX = 4.5f
 
 /**
@@ -188,23 +203,23 @@ private val ANNUNCIATOR_BORDER = Color(0xFF4A4A4A)
  * them.
  */
 private val SAMPLE_SETS = listOf(
-    // Something a real calculation would look like.
+    // Something a real calculation would look like, formatted at the DSP default.
     mapOf(
-        "T" to "0",
-        "Z" to "12",
-        "Y" to "1.4142136",
-        "X" to "3.1415927",
-        "LASTX" to "2.7182818",
-        "STO" to "6.02e23",
-    ),
+        "T" to 0.0,
+        "Z" to 12.0,
+        "Y" to 1.4142136,
+        "X" to 3.1415927,
+        "LASTX" to 2.7182818,
+        "STO" to 6.02e23,
+    ).mapValues { (_, v) -> dsp(v) },
     // Worst case: every segment lit, every cell full.
     mapOf(
-        "T" to "8888888888",
-        "Z" to "8888888888",
-        "Y" to "8888888888",
-        "X" to "8888888888",
-        "LASTX" to "8888888888",
-        "STO" to "8888888888",
+        "T" to "8",
+        "Z" to "8",
+        "Y" to "8",
+        "X" to "8",
+        "LASTX" to "8",
+        "STO" to "8",
     ),
     // Every glyph, so no digit hides behind another.
     mapOf(
@@ -224,6 +239,68 @@ private val SAMPLE_SETS = listOf(
  * The other two exist to fill the row, so they follow the row.
  */
 private val SAMPLE_FILLS_ROW = listOf(false, true, true)
+
+/**
+ * THE FIELD: every register shows its value in this many digit positions.
+ *
+ * A position is one full-width cell plus one gap. The field's right edge goes as
+ * far right as the glass allows; the mantissa is left-justified from position 1,
+ * and an exponent occupies the rightmost [EXPONENT_FIELD_POSITIONS].
+ */
+private const val FIELD_POSITIONS = 15
+
+/**
+ * The exponent's share of the field, at the right end: a blank - or the minus,
+ * when the exponent is negative - then two digits. HP convention; no marker.
+ */
+private const val EXPONENT_FIELD_POSITIONS = 3
+
+/** Places shown after the radix - the DSP mode. DSP 3 is the default. */
+private const val DSP_PLACES = 3
+
+/**
+ * Slack for the does-it-fit comparison, in cell units.
+ *
+ * A full field of full-width digits measures EXACTLY the field's width, so the
+ * comparison sits on an equality that floating point tips either way - which
+ * showed as the digit count flickering between 14 and 15 as the gap moved.
+ * Far below anything visible; far above any rounding error.
+ */
+private const val FIT_SLACK_UNITS = 0.001f
+
+/**
+ * Ink width of [n] full-width digit positions, in cell units: the cells, the
+ * gaps between them, the slant's lean, and the stroke overhanging both ends.
+ */
+private fun fieldUnits(n: Int, gap: Float, slantDegrees: Float): Float =
+    n * TalkRpnFont.CELL_WIDTH + (n - 1) * gap +
+        (TalkRpnFont.shearedWidth(slantDegrees) - TalkRpnFont.CELL_WIDTH) +
+        TalkRpnFont.STROKE
+
+/**
+ * Segment G's y inside a row's canvas: half a stroke of headroom, then half the
+ * cap height, at the row's scale. The optical middle of the digits - what the
+ * screen centres X on, and what each label centres itself against.
+ */
+private fun midBarYPx(cellHeightPx: Float): Float =
+    (TalkRpnFont.STROKE / 2f + TalkRpnFont.CELL_HEIGHT / 2f) *
+        (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
+
+/**
+ * Where a row's field begins, in its own canvas coordinates: the field centred
+ * on the SCREEN's vertical axis, labels not counted.
+ */
+private fun fieldLeftPx(
+    cellHeightPx: Float,
+    gapUnits: Float,
+    slantDegrees: Float,
+    screenPx: Float,
+    leftInRootPx: Float,
+): Float {
+    val fieldWidthPx = fieldUnits(FIELD_POSITIONS, gapUnits, slantDegrees) *
+        (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
+    return screenPx / 2f - fieldWidthPx / 2f - leftInRootPx
+}
 
 /**
  * Whether to separate groups of three digits left of the radix.
@@ -279,6 +356,9 @@ private val GAP_SMALL = 4.dp
 private val GAP_MEDIUM = 8.dp
 
 private val TEXT_REGISTER_LABEL = 9.sp
+
+/** Air between a label's right end and the field it names. */
+private val LABEL_FIELD_CLEARANCE = 4.dp
 private val TEXT_ANNUNCIATOR = 10.sp
 private val TEXT_READOUT = 8.sp
 private val TEXT_BUTTON = 9.sp
@@ -337,19 +417,25 @@ private fun DisplayTestScreen() {
     val screenPx = minOf(metrics.widthPixels, metrics.heightPixels).toFloat()
     val insetPx = BEZEL_INSET.value * metrics.density
 
-    // The two independent adjustments. Neither moves the other.
+    // The two independent adjustments. Neither moves the other once running -
+    // but the STARTING height is derived from the field: the tallest digits at
+    // which all FIELD_POSITIONS fit the widest chord at the default gap. X sits
+    // on the diameter, so its chord is the screen less the bezel insets.
+    val fittedHeightFraction = remember {
+        val usablePx = screenPx - 2f * insetPx
+        val fieldWidthUnits =
+            fieldUnits(FIELD_POSITIONS, INITIAL_GAP_UNITS, TalkRpnFont.SLANT_DEGREES)
+        (usablePx / fieldWidthUnits * TalkRpnFont.CELL_HEIGHT / screenPx)
+            .coerceIn(HEIGHT_FRACTION_MIN, HEIGHT_FRACTION_MAX)
+    }
+
     var gapUnits by remember { mutableStateOf(INITIAL_GAP_UNITS) }
-    var heightFraction by remember { mutableStateOf(INITIAL_HEIGHT_FRACTION) }
+    var heightFraction by remember { mutableStateOf(fittedHeightFraction) }
 
     var vpitchUnits by remember { mutableStateOf(INITIAL_VPITCH_UNITS) }
     var slantDegrees by remember { mutableStateOf(TalkRpnFont.SLANT_DEGREES) }
     var sampleIndex by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(false) }
-
-    // Width available to a register row, captured during layout rather than inside
-    // a Canvas: writing state during the draw phase schedules another draw, which
-    // writes the state again.
-    var rowWidthPx by remember { mutableStateOf(0) }
 
     // Height is now set directly, not inferred from a cell count.
     val xCellHeightPx = heightFraction * screenPx
@@ -382,44 +468,63 @@ private fun DisplayTestScreen() {
     val gapSmallToXPx = rowGapPx(vpitchPx, smallCellHeightPx, xCellHeightPx)
     val gapXToSmallPx = rowGapPx(vpitchPx, xCellHeightPx, smallCellHeightPx)
 
-    // The tightest vpitch that still leaves every gap non-negative. Binding case
-    // is a small row above X, since that is where the row below is tallest.
-    val minVpitchUnits = minVpitchPx(smallCellHeightPx, xCellHeightPx) / unitPx
+    // ---- Put X's MIDDLE BAR on the screen's diameter --------------------------
+    //
+    // The widest chord of a round display passes through its centre, so the
+    // widest row earns the most width when the OPTICAL middle of its digits -
+    // segment G - sits exactly there. Centring the stack as a block put X
+    // wherever the labels' and annunciators' heights happened to leave it.
+    //
+    // The stack therefore hangs from a computed top spacer: the distance from
+    // the screen centre up to X's canvas top, less everything stacked above X.
+
+    val xMidBarInCanvasPx = midBarYPx(xCellHeightPx)
+
+    // What sits above X's canvas: the upper rows' canvases and the gaps between.
+    // RAW gaps, negative included - a clamped spacer's shortfall comes back as
+    // an upward offset on the rows below it, so the sum is what counts. Canvas
+    // heights repeat the rounding in canvasHeightDp; being a pixel off here
+    // moves the chord by nothing measurable.
+    val smallCanvasPx = ceil(inkHeightPx(smallCellHeightPx)) + 1f
+    val aboveXPx = UPPER_REGISTERS.size * smallCanvasPx +
+        (UPPER_REGISTERS.size - 1) * gapSmallToSmallPx +
+        gapSmallToXPx
+
+    val topSpacerPx = (screenPx / 2f - xMidBarInCanvasPx - aboveXPx).coerceAtLeast(0f)
+
+    // The small rows centre "label + field" as one unit, so a labelled register
+    // reads as the centred thing - X, having no label, centres its field alone.
+    // ONE shift for every small row, half the widest label's block, so the
+    // fields all stay aligned with each other; shorter labels just leave a
+    // little slack to their left.
+    val textMeasurer = rememberTextMeasurer()
+    val smallFieldShiftPx = remember(metrics.density) {
+        val widestLabelPx = (UPPER_REGISTERS + LOWER_REGISTERS).maxOf { label ->
+            textMeasurer.measure(label, TextStyle(fontSize = TEXT_REGISTER_LABEL)).size.width
+        }
+        (widestLabelPx + LABEL_FIELD_CLEARANCE.value * metrics.density) / 2f
+    }
 
     // One press must move the layout at least one pixel; below that the control
     // looks broken rather than fine-grained.
     val spacingStepUnits = maxOf(SPACING_STEP_UNITS, MIN_STEP_PX / unitPx)
 
-    // With both free, the cell count becomes the *result* rather than the input -
-    // which is the more useful reading anyway, since the question was how many
-    // digits fit at a size that can be read.
-    //
-    // A full-width glyph advances by its own cell plus one gap. That is an
-    // ESTIMATE now that spacing is proportional - a row of 1s fits far more - but
-    // the samples this sizes are all digits, where every glyph but 1 is full
-    // width, and the draw step trims anything that still overruns.
-    val scale = xCellHeightPx / TalkRpnFont.CELL_HEIGHT
-    val fullCellAdvanceUnits = TalkRpnFont.CELL_WIDTH + gapUnits
-    val cellsAcross =
-        if (rowWidthPx <= 0 || scale <= 0f) 0
-        else ((rowWidthPx / scale - TalkRpnFont.shearedWidth(slantDegrees)) / fullCellAdvanceUnits).toInt() + 1
-
-    // Fit the digits first, then punctuate: the radix and the separators are all
-    // narrower than a cell, so counting them as cells would under-fill the row.
-    // The draw step trims whatever still does not fit.
+    // Fit the digits to the field, then punctuate: the radix and the separators
+    // are narrower than a digit position, so counting them would under-fill it.
+    // The draw step trims by measurement whatever still overruns.
     val samples = SAMPLE_SETS[sampleIndex].mapValues { (_, text) ->
 
         val fitted = when {
-            cellsAcross <= 0 -> ""
             SAMPLE_FILLS_ROW[sampleIndex] ->
-                buildString { while (length < cellsAcross) append(text) }.take(cellsAcross)
-            // Right-aligned, so an over-long value loses its left end.
-            text.length > cellsAcross -> text.takeLast(cellsAcross)
+                buildString { while (length < FIELD_POSITIONS) append(text) }.take(FIELD_POSITIONS)
+            // Left-justified, so an over-long value loses its right end.
+            text.length > FIELD_POSITIONS -> text.take(FIELD_POSITIONS)
             else -> text
         }
 
         groupDigits(ensureRadix(fitted))
     }
+
 
     Box(
         modifier = Modifier
@@ -438,14 +543,25 @@ private fun DisplayTestScreen() {
                 .fillMaxSize()
                 .padding(horizontal = SIDE_MARGIN),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
         ) {
+
+            // Hangs the stack so X's segment G lands on the diameter; see the
+            // derivation of topSpacerPx above.
+            Spacer(Modifier.height(pxToDp(topSpacerPx, metrics.density)))
+
+            // A Compose spacer cannot be negative, so when the vpitch drops
+            // below the rows-touch point each clamped gap's shortfall is
+            // accumulated here and paid back as an upward offset on everything
+            // below it. That is what lets the control show OVERLAP rather than
+            // silently stopping at the touch point.
+            var overlapPx = 0f
 
             for ((index, name) in UPPER_REGISTERS.withIndex()) {
 
                 RegisterRow(
                     name, samples[name].orEmpty(), smallCellHeightPx, gapUnits,
-                    LedPalette.LIT, metrics.density, screenPx, insetPx, slantDegrees
+                    LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
+                    Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
 
                 // The last of these sits above X, which is taller, so it needs a
@@ -454,53 +570,46 @@ private fun DisplayTestScreen() {
                     if (index == UPPER_REGISTERS.lastIndex) gapSmallToXPx else gapSmallToSmallPx
 
                 Spacer(Modifier.height(pxToDp(gapPx.coerceAtLeast(0f), metrics.density)))
+                overlapPx += minOf(gapPx, 0f)
             }
 
             // X carries no label: it is the largest row, it spans the full width,
-            // and the whole point of "across the middle" is that it gets everything.
-            // This is also the row whose width defines every other row's size, so it
-            // is the one that measures itself.
-            //
-            // Sitting at the vertical centre, X is on the longest chord, so the
-            // round-screen limit is never what binds it - but it is applied anyway
-            // rather than assumed, since "X is centred" is a layout fact that could
-            // stop being true.
-            var xTopInRootPx by remember { mutableStateOf(0f) }
+            // and the whole point of "across the middle" is that it gets
+            // everything. Like every register, its field is centred on the
+            // screen's vertical axis.
             var xLeftInRootPx by remember { mutableStateOf(0f) }
 
             Canvas(
                 modifier = Modifier
+                    .offset(y = pxToDp(overlapPx, metrics.density))
                     .fillMaxWidth()
                     .height(canvasHeightDp(xCellHeightPx, metrics.density))
-                    .onSizeChanged { rowWidthPx = it.width }
-                    .onGloballyPositioned {
-                        xTopInRootPx = it.positionInRoot().y
-                        xLeftInRootPx = it.positionInRoot().x
-                    }
+                    .onGloballyPositioned { xLeftInRootPx = it.positionInRoot().x }
             ) {
-                val limit =
-                    chordRightEdgePx(xTopInRootPx, inkHeightPx(xCellHeightPx), screenPx, insetPx) - xLeftInRootPx
-
                 drawRegister(
                     samples["X"].orEmpty(), xCellHeightPx, gapUnits, LedPalette.LIT,
-                    limit.coerceAtMost(size.width), slantDegrees
+                    fieldLeftPx(xCellHeightPx, gapUnits, slantDegrees, screenPx, xLeftInRootPx),
+                    slantDegrees
                 )
             }
 
             // X down to the first of the lower registers: the row below is now the
             // smaller one, so this gap is the wider of the three.
             Spacer(Modifier.height(pxToDp(gapXToSmallPx.coerceAtLeast(0f), metrics.density)))
+            overlapPx += minOf(gapXToSmallPx, 0f)
 
             for (name in LOWER_REGISTERS) {
 
                 RegisterRow(
                     name, samples[name].orEmpty(), smallCellHeightPx, gapUnits,
-                    LedPalette.LIT, metrics.density, screenPx, insetPx, slantDegrees
+                    LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
+                    Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
 
                 // The trailing one has no row beneath it - it is just the padding
                 // ahead of the annunciators, and matching the others keeps it even.
                 Spacer(Modifier.height(pxToDp(gapSmallToSmallPx.coerceAtLeast(0f), metrics.density)))
+                overlapPx += minOf(gapSmallToSmallPx, 0f)
             }
 
             Spacer(Modifier.height(ANNUNCIATOR_GAP))
@@ -509,7 +618,10 @@ private fun DisplayTestScreen() {
             //
             // Not real segments, as on an HP-42S - just a reserved screen region
             // that draws one word or the other. Cheating, deliberately.
-            Row(horizontalArrangement = Arrangement.Center) {
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.offset(y = pxToDp(overlapPx, metrics.density)),
+            ) {
                 Annunciator("DEG")
                 Spacer(Modifier.width(GAP_SMALL))
                 Annunciator("SI")
@@ -549,9 +661,9 @@ private fun DisplayTestScreen() {
                     // The ADVANCE for a full-width pair - what two full-width glyphs
                     // sit apart at this gap, which is the widest any pair gets.
                     // Narrow glyphs advance by less, so it is an upper bound not a grid.
-                    text = "%.1f mm  %d cells  adv %.2f".format(
+                    text = "%.1f mm  field %d  adv %.2f".format(
                         xCellHeightPx / pixelsPerMm,
-                        cellsAcross,
+                        FIELD_POSITIONS,
                         TalkRpnFont.CELL_WIDTH + gapUnits
                     ),
                     color = LedPalette.LABEL,
@@ -618,10 +730,8 @@ private fun DisplayTestScreen() {
                                 .coerceAtMost(VPITCH_UNITS_MAX)
                         },
                         onDecrease = {
-                            // Stops where the rows would start to touch, rather
-                            // than at a guessed constant.
                             vpitchUnits = (vpitchUnits - spacingStepUnits)
-                                .coerceAtLeast(minVpitchUnits)
+                                .coerceAtLeast(VPITCH_UNITS_MIN)
                         }
                     )
 
@@ -654,44 +764,7 @@ private fun DisplayTestScreen() {
     }
 }
 
-/**
- * How far right ink may go, for a row occupying [topPx] to [topPx] + [heightPx].
- *
- * The screen is a circle, so the usable width depends on how far the row sits from
- * the vertical centre - a row near the top or bottom is on a short chord, and
- * ignoring that slices digits off the outer registers while the middle ones look
- * perfect.
- *
- * The binding point is whichever of the row's two edges is further from centre,
- * since that is where the circle has closed in most.
- */
-private fun chordRightEdgePx(topPx: Float, heightPx: Float, screenPx: Float, insetPx: Float): Float {
-
-    val radius = screenPx / 2f
-    val centre = radius
-
-    val worstOffset = maxOf(
-        kotlin.math.abs(topPx - centre),
-        kotlin.math.abs(topPx + heightPx - centre)
-    )
-
-    // Off the circle entirely: nothing is drawable, so give back the centre line.
-    val halfChordSquared = radius * radius - worstOffset * worstOffset
-    if (halfChordSquared <= 0f) return centre
-
-    return centre + kotlin.math.sqrt(halfChordSquared) - insetPx
-}
-
-/** The mirror of [chordRightEdgePx]: how far left ink may go on the same row. */
-private fun chordLeftEdgePx(topPx: Float, heightPx: Float, screenPx: Float, insetPx: Float): Float {
-
-    val radius = screenPx / 2f
-    val centre = radius
-
-    return centre - (chordRightEdgePx(topPx, heightPx, screenPx, insetPx) - centre)
-}
-
-/** One of the smaller registers: a name at the left, digits right-aligned. */
+/** One of the smaller registers: a name at the left, the value in its field. */
 @Composable
 private fun RegisterRow(
     name: String,
@@ -701,20 +774,24 @@ private fun RegisterRow(
     color: Color,
     density: Float,
     screenPx: Float,
-    insetPx: Float,
-    slantDegrees: Float
+    fieldShiftPx: Float,
+    slantDegrees: Float,
+    modifier: Modifier = Modifier,
 ) {
-    // Where this row ended up on screen, so the chord at its height can be found.
-    var topInRootPx by remember { mutableStateOf(0f) }
+    // Where this row sits horizontally, so the screen's axis can be found in
+    // its own coordinates.
     var leftInRootPx by remember { mutableStateOf(0f) }
 
+    // The field centred on the screen's axis, then shifted right by half the
+    // widest label block, so LABEL PLUS FIELD is the centred unit. The same
+    // shift for every small row keeps their fields aligned with each other.
+    val rowFieldLeftPx =
+        fieldLeftPx(cellHeightPx, gapUnits, slantDegrees, screenPx, leftInRootPx) + fieldShiftPx
+
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .onGloballyPositioned {
-                topInRootPx = it.positionInRoot().y
-                leftInRootPx = it.positionInRoot().x
-            }
+            .onGloballyPositioned { leftInRootPx = it.positionInRoot().x }
     ) {
 
         Canvas(
@@ -722,32 +799,33 @@ private fun RegisterRow(
                 .fillMaxWidth()
                 .height(canvasHeightDp(cellHeightPx, density))
         ) {
-            // Convert the screen-space limit into this Canvas's own coordinates.
-            val limit = chordRightEdgePx(topInRootPx, inkHeightPx(cellHeightPx), screenPx, insetPx) - leftInRootPx
-
-            drawRegister(value, cellHeightPx, gapUnits, color, limit.coerceAtMost(size.width), slantDegrees)
+            drawRegister(value, cellHeightPx, gapUnits, color, rowFieldLeftPx, slantDegrees)
         }
 
-        // The label sits over the left end of the row. A smaller register is
-        // narrower than the full width by exactly the scale factor, so there is
-        // always dark space there for it.
+        // The label sits just LEFT of the field, right-justified against the
+        // mantissa's starting edge, so every label ends at the same x and reads
+        // as a column of names beside a column of values. Done by giving the
+        // label a box that ends where the field begins, less a little clearance,
+        // and letting the text right-align inside it - no text measuring needed.
         //
-        // Pushed inward by the same chord logic as the digits, on the other side:
-        // the topmost register's label sat at x = 12 while the circle had already
-        // closed in to x = 27, so it was invisible on a round screen while looking
-        // perfectly fine on a square emulator.
-        val labelIndentPx =
-            (chordLeftEdgePx(topInRootPx, inkHeightPx(cellHeightPx), screenPx, insetPx) - leftInRootPx)
-                .coerceAtLeast(0f)
-
-        Text(
-            text = name,
-            color = LedPalette.LABEL,
-            fontSize = TEXT_REGISTER_LABEL,
+        // Vertically it centres on SEGMENT G - the optical middle of the digits
+        // - by way of a box exactly twice segment G's depth, whose centre is
+        // therefore segment G, whatever height the text turns out to be.
+        Box(
             modifier = Modifier
-                .align(Alignment.CenterStart)
-                .offset(x = pxToDp(labelIndentPx, density))
-        )
+                .align(Alignment.TopStart)
+                .width(pxToDp(rowFieldLeftPx, density) - LABEL_FIELD_CLEARANCE)
+                .height(pxToDp(2f * midBarYPx(cellHeightPx), density)),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Text(
+                text = name,
+                color = LedPalette.LABEL,
+                fontSize = TEXT_REGISTER_LABEL,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
     }
 }
 
@@ -837,51 +915,92 @@ private fun Annunciator(text: String) {
 }
 
 /**
- * Draws one register's digits, right-aligned to [widthPx].
+ * Draws one register's value into its [FIELD_POSITIONS]-position field, whose
+ * position 1 begins at [fieldLeftPx] - the caller centres the field on the
+ * screen's vertical axis via [fieldLeftPx] (the function of the same name).
  *
- * Right alignment is what an RPN display does, and it is also what makes the
- * decimal points line up down the stack.
+ * Mantissa left-justified from position 1; exponent, when there is one,
+ * right-justified into the last [EXPONENT_FIELD_POSITIONS] with no marker.
+ *
+ * Anything the font has no glyph for is dropped by the layout, so a gap in the
+ * glyph table shows as missing ink rather than crashing. Radix and comma need
+ * no cell of their own: they merge into the preceding cell's DP/COMMA element.
  */
 private fun DrawScope.drawRegister(
     value: String,
     cellHeightPx: Float,
     gapUnits: Float,
     color: Color,
-    widthPx: Float,
+    fieldLeftPx: Float,
     slantDegrees: Float
 ) {
     if (value.isEmpty() || cellHeightPx <= 0f) return
 
-    // Anything the font has no glyph for draws as a blank cell inside the text
-    // helper, so a gap in the glyph table is visible rather than silently
-    // swallowed. Radix and comma are legal without glyph entries of their own:
-    // they merge into the preceding cell's DP/COMMA element.
-    var drawable = value
+    val scale = cellHeightPx / TalkRpnFont.CELL_HEIGHT
 
-    // Separators are added after the cell count is worked out, so a grouped value
-    // can be a little wider than the row. Drop from the left - the display is
-    // right-aligned, so that is the end that would run off the screen anyway.
-    while (drawable.isNotEmpty() &&
-        TalkRpnFont.measureWidth(drawable, cellHeightPx, gapUnits, slantDegrees) > widthPx
-    ) {
-        drawable = drawable.drop(1)
+    // The ink width of a run of n full-width digit positions, at this row's size.
+    fun positionsPx(n: Int): Float = fieldUnits(n, gapUnits, slantDegrees) * scale
+
+    // THE FIELD: position 1 at [fieldLeftPx], the caller having centred it.
+    val fieldRightPx = fieldLeftPx + positionsPx(FIELD_POSITIONS)
+
+    // Split off the exponent. The marker never reaches the screen: the mantissa
+    // is left-justified from position 1, the exponent right-justified into the
+    // field's last EXPONENT_FIELD_POSITIONS, and the darkness between them is
+    // the HP convention's blank.
+    val markerAt = value.indexOfFirst { it in EXPONENT_MARKERS }
+    var mantissa = if (markerAt >= 0) value.take(markerAt) else value
+    val exponent = if (markerAt >= 0) value.substring(markerAt + 1) else ""
+
+    // The mantissa may not enter the exponent's positions. Overflow loses its
+    // RIGHT end - it is the left-justified block.
+    //
+    // The check runs in the font's own UNITS, not pixels, so every row reaches
+    // the same verdict for the same text - checked in pixels, the small rows'
+    // different rounding could disagree with X's at the same gap. A TRAILING
+    // radix or separator is not counted: it lives in the gap after its digit,
+    // costs no position, and may poke past the field into the darkness.
+    val mantissaMaxUnits = fieldUnits(
+        if (exponent.isEmpty()) FIELD_POSITIONS else FIELD_POSITIONS - EXPONENT_FIELD_POSITIONS,
+        gapUnits, slantDegrees
+    )
+
+    fun fits(text: String): Boolean {
+        val counted = text.trimEnd(RADIX, GROUP_SEPARATOR)
+        return TalkRpnFont.measureWidth(counted, TalkRpnFont.CELL_HEIGHT, gapUnits, slantDegrees) <=
+            mantissaMaxUnits + FIT_SLACK_UNITS
     }
 
-    if (drawable.isEmpty()) return
+    while (mantissa.isNotEmpty() && !fits(mantissa)) {
+        mantissa = mantissa.dropLast(1)
+    }
 
-    val inkWidth = TalkRpnFont.measureWidth(drawable, cellHeightPx, gapUnits, slantDegrees)
-
-    // The font takes the ink's own top-left corner, so the row simply hangs from
-    // the top of its canvas - the stroke's overhang is inside the measurement.
+    // The font takes the ink's own top-left corner, so rows simply hang from the
+    // top of their canvas - the stroke's overhang is inside the measurement.
     with(TalkRpnFont) {
-        drawTalkRpnText(
-            text = drawable,
-            inkOrigin = Offset(widthPx - inkWidth, 0f),
-            cellHeight = cellHeightPx,
-            color = color,
-            gap = gapUnits,
-            slantDegrees = slantDegrees
-        )
+
+        if (mantissa.isNotEmpty()) {
+            drawTalkRpnText(
+                text = mantissa,
+                inkOrigin = Offset(fieldLeftPx, 0f),
+                cellHeight = cellHeightPx,
+                color = color,
+                gap = gapUnits,
+                slantDegrees = slantDegrees
+            )
+        }
+
+        if (exponent.isNotEmpty()) {
+            val exponentInkPx = measureWidth(exponent, cellHeightPx, gapUnits, slantDegrees)
+            drawTalkRpnText(
+                text = exponent,
+                inkOrigin = Offset(fieldRightPx - exponentInkPx, 0f),
+                cellHeight = cellHeightPx,
+                color = color,
+                gap = gapUnits,
+                slantDegrees = slantDegrees
+            )
+        }
     }
 }
 
@@ -896,8 +1015,8 @@ private fun DrawScope.drawRegister(
  * Adds a trailing radix when the value has none, per [ALWAYS_SHOW_RADIX].
  *
  * The radix belongs to the mantissa, so on a value carrying an exponent it goes
- * before the exponent marker rather than at the end - "6e23" becomes "6.e23", not
- * "6e23.".
+ * before the exponent marker rather than at the end - "6E23" becomes "6.E23",
+ * not "6E23.". The marker itself never reaches the screen; see [hpExponent].
  */
 private fun ensureRadix(value: String): String {
 
@@ -911,6 +1030,42 @@ private fun ensureRadix(value: String): String {
     if (mantissa.contains(RADIX)) return value
 
     return mantissa + RADIX + exponent
+}
+
+/**
+ * DSP - fixed-point to [places] after the radix, scientific when fixed form
+ * cannot say anything useful: when the integer part outgrows the mantissa's
+ * share of the field, or when the value is so small that every shown place
+ * would be zero.
+ *
+ * A sketch of the real formatter, good enough to feed the samples. The real one
+ * inherits its edge cases: rounding that carries into a new digit, exponents of
+ * three digits, and the exact fixed-to-scientific switchover.
+ */
+private fun dsp(value: Double, places: Int = DSP_PLACES): String {
+
+    if (value == 0.0) return "%.${places}f".format(0.0)
+
+    val magnitude = abs(value)
+
+    // How many digits fixed form needs left of the radix, sign aside.
+    val integerDigits = maxOf(floor(log10(magnitude)).toInt() + 1, 1)
+
+    // Everything the mantissa's share of the field must hold in fixed form:
+    // integer digits, their group separators, the radix, and the places.
+    val separators = if (GROUP_DIGITS) (integerDigits - 1) / GROUP_SIZE else 0
+    val sign = if (value < 0) 1 else 0
+    val fixedLength = sign + integerDigits + separators + 1 + places
+
+    val tooBig = fixedLength > FIELD_POSITIONS - EXPONENT_FIELD_POSITIONS
+    val tooSmall = magnitude < 10.0.pow(-places)
+
+    if (!tooBig && !tooSmall) return "%.${places}f".format(value)
+
+    val exponent = floor(log10(magnitude)).toInt()
+    val mantissa = value / 10.0.pow(exponent)
+
+    return "%.${places}fE%d".format(mantissa, exponent)
 }
 
 private fun groupDigits(value: String): String {
@@ -997,16 +1152,4 @@ private fun minVpitchPx(smallPx: Float, xPx: Float) = maxOf(
  * Rounding up costs a pixel of layout and removes the failure mode entirely.
  */
 private fun canvasHeightDp(px: Float, density: Float) = ((ceil(inkHeightPx(px)) + 1f) / density).dp
-
-
-
-
-
-
-
-
-
-
-
-
 

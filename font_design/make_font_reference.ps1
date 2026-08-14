@@ -57,7 +57,7 @@ $DP_Y = $CELL_HEIGHT + $DP_DROP
 
 # From the last lit centreline of one glyph to the first of the next, and how far across it
 # the decimal point sits. Both mirror TalkRpnFont.
-$GAP = 0.85
+$GAP = 0.67
 $DP_GAP_FRACTION = 0.337
 
 # Where the dot lands after a full-width cell - which is every cell on the

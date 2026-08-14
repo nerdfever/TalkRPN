@@ -157,7 +157,7 @@ object TalkRpnFont {
      * Both ends are centrelines, like every other length in this font. That is
      * NOT the dark space a reader sees: each glyph's ink overhangs its own
      * centreline by half a stroke, so the visible dark band is gap - [STROKE].
-     * At the default, 0.85 - 0.1475 = 0.70.
+     * At the default, 0.67 - 0.1475 = 0.52.
      *
      * Measuring centre to centre is what makes the floor fall out directly: the
      * two inks touch when the gap equals one stroke, so anything above [STROKE]
@@ -170,7 +170,7 @@ object TalkRpnFont {
      * Mixed-case text reads well from about 0.76 to 0.92; all caps takes rather
      * less. Still to be judged on the watch.
      */
-    const val DEFAULT_GAP = 0.85f
+    const val DEFAULT_GAP = 0.67f
 
     /**
      * How wide a space is, in cell widths.
@@ -188,11 +188,13 @@ object TalkRpnFont {
      * Row spacing as a multiple of [TOTAL_HEIGHT], so that shortening the
      * descender closes the rows up by itself rather than needing a second edit.
      *
-     * The floor is [INK_HEIGHT] / [TOTAL_HEIGHT] = 1.060, below which one row's
-     * descenders reach into the row beneath. 1.117 leaves about 5% air above
-     * that.
+     * DELIBERATELY below [INK_HEIGHT] / [TOTAL_HEIGHT] = 1.060, the point at
+     * which one row's descenders reach into the row beneath: tuned by eye on
+     * the emulator against digit-heavy samples, where nothing descends. Rows of
+     * text with real descenders will collide at this setting - revisit when the
+     * descender depth itself is revisited.
      */
-    private const val VPITCH_OF_TOTAL_HEIGHT = 1.117f
+    private const val VPITCH_OF_TOTAL_HEIGHT = 0.865f
 
     /**
      * VPITCH - vertical distance between successive rows, baseline to baseline,
