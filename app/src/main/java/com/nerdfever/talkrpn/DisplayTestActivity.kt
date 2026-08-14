@@ -230,15 +230,26 @@ private val SAMPLE_SETS = listOf(
         "LASTX" to "1234567890",
         "STO" to "1234567890",
     ),
+    // Lower case, heavy on descenders, so g j p q y can be judged - especially
+    // whether one row's tails collide with the row beneath at the current
+    // vpitch, which sits below the descender-clearance point by design.
+    mapOf(
+        "T" to "jaggy pyjamas",
+        "Z" to "happy pygmy jog",
+        "Y" to "Syntax error",
+        "X" to "quick jazzy pig",
+        "LASTX" to "grumpy dog",
+        "STO" to "type gyp quay",
+    ),
 )
 
 /**
  * Whether each sample set should be grown to whatever number of cells now fits.
  *
- * The realistic set is fixed text, because its point is to look like a calculation.
- * The other two exist to fill the row, so they follow the row.
+ * The realistic and lowercase sets are fixed text, because their point is to
+ * look like something; the fill sets exist to fill the field, so they follow it.
  */
-private val SAMPLE_FILLS_ROW = listOf(false, true, true)
+private val SAMPLE_FILLS_ROW = listOf(false, true, true, false)
 
 /**
  * THE FIELD: every register shows its value in this many digit positions.
@@ -327,6 +338,37 @@ private const val ALWAYS_SHOW_RADIX = true
 
 /** Marks the start of an exponent, which never takes a radix of its own. */
 private const val EXPONENT_MARKERS = "eE"
+
+/**
+ * Whether a sample value is a NUMBER - which the radix, grouping and exponent
+ * rules apply to. Text passes through untouched: the lowercase sample taught
+ * that lesson by rendering "Syntax error" as mantissa "Syntax ." with exponent
+ * "rror", and by giving "pyjamas" a trailing radix.
+ */
+private fun isNumeric(value: String): Boolean =
+    value.isNotEmpty() && value.all {
+        it.isDigit() || it == RADIX || it == GROUP_SEPARATOR || it == '-' || it in EXPONENT_MARKERS
+    }
+
+/**
+ * Where [value]'s exponent starts, or -1 when it has none.
+ *
+ * A marker only counts when what follows it is an optional minus and digits,
+ * and what precedes it is numeric - so "6.020E23" gives up its E while
+ * "Syntax error" keeps every e it has.
+ */
+private fun exponentMarkerAt(value: String): Int {
+
+    val at = value.indexOfFirst { it in EXPONENT_MARKERS }
+    if (at <= 0) return -1
+
+    if (!isNumeric(value.take(at))) return -1
+
+    val tail = value.substring(at + 1).removePrefix("-")
+    if (tail.isEmpty() || !tail.all { it.isDigit() }) return -1
+
+    return at
+}
 
 /** Registers above X, in drawing order (T at the top, as HP draws it). */
 private val UPPER_REGISTERS = listOf("T", "Z", "Y")
@@ -522,7 +564,8 @@ private fun DisplayTestScreen() {
             else -> text
         }
 
-        groupDigits(ensureRadix(fitted))
+        // Numbers get the radix, grouping and exponent treatment; text does not.
+        if (isNumeric(fitted)) groupDigits(ensureRadix(fitted)) else fitted
     }
 
 
@@ -948,7 +991,7 @@ private fun DrawScope.drawRegister(
     // is left-justified from position 1, the exponent right-justified into the
     // field's last EXPONENT_FIELD_POSITIONS, and the darkness between them is
     // the HP convention's blank.
-    val markerAt = value.indexOfFirst { it in EXPONENT_MARKERS }
+    val markerAt = exponentMarkerAt(value)
     var mantissa = if (markerAt >= 0) value.take(markerAt) else value
     val exponent = if (markerAt >= 0) value.substring(markerAt + 1) else ""
 
@@ -1016,14 +1059,16 @@ private fun DrawScope.drawRegister(
  *
  * The radix belongs to the mantissa, so on a value carrying an exponent it goes
  * before the exponent marker rather than at the end - "6E23" becomes "6.E23",
- * not "6E23.". The marker itself never reaches the screen; see [hpExponent].
+ * not "6E23.". The marker itself never reaches the screen; drawRegister splits
+ * it off and right-justifies the exponent digits into the field's last
+ * positions.
  */
 private fun ensureRadix(value: String): String {
 
     if (!ALWAYS_SHOW_RADIX || value.isEmpty()) return value
 
     // Split the mantissa from any exponent.
-    val exponentAt = value.indexOfFirst { it in EXPONENT_MARKERS }
+    val exponentAt = exponentMarkerAt(value)
     val mantissa = if (exponentAt >= 0) value.substring(0, exponentAt) else value
     val exponent = if (exponentAt >= 0) value.substring(exponentAt) else ""
 
