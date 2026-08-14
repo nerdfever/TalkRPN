@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
@@ -177,49 +176,6 @@ private const val SLANT_DEGREES_MAX = 24f
  * is larger: the nominal step above, or one pixel's worth of units.
  */
 private const val MIN_STEP_PX = 1f
-
-/**
- * The lit-segment colour: the display's reddest red, and deliberately so.
- *
- * These parts are GaAsP, and both datasheets state the peak outright - 655 nm for
- * HP's 5082-7400 bubble, 660 nm for the Siemens DL-3422. That is x = 0.728,
- * y = 0.272 in CIE 1931, which is outside EVERY display gamut: sRGB's red primary
- * falls short by 0.088 in x, Display P3 by 0.048, even Rec.2020 by 0.020.
- *
- * So there is no exact match and the question is which reachable colour is
- * closest. Clipping to maximum saturation gives this, at dE2000 7.8; desaturating
- * along the constant-dominant-wavelength line gives 0xFFFF0052, at 17.0. The
- * second is not wrong about the wavelength - it is genuinely 655 nm at 63% purity
- * - but that line leaves the gamut through the MAGENTA edge, so it lands on pink.
- *
- * Do not sample this from a photograph. Camera filters overlap, the red channel
- * clips almost at once on a lit segment, and the highlight rolls into whatever
- * green and blue were picking up - which is why photographs of these displays
- * show a white-pink core. The eye does not do that: its cones overlap too, but
- * with no hard clip and far more dynamic range, so a bright segment stays
- * saturated red. Matching a photograph reproduces the camera's failure.
- *
- * Free improvement available: this watch's OLED covers P3, so rendering in a
- * wide-gamut space would move the red primary from x = 0.64 to x = 0.68.
- */
-
-/** Behind everything. Black costs no power on OLED. */
-
-/**
- * Marks where the round glass ends.
- *
- * The emulator window is square and shows the whole framebuffer, so without this
- * there is no way to see what a round watch cuts off - a layout can look fine on
- * the emulator and lose a digit on the wrist, which is exactly what happened to
- * the top register.
- *
- * Greying the off-glass corners would be the obvious way to show it, but the app
- * cannot paint there; see the note at the draw site.
- */
-private val GLASS_EDGE = Color(0xFF5A5A5A)
-private val EDGE_RING_WIDTH = 1.dp
-
-/** Register labels and annunciator text - dimmer than the digits, and not red. */
 
 /** The annunciator box outline. */
 private val ANNUNCIATOR_BORDER = Color(0xFF4A4A4A)
@@ -691,31 +647,10 @@ private fun DisplayTestScreen() {
             }
         }
 
-        // ---- Where the round glass ends -------------------------------------
-        //
-        // Drawn last, over everything, so it marks controls as well as digits.
-        Canvas(modifier = Modifier.fillMaxSize()) {
-
-            val radius = minOf(size.width, size.height) / 2f
-            val centre = Offset(size.width / 2f, size.height / 2f)
-
-            // No attempt to fill the off-glass corners: the app cannot paint
-            // there. The platform's round-screen mask composites above app
-            // content, so anything drawn out there comes back black. The
-            // boundary is marked from the inside instead.
-
-            // One ring, at the glass edge, drawn just inside it so the mask does
-            // not eat it. Only this line is worth showing - content outside it
-            // does not exist on the watch. A second ring at the bezel inset reads
-            // as an edge with something extra outside it rather than as a
-            // boundary and its margin; the inset is a layout detail.
-            drawCircle(
-                color = GLASS_EDGE,
-                radius = radius - EDGE_RING_WIDTH.toPx() / 2f,
-                center = centre,
-                style = Stroke(width = EDGE_RING_WIDTH.toPx())
-            )
-        }
+        // Where the round glass ends. Drawn last, over everything, so it marks
+        // controls as well as digits - and unconditionally, not just on the
+        // emulator, because this screen IS the measuring instrument.
+        GlassEdge()
     }
 }
 

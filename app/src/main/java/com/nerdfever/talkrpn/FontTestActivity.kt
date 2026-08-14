@@ -84,22 +84,6 @@ private val STROKE_CHOICES = STROKE_MULTIPLES.map { it * TalkRpnFont.STROKE }
 /** Start on the font's own stroke - found by value, not by a hand-counted index. */
 private val INITIAL_STROKE_INDEX = STROKE_MULTIPLES.indexOf(1.0f)
 
-/**
- * The lit-segment colour: the display's reddest red.
- *
- * See DisplayTestActivity for why - briefly, the real emitters peak at 655-660 nm,
- * which is outside every display gamut, and clipping to maximum saturation is the
- * closest reachable colour by a factor of two in dE2000.
- */
-
-/** Unlit segments, drawn faintly in step mode so the cell keeps its shape. */
-
-/**
- * The cell boundary, for diagnosing where a glyph's ink sits inside its cell.
- *
- * Cyan rather than a shade of red so it cannot be mistaken for a segment.
- */
-
 /** Boundary line width, in cell widths, so it scales with the glyph. */
 private const val BOUNDS_STROKE = 0.02052f
 
@@ -176,6 +160,7 @@ class FontTestActivity : ComponentActivity() {
         setContent {
             AppScaffold {
                 FontTestScreen()
+                GlassEdgeIfEmulator()
             }
         }
     }

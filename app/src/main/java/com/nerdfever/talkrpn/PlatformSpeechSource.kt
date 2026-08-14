@@ -221,6 +221,9 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
     /** Consecutive sessions that died at once without hearing anything. */
     private var fastFailures = 0
 
+    /** Whether a restart is already queued, so a doubled ERROR cannot queue two. */
+    private var restartScheduled = false
+
     override fun start() {
 
         // One microphone for the whole session, opened before the first recognizer
@@ -249,6 +252,9 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
      * wipe the session's token history the way a real restart would.
      */
     private fun beginUtterance() {
+
+        // A new utterance is the restart happening; the next one may schedule.
+        restartScheduled = false
 
         releaseRecognizer()
 
@@ -585,6 +591,14 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
     private fun restartIfContinuous() {
 
         if (!continuous) return
+
+        // The platform can deliver ERROR twice for one session (seen on the
+        // emulator: paired failures at the same millisecond). Without this guard
+        // each callback schedules its own restart, so attempts double per round,
+        // the failure count rises twice per real attempt, and the backoff gives
+        // up in a tenth of the time it promises.
+        if (restartScheduled) return
+        restartScheduled = true
 
         // Did this attempt actually run, or did it die on the doorstep?
         val elapsed = SystemClock.elapsedRealtime() - utteranceStartedAt

@@ -133,6 +133,7 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 AppScaffold {
                     ListenScreen(resumed = resumed)
+                    GlassEdgeIfEmulator()
                 }
             }
         }

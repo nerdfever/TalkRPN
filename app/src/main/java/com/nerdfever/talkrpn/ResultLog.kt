@@ -50,6 +50,14 @@ private val COLUMNS = listOf(
     "tokens",
 )
 
+private val PARTIAL_COLUMNS = listOf(
+    "time",
+    "utterance",
+    "ms",
+    "text",
+    "new_tokens",
+)
+
 /**
  * Appends one line per recognised utterance.
  *
@@ -95,9 +103,7 @@ class ResultLog(context: Context) {
 
         context.getExternalFilesDir(null)?.let {
             val f = File(it, PARTIALS_FILE)
-            if (!f.exists()) {
-                f.writeText(listOf("time", "utterance", "ms", "text", "new_tokens").joinToString(SEPARATOR) + "\n")
-            }
+            if (!f.exists()) f.writeText(PARTIAL_COLUMNS.joinToString(SEPARATOR) + "\n")
             f
         }
 
@@ -132,10 +138,27 @@ class ResultLog(context: Context) {
             newTokens.joinToString(" ") { it.token },
         )
 
+        append(target, PARTIAL_COLUMNS, row, "partial")
+    }
+
+    /**
+     * Append one row, or say why not.
+     *
+     * The row is CHECKED against its header rather than trusted. A field added to
+     * one and not the other would otherwise shift every later column silently, and
+     * a log that is quietly wrong is worse than one that is visibly missing a line.
+     */
+    private fun append(target: File, header: List<String>, row: List<String>, what: String) {
+
+        if (row.size != header.size) {
+            Log.e(LOG_TAG, "$what: ${row.size} fields for ${header.size} columns - row dropped")
+            return
+        }
+
         try {
             target.appendText(row.joinToString(SEPARATOR) + "\n")
         } catch (e: Exception) {
-            Log.e(LOG_TAG, "could not append partial", e)
+            Log.e(LOG_TAG, "could not append $what", e)
         }
     }
 
@@ -190,11 +213,7 @@ class ResultLog(context: Context) {
             "",
         )
 
-        try {
-            target.appendText(row.joinToString(SEPARATOR) + "\n")
-        } catch (e: Exception) {
-            Log.e(LOG_TAG, "could not append failure to result log", e)
-        }
+        append(target, COLUMNS, row, "failure")
     }
 
     /** Record one finished utterance. Failures are logged, never thrown at the UI. */
@@ -223,10 +242,6 @@ class ResultLog(context: Context) {
                 .joinToString(" ") { "${it.token}@${it.atMs}" },
         )
 
-        try {
-            target.appendText(row.joinToString(SEPARATOR) + "\n")
-        } catch (e: Exception) {
-            Log.e(LOG_TAG, "could not append to result log", e)
-        }
+        append(target, COLUMNS, row, "result")
     }
 }

@@ -360,6 +360,13 @@ image for a correct 1495-pixel file. Hash-table keys collide the same way.
 **The emulator's font screen came up blank** — CPU starvation from the speech
 recognizer's unbounded restart loop, not a rendering fault.
 
+**The recognizer's backoff gave up in ~1.2 s instead of the promised ~10 s.**
+The platform delivers ERROR twice for one failed session — visible in logcat as
+paired failures at the same millisecond — and each callback scheduled its own
+restart, so attempts doubled per round and the failure count rose twice per real
+attempt. Found by testing the give-up path on the emulator; fixed with a
+`restartScheduled` guard cleared when the next utterance actually begins.
+
 ---
 
 ## Display P3, and Dave's monitor

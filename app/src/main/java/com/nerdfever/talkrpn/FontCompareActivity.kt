@@ -62,14 +62,6 @@ private const val STROKE_CURRENT = Hp01Font.STROKE
 private const val STROKE_MEASURED = 4.26f
 
 /**
- * The lit-segment colour: the display's reddest red.
- *
- * See DisplayTestActivity for why - briefly, the real emitters peak at 655-660 nm,
- * which is outside every display gamut, and clipping to maximum saturation is the
- * closest reachable colour by a factor of two in dE2000.
- */
-
-/**
  * Wide, because all four rows share one inset and the outer two sit on much
  * shorter chords than the middle. Sizing to the worst row keeps every row the
  * same width, which is what makes them comparable.
@@ -99,6 +91,7 @@ class FontCompareActivity : ComponentActivity() {
         setContent {
             AppScaffold {
                 FontCompareScreen()
+                GlassEdgeIfEmulator()
             }
         }
     }

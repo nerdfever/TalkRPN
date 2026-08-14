@@ -1,7 +1,15 @@
 package com.nerdfever.talkrpn
 
+import android.os.Build
 import android.util.DisplayMetrics
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.dp
 
 /*
  * What every screen that draws the LED display shares.
@@ -70,4 +78,52 @@ object LedPalette {
 
     /** Outlines on controls and annunciator boxes. */
     val BORDER = Color(0xFF5A5A5A)
+
+    /** The ring marking where the round glass ends. */
+    val GLASS_EDGE = Color(0xFF5A5A5A)
+}
+
+/**
+ * Whether this is an emulator rather than a watch.
+ *
+ * The stock heuristic; there is no honest API for it. Both halves matter -
+ * the Wear images report a "generic" fingerprint and an "sdk_gwear" product.
+ */
+val IS_EMULATOR: Boolean =
+    Build.FINGERPRINT.contains("generic") || Build.PRODUCT.contains("sdk")
+
+/** Ring line width. Thin, so it reads as a boundary rather than content. */
+private val GLASS_EDGE_RING_WIDTH = 1.dp
+
+/**
+ * Marks where the round glass ends. Overlay it LAST, so it sits above content.
+ *
+ * The emulator window is square and shows the whole framebuffer, so without
+ * this there is no way to see what a round watch cuts off - a layout can look
+ * fine on the emulator and lose a digit on the wrist. Every screen shows it on
+ * the emulator, per standing instruction.
+ *
+ * The ring is drawn just INSIDE the circle, because the platform's round-screen
+ * mask composites above app content: anything painted outside it comes back
+ * black, so the boundary cannot be marked from without.
+ */
+@Composable
+fun GlassEdge() {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+
+        val radius = minOf(size.width, size.height) / 2f
+
+        drawCircle(
+            color = LedPalette.GLASS_EDGE,
+            radius = radius - GLASS_EDGE_RING_WIDTH.toPx() / 2f,
+            center = Offset(size.width / 2f, size.height / 2f),
+            style = Stroke(width = GLASS_EDGE_RING_WIDTH.toPx()),
+        )
+    }
+}
+
+/** [GlassEdge] on the emulator only - for screens that are not measuring tools. */
+@Composable
+fun GlassEdgeIfEmulator() {
+    if (IS_EMULATOR) GlassEdge()
 }

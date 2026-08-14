@@ -35,14 +35,27 @@ const val MIC_SAMPLE_RATE = 16000
 const val MIC_ENCODING = AudioFormat.ENCODING_PCM_16BIT
 const val MIC_CHANNELS = 1
 
+/** AudioRecord wants the channel count as a mask; the count above is the source. */
+private val MIC_CHANNEL_CONFIG =
+    if (MIC_CHANNELS == 1) AudioFormat.CHANNEL_IN_MONO else AudioFormat.CHANNEL_IN_STEREO
+
+/** Derived from the encoding rather than stated, so the two cannot disagree. */
+private val MIC_BYTES_PER_SAMPLE = when (MIC_ENCODING) {
+    AudioFormat.ENCODING_PCM_8BIT -> 1
+    AudioFormat.ENCODING_PCM_16BIT -> 2
+    else -> error("MIC_ENCODING has no known sample size")
+}
+
 /**
  * How much audio to hold while no recognizer is listening.
  *
- * 16 kHz x 2 bytes = 32 kB per second, so this is about two seconds - comfortably
- * more than the longest restart gap measured, and small enough that stale audio is
- * never replayed into a much later session.
+ * Comfortably more than the longest restart gap measured, and short enough that
+ * stale audio is never replayed into a much later session.
  */
-private const val BACKLOG_LIMIT_BYTES = 64 * 1024
+private const val BACKLOG_SECONDS = 2f
+
+private val BACKLOG_LIMIT_BYTES =
+    (MIC_SAMPLE_RATE * MIC_CHANNELS * MIC_BYTES_PER_SAMPLE * BACKLOG_SECONDS).toInt()
 
 /**
  * Multiple of AudioRecord's minimum buffer to request.
@@ -59,25 +72,31 @@ private const val CAPTURE_BUFFER_MULTIPLE = 4
  */
 class MicStream {
 
-    private var record: AudioRecord? = null
     private var capturing = false
 
     /** Where captured audio currently goes. Null between sessions. */
     @Volatile
     private var sink: OutputStream? = null
 
+    /**
+     * Guards every change to [sink].
+     *
+     * The capture thread reads it, writes to it, and clears it on failure; the
+     * caller's thread replaces it between sessions. Without a lock a write that
+     * fails can clear a session installed since it started, starving the new
+     * recognizer until the next restart.
+     */
+    private val sinkLock = Any()
+
     /** Audio captured while [sink] was null, replayed into the next session. */
     private val backlog = java.io.ByteArrayOutputStream()
-
-    /** Whether the microphone is actually open. */
-    val isCapturing: Boolean get() = capturing
 
     @SuppressLint("MissingPermission")
     fun start(): Boolean {
 
         if (capturing) return true
 
-        val minBuffer = AudioRecord.getMinBufferSize(MIC_SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, MIC_ENCODING)
+        val minBuffer = AudioRecord.getMinBufferSize(MIC_SAMPLE_RATE, MIC_CHANNEL_CONFIG, MIC_ENCODING)
 
         if (minBuffer <= 0) {
             Log.e(LOG_TAG, "mic: unsupported capture format")
@@ -87,7 +106,7 @@ class MicStream {
         val created = AudioRecord(
             MediaRecorder.AudioSource.VOICE_RECOGNITION,
             MIC_SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_MONO,
+            MIC_CHANNEL_CONFIG,
             MIC_ENCODING,
             minBuffer * CAPTURE_BUFFER_MULTIPLE,
         )
@@ -98,7 +117,6 @@ class MicStream {
             return false
         }
 
-        record = created
         capturing = true
         created.startRecording()
 
@@ -137,10 +155,12 @@ class MicStream {
             } else {
                 try {
                     destination.write(buffer, 0, read)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // The recognizer closed its end; stop feeding it and start
-                    // buffering again for whoever comes next.
-                    sink = null
+                    // buffering again for whoever comes next. Only if it is still
+                    // the session that failed - a new one may have been installed
+                    // while this write was in flight.
+                    synchronized(sinkLock) { if (sink === destination) sink = null }
                 }
             }
         }
@@ -175,7 +195,7 @@ class MicStream {
                 }
             }
 
-            sink = out
+            synchronized(sinkLock) { sink = out }
             pipe[0]
 
         } catch (e: Exception) {
@@ -187,8 +207,7 @@ class MicStream {
     /** Detach the current session; capture continues. */
     fun closePipe() {
 
-        val current = sink
-        sink = null
+        val current = synchronized(sinkLock) { sink.also { sink = null } }
 
         runCatching { current?.close() }
     }
@@ -198,7 +217,6 @@ class MicStream {
 
         closePipe()
         capturing = false
-        record = null
 
         synchronized(backlog) { backlog.reset() }
     }

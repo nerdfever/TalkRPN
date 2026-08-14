@@ -118,15 +118,17 @@ failed instantly and was retried immediately — **hundreds per second**, enough
 that the process could not draw its own window. The first symptom was a *font*
 screen refusing to appear.
 
-Two bounds now:
+**Backoff, with the cap doing double duty.** The delay starts at 80 ms and
+doubles per consecutive immediate failure, dropping back the moment a session
+runs for a sensible length of time — so an isolated hiccup costs nothing.
 
-- **Backoff.** The delay doubles per consecutive immediate failure, capped at
-  30 s, and drops back to 80 ms the moment a session runs for a sensible length
-  of time. An isolated hiccup costs nothing.
-- **Give up** after 8 consecutive immediate failures — about 20 s with the
-  doubling. Long enough to ride out a recognition service restarting or a locale
-  pack installing; short enough that a broken device stops burning battery.
-  `start()` clears the count, so asking again overrules the give-up.
+There is deliberately **no separate "give up after N tries" count**: once the
+next wait would exceed `RESTART_DELAY_MAX_MS`, we stop. One knob, so the two
+cannot drift into disagreeing about how long we persist. At 10 s that works out
+to seven retries over about ten seconds — long enough to ride out a recognition
+service restarting or a locale pack installing, short enough that a broken
+device stops burning battery. Ten seconds is already generous, since recognition
+runs *on* the watch and nothing here waits on a network.
 
 **The trigger is elapsed time, not the error code.** The failure that prompted
 this arrives as an ordinary `ERROR_CLIENT`, indistinguishable from faults worth
