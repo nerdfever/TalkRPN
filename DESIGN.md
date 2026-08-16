@@ -59,7 +59,9 @@ automatic mode switch converts stored values or only changes the default.
 - **`Hp01Font`'s 130 advance and 62 cell width are reconstruction figures** with
   no corroboration. `TalkRpnFont` no longer depends on either.
 - **Segment `M` is too deep** — `DESCENDER_DEPTH` is 0.753 against an x-height of
-  0.855, so tails plunge nearly as deep as their bowls are tall.
+  0.855, so tails plunge nearly as deep as their bowls are tall. Now on a live
+  knob in the display test screen; pick the depth by eye and set the font's
+  default to it.
 - **`'`, `f` and `t` are still guessed** — the Litronix chart is ambiguous there.
 
 **Deferred by decision, not open** — programs, units, integer/base mode.

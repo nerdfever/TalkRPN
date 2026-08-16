@@ -71,10 +71,9 @@ import kotlin.math.pow
 // ---------------------------------------------------------------------------
 // Tweakables.
 //
-// All physical lengths here are millimetres unless the name says otherwise.
-// Anything in device pixels carries "Px" in its name; anything in the font's own
-// coordinate system carries "Units". Mixing those three is the whole risk in this
-// file, so each is named.
+// Lengths are in the font's cell widths unless the name says otherwise.
+// Anything in device pixels carries "Px" in its name. Mixing the two is the
+// whole risk in this file, so each is named.
 // ---------------------------------------------------------------------------
 
 /**
@@ -169,16 +168,12 @@ private const val SPACING_STEP_UNITS = 0.025f
 private const val ADJUST_STEP_FRACTION = 0.05f
 
 /**
- * Slant, in degrees from vertical. The default is TalkRpnFont.SLANT_DEGREES.
- *
- * Stepped by a fixed amount rather than by a percentage: slant is the one
- * adjustment whose useful range includes zero, and a percentage step cannot move
- * away from zero or cross it. Upright is a legitimate choice here, so the control
- * has to be able to reach it and pass through.
+ * The descender knob's range, in cell widths. Wide on purpose: from a stub
+ * shallower than the stroke up to well past the authentic depth, so the whole
+ * question can be answered by eye.
  */
-private const val SLANT_STEP_DEGREES = 0.5f
-private const val SLANT_DEGREES_MIN = -6f
-private const val SLANT_DEGREES_MAX = 24f
+private const val DESCENDER_UNITS_MIN = 0.2f
+private const val DESCENDER_UNITS_MAX = 1.2f
 
 /**
  * A press must never move the layout by less than one pixel. A step that lands
@@ -448,11 +443,7 @@ private fun DisplayTestScreen() {
 
     val context = LocalContext.current
 
-    // The one conversion from physical to pixel. xdpi is what the panel reports
-    // about itself; it is approximate on some devices, which is why the readout
-    // shows only one decimal place.
     val metrics = context.resources.displayMetrics
-    val pixelsPerMm = metrics.pixelsPerMm()
 
     // The screen is round, and the layout has to know it. Taken as a circle whose
     // diameter is the narrower side.
@@ -475,9 +466,17 @@ private fun DisplayTestScreen() {
     var heightFraction by remember { mutableStateOf(fittedHeightFraction) }
 
     var vpitchUnits by remember { mutableStateOf(INITIAL_VPITCH_UNITS) }
-    var slantDegrees by remember { mutableStateOf(TalkRpnFont.SLANT_DEGREES) }
+    var descenderUnits by remember { mutableStateOf(TalkRpnFont.DESCENDER_DEPTH) }
     var sampleIndex by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(false) }
+
+    // Slant is settled at 6.0 degrees; its knob gave way to the descender's.
+    val slantDegrees = TalkRpnFont.SLANT_DEGREES
+
+    // Drive the font's live descender from this screen's state. Idempotent, so
+    // re-running on every recomposition is harmless - and every use of the
+    // font's derived heights below reads the current value.
+    TalkRpnFont.DESCENDER_DEPTH = descenderUnits
 
     // Height is now set directly, not inferred from a cell count.
     val xCellHeightPx = heightFraction * screenPx
@@ -701,13 +700,14 @@ private fun DisplayTestScreen() {
                 // Values live here rather than on the buttons: at this size a
                 // button is only wide enough for its name.
                 Text(
-                    // The ADVANCE for a full-width pair - what two full-width glyphs
-                    // sit apart at this gap, which is the widest any pair gets.
-                    // Narrow glyphs advance by less, so it is an upper bound not a grid.
-                    text = "%.1f mm  field %d  adv %.2f".format(
-                        xCellHeightPx / pixelsPerMm,
-                        FIELD_POSITIONS,
-                        TalkRpnFont.CELL_WIDTH + gapUnits
+                    // cw: what ONE CELL WIDTH - the font's unit - renders as on
+                    // this device, in dp. The size readout, since everything
+                    // else on both lines is measured in it. th: the cell's full
+                    // height in cell widths, cap plus descender - the derived
+                    // consequence of the descender knob.
+                    text = "cw %.1f dp  th %.2f".format(
+                        unitPx / metrics.density,
+                        TalkRpnFont.TOTAL_HEIGHT
                     ),
                     color = LedPalette.LABEL,
                     fontSize = TEXT_READOUT,
@@ -716,15 +716,12 @@ private fun DisplayTestScreen() {
                 )
 
                 Text(
-                    // Gap and vpitch in cell-width units, so they read against
-                    // each other and against the font's own numbers. Height stays
-                    // a screen fraction: it is the one quantity that has to be
-                    // physical.
-                    text = "g%.2f v%.2f h%.1f%% s%.1f".format(
+                    // The knobs, all in cell widths, so they read against each
+                    // other and against the font's own numbers.
+                    text = "g%.2f v%.2f d%.2f".format(
                         gapUnits,
                         vpitchUnits,
-                        heightFraction * 100f,
-                        slantDegrees
+                        descenderUnits
                     ),
                     color = LedPalette.LABEL,
                     fontSize = TEXT_READOUT,
@@ -780,14 +777,14 @@ private fun DisplayTestScreen() {
 
                     Spacer(Modifier.width(GAP_SMALL))
 
-                    SplitButton("slant", Modifier.weight(1f),
+                    SplitButton("desc", Modifier.weight(1f),
                         onIncrease = {
-                            slantDegrees = (slantDegrees + SLANT_STEP_DEGREES)
-                                .coerceAtMost(SLANT_DEGREES_MAX)
+                            descenderUnits = (descenderUnits + spacingStepUnits)
+                                .coerceAtMost(DESCENDER_UNITS_MAX)
                         },
                         onDecrease = {
-                            slantDegrees = (slantDegrees - SLANT_STEP_DEGREES)
-                                .coerceAtLeast(SLANT_DEGREES_MIN)
+                            descenderUnits = (descenderUnits - spacingStepUnits)
+                                .coerceAtLeast(DESCENDER_UNITS_MIN)
                         }
                     )
                 }
