@@ -100,11 +100,11 @@ private const val HEIGHT_FRACTION_MIN = 0.03f
 private const val HEIGHT_FRACTION_MAX = 0.25f
 
 /**
- * THE UNIT for the gap and the vpitch below: segment E/F to segment B/C - the
+ * THE UNIT for the gap and the vgap below: segment E/F to segment B/C - the
  * cell width - is 1.
  *
  * TalkRpnFont's header defines it; this is the same unit, used horizontally and
- * vertically alike, so a gap and a vpitch are directly comparable numbers. There
+ * vertically alike, so a gap and a vgap are directly comparable numbers. There
  * is no conversion between this screen and the font - both are in cell widths.
  *
  * GAP - from the LAST lit centreline of one glyph to the FIRST of the next, in
@@ -119,7 +119,7 @@ private const val HEIGHT_FRACTION_MAX = 0.25f
  * Starts at the font's own default so the two cannot drift apart. The range
  * brackets it generously - this screen exists to find the value.
  *
- * Independent of the height control: this moves spacing only. Sizing the cell to
+ * Independent of the cw control: this moves spacing only. Sizing the cell to
  * make a fixed cell count fill the row would let a tighter gap buy taller digits,
  * which is convenient and means neither control does one thing.
  */
@@ -133,32 +133,35 @@ private val GAP_UNITS_MIN = TalkRpnFont.STROKE
 private const val GAP_UNITS_MAX = 3.0f
 
 /**
- * VPITCH - vertical row-to-row distance, BASELINE TO BASELINE, in the same units.
+ * VGAP - the vertical space between rows, in the same units. The knob mirrors
+ * the font's tweakable of the same name: one row's descender-bar centreline
+ * down to the next row's cap centreline, negative meaning the bands interleave.
  *
- * Baseline to baseline rather than gap-between-rows, so that it keeps meaning the
- * same thing when adjacent rows are different sizes - which they are here, since
- * every row but X is scaled by [SMALL_ROW_SCALE]. Measured always in the X row's
- * units, so a smaller row does not bring smaller units with it.
+ * The screen spaces rows by the derived vpitch, baseline to baseline:
+ * totalHeight(dd) + vg. Baseline to baseline rather than gap-between-rows, so
+ * that it keeps meaning the same thing when adjacent rows are different sizes -
+ * which they are here, since every row but X is scaled by [SMALL_ROW_SCALE].
+ * Measured always in the X row's units, so a smaller row does not bring
+ * smaller units with it.
  *
  * A uniform GAP between unequal rows would put the baselines at unequal
- * distances, and the baselines are what the eye reads. Making the spacing uniform
- * means the gaps differ instead, which is the way round that looks even.
- *
- * Floor is the font's ink height, 2.62 units with the descenders - below that,
- * one row's descenders reach the row beneath.
+ * distances, and the baselines are what the eye reads. Making the spacing
+ * uniform means the gaps differ instead, which is the way round that looks even.
  */
-private val INITIAL_VPITCH_UNITS = TalkRpnFont.VPITCH
-/**
- * The vpitch control's range. The floor is deliberately BELOW the point where
- * rows touch (about 2.36 at the derived default height): on a measuring
- * instrument, seeing the overlap is more useful than being protected from it.
- * Zero puts every baseline in the same place.
- */
-private const val VPITCH_UNITS_MIN = 0f
-private const val VPITCH_UNITS_MAX = 4.5f
+private val INITIAL_VGAP_UNITS = TalkRpnFont.VGAP
 
 /**
- * The gap and the vpitch step by this, additively - they are lengths, not
+ * The vgap control's range, deliberately far past both touching points: ink
+ * meets ink at one stroke, like the horizontal gap, and on a measuring
+ * instrument seeing the overlap is more useful than being protected from it.
+ * The floor puts every baseline in nearly the same place (vpitch about zero,
+ * exactly zero at the font's own descender depth).
+ */
+private val VGAP_UNITS_MIN = -TalkRpnFont.TOTAL_HEIGHT
+private const val VGAP_UNITS_MAX = 2.0f
+
+/**
+ * The gap, vgap and dd knobs step by this, additively - they are lengths, not
  * proportions. A fortieth of a cell width, which is fine enough to tune with and
  * coarse enough that a press is always visible at a readable size.
  */
@@ -465,7 +468,7 @@ private fun DisplayTestScreen() {
     var gapUnits by remember { mutableStateOf(INITIAL_GAP_UNITS) }
     var heightFraction by remember { mutableStateOf(fittedHeightFraction) }
 
-    var vpitchUnits by remember { mutableStateOf(INITIAL_VPITCH_UNITS) }
+    var vgapUnits by remember { mutableStateOf(INITIAL_VGAP_UNITS) }
     var descenderUnits by remember { mutableStateOf(TalkRpnFont.DESCENDER_DEPTH) }
     var sampleIndex by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(false) }
@@ -485,12 +488,15 @@ private fun DisplayTestScreen() {
     // there is nothing to convert between them.
 
     // Pixels per cell width, always at the X row's size - that is the reference
-    // the vpitch is quoted in, so a smaller row must not redefine it.
+    // the vertical spacing is quoted in, so a smaller row must not redefine it.
     val unitPx = xCellHeightPx / TalkRpnFont.CELL_HEIGHT
 
-    val vpitchPx = vpitchUnits * unitPx
+    // The derived vertical pitch, exactly as the font derives VPITCH: the row's
+    // span at the CURRENT descender, plus the tuned gap between rows. This is
+    // what makes the dd knob carry the rows with it.
+    val vpitchPx = (TalkRpnFont.totalHeight(descenderUnits) + vgapUnits) * unitPx
 
-    // ---- Row spacing, derived from vpitch ------------------------------------
+    // ---- Row spacing, from the derived vpitch ---------------------------------
     //
     // A Column stacks canvases and separates them with gaps, but vpitch is stated
     // baseline to baseline - so each gap is vpitch minus the ink already lying
@@ -712,11 +718,12 @@ private fun DisplayTestScreen() {
                 )
 
                 Text(
-                    // The knobs, all in cell widths, so they read against each
-                    // other and against the font's own numbers.
-                    text = "g%.2f v%.2f d%.2f".format(
+                    // The knobs, all in cell widths, named as the font names
+                    // them: g DEFAULT_GAP, vg VGAP, dd DESCENDER_DEPTH - the
+                    // values here copy straight back into TalkRpnFont.
+                    text = "g%.2f vg%.2f dd%.2f".format(
                         gapUnits,
-                        vpitchUnits,
+                        vgapUnits,
                         descenderUnits
                     ),
                     color = LedPalette.LABEL,
@@ -744,7 +751,7 @@ private fun DisplayTestScreen() {
                     // that needs the gap.
                     Spacer(Modifier.width(GAP_SMALL))
 
-                    SplitButton("height", Modifier.weight(1f),
+                    SplitButton("cw", Modifier.weight(1f),
                         onIncrease = {
                             heightFraction = (heightFraction * (1f + ADJUST_STEP_FRACTION))
                                 .coerceAtMost(HEIGHT_FRACTION_MAX)
@@ -760,20 +767,20 @@ private fun DisplayTestScreen() {
 
                 Row(modifier = Modifier.fillMaxWidth()) {
 
-                    SplitButton("vpitch", Modifier.weight(1f),
+                    SplitButton("vgap", Modifier.weight(1f),
                         onIncrease = {
-                            vpitchUnits = (vpitchUnits + spacingStepUnits)
-                                .coerceAtMost(VPITCH_UNITS_MAX)
+                            vgapUnits = (vgapUnits + spacingStepUnits)
+                                .coerceAtMost(VGAP_UNITS_MAX)
                         },
                         onDecrease = {
-                            vpitchUnits = (vpitchUnits - spacingStepUnits)
-                                .coerceAtLeast(VPITCH_UNITS_MIN)
+                            vgapUnits = (vgapUnits - spacingStepUnits)
+                                .coerceAtLeast(VGAP_UNITS_MIN)
                         }
                     )
 
                     Spacer(Modifier.width(GAP_SMALL))
 
-                    SplitButton("desc", Modifier.weight(1f),
+                    SplitButton("dd", Modifier.weight(1f),
                         onIncrease = {
                             descenderUnits = (descenderUnits + spacingStepUnits)
                                 .coerceAtMost(DESCENDER_UNITS_MAX)
