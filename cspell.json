@@ -33,6 +33,7 @@
         "recompositions",
         "screencap",
         "sdcard",
+        "SEGS",
         "sharedpref",
 
         // Speech recognition
