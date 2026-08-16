@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- A watch app, and only a watch app. -->
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <!-- Flipping the wireless-debugging global setting needs this, and it is not
+         grantable from any on-device UI. It is granted exactly once, over adb,
+         while a debugging session is already up:
+
+             adb shell pm grant com.nerdfever.wdbtile android.permission.WRITE_SECURE_SETTINGS
+
+         The grant survives reboots and reinstalls. Until it is given, the tile
+         shows NO PERMIT instead of toggling. -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+
+    <application
+        android:label="WDB"
+        android:icon="@drawable/ic_wdb"
+        android:theme="@android:style/Theme.DeviceDefault">
+
+        <!-- Runs with no phone app counterpart. -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+
+        <!-- The tile: add it from the watchface carousel's tile picker. -->
+        <service
+            android:name=".WdbTileService"
+            android:label="WDB"
+            android:icon="@drawable/ic_wdb"
+            android:exported="true"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+
+            <!-- The picture the tile picker shows before the tile is added. -->
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@drawable/ic_wdb" />
+        </service>
+
+        <!-- The same toggle as a plain app, for when the launcher is closer to
+             hand than the carousel - and for driving the toggle over adb. -->
+        <activity
+            android:name=".WdbActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

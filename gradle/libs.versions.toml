@@ -15,6 +15,12 @@ composeBom = "2026.06.01"        # "Bill of materials": picks mutually-compatibl
 wearCompose = "1.6.2"            # Compose components styled and sized for round watch screens.
 wearToolingPreview = "1.0.0"     # Watch device definitions for @Preview in the IDE.
 
+# The wdbtile module only: the Tiles surface (swipe-left cards on the watchface)
+# and its layout language. Tiles talk in ListenableFuture, hence guava.
+wearTiles = "1.4.1"              # TileService - lets an app supply a tile.
+protolayout = "1.2.1"            # The layout/DSL a tile's UI is described in.
+guava = "33.3.1-android"         # Futures.immediateFuture, for TileService's return type.
+
 [libraries]
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -32,6 +38,11 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wearCompose" }
 androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wearCompose" }
 androidx-wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
+
+# Tiles, for the wdbtile module.
+androidx-wear-tiles = { group = "androidx.wear.tiles", name = "tiles", version.ref = "wearTiles" }
+androidx-wear-protolayout = { group = "androidx.wear.protolayout", name = "protolayout", version.ref = "protolayout" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 
 [plugins]
 

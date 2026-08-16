@@ -38,8 +38,12 @@ dependencyResolutionManagement {
 // The name of the whole build (shows up in Gradle output and IDE window titles).
 rootProject.name = "TalkRPN"
 
-// The one and only module: the watch app itself.
+// The modules: the watch app itself, and a tiny companion utility - a tile that
+// toggles the watch's wireless-debugging setting, so development doesn't start
+// with a scroll through Settings. Separate APK on purpose: dev tooling, not
+// part of the calculator.
 include(":app")
+include(":wdbtile")
 
 // ---------------------------------------------------------------------------
 // Keep generated output off Google Drive.
