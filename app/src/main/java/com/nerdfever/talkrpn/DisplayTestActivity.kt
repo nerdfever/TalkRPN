@@ -336,9 +336,8 @@ private const val EXPONENT_MARKERS = "eE"
 
 /**
  * Whether a sample value is a NUMBER - which the radix, grouping and exponent
- * rules apply to. Text passes through untouched: the lowercase sample taught
- * that lesson by rendering "Syntax error" as mantissa "Syntax ." with exponent
- * "rror", and by giving "pyjamas" a trailing radix.
+ * rules apply to. Text passes through untouched: "Syntax error" must keep its
+ * e and gain no trailing radix.
  */
 private fun isNumeric(value: String): Boolean =
     value.isNotEmpty() && value.all {
