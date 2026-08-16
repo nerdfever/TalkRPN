@@ -100,38 +100,94 @@ import kotlin.math.tan
 
 object TalkRpnFont {
 
-    // ---- Cell metrics, in cell units ----------------------------------------
+    // ---- Tweakables, in cell units -------------------------------------------
+    //
+    // Every value someone might plausibly want to turn, in one place. The rest
+    // of this file either derives from these or describes the segments'
+    // geometry. Each is explained in the block after the values, in this order.
 
-    /**
-     * Segment E/F to segment B/C - the left column to the right column, centre to
-     * centre. This is the unit's definition, so it is 1 by construction and must
-     * never be anything else.
-     */
     const val CELL_WIDTH = 1f
-
-    /**
-     * CAP HEIGHT - the height of a capital letter, baseline to the top of a flat
-     * cap. Here that is segment D to segment A, centreline to centreline.
-     *
-     * In a segment font every capital is exactly this tall, so it doubles as the
-     * cell's height above the baseline. Two other heights are NOT this one: the
-     * x-height, which is half of it (segment G to segment D), and [TOTAL_HEIGHT],
-     * which adds the descender below the baseline.
-     */
     const val CELL_HEIGHT = 1.710f
-
-    /**
-     * How far the descender bar hangs below the baseline.
-     *
-     * The single number controlling how deep g q y j reach: everything that
-     * depends on it - [TOTAL_HEIGHT], the descender segments, the slant's lean,
-     * the row spacing - derives from it, so one change propagates.
-     *
-     * Every drawing and measuring call also takes a descender parameter
-     * DEFAULTING to this, which is how the display test screen previews other
-     * depths without changing anything outside itself.
-     */
     const val DESCENDER_DEPTH = 0.7525f
+    const val STROKE = 0.1475f
+    const val SLANT_DEGREES = 6.0f
+    const val DEFAULT_GAP = 0.67f
+    const val SPACE_WIDTH = 0.6f
+    private const val VPITCH_OF_TOTAL_HEIGHT = 0.865f
+    const val DP_GAP_FRACTION = 0.337f
+
+    /*
+     * CELL_WIDTH - segment E/F to segment B/C: the left column to the right
+     * column, centre to centre. This is the unit's definition, so it is 1 by
+     * construction and must never be anything else.
+     *
+     * CELL_HEIGHT - the CAP HEIGHT: baseline to the top of a flat cap, which
+     * here is segment D to segment A, centreline to centreline. In a segment
+     * font every capital is exactly this tall, so it doubles as the cell's
+     * height above the baseline. Two other heights are NOT this one: the
+     * x-height, which is half of it (segment G to segment D), and TOTAL_HEIGHT,
+     * which adds the descender below the baseline.
+     *
+     * DESCENDER_DEPTH - how far the descender bar hangs below the baseline.
+     * The single number controlling how deep g q y j reach: everything that
+     * depends on it - TOTAL_HEIGHT, the descender segments, the slant's lean,
+     * the row spacing - derives from it, so one change propagates. Every
+     * drawing and measuring call also takes a descender parameter DEFAULTING
+     * to this, which is how the display test screen previews other depths
+     * without changing anything outside itself.
+     *
+     * STROKE - rendered stroke width. If this is ever re-measured off a
+     * photograph, measure the denominator CENTRE TO CENTRE, never as the outer
+     * ink width: outer width already contains one stroke, so using it
+     * understates the ratio. Centre-to-centre also makes the measurement
+     * robust, since bloom pushes outer edges out and inner edges in by the
+     * same amount and cancels exactly.
+     *
+     * SLANT_DEGREES - rightward lean, in degrees.
+     *
+     * DEFAULT_GAP - from the LAST lit centreline of one glyph to the FIRST lit
+     * centreline of the next. The layout's one horizontal knob, and a
+     * parameter on every call that lays out text - this is only its default.
+     * Named DEFAULT_GAP rather than GAP so it cannot be mistaken for the `gap`
+     * parameter it seeds: PowerShell, which mirrors this font, treats $GAP and
+     * $gap as the SAME variable.
+     *
+     *   Both ends are centrelines, like every other length in this font. That
+     *   is NOT the dark space a reader sees: each glyph's ink overhangs its
+     *   own centreline by half a stroke, so the visible dark band is
+     *   gap - STROKE. At the default, 0.67 - 0.1475 = 0.52.
+     *
+     *   Measuring centre to centre is what makes the floor fall out directly:
+     *   the two inks touch when the gap equals one stroke, so anything above
+     *   STROKE is physically legal. The slant makes it LOOK tight well before
+     *   that, because one glyph's top-right passes close to the next one's
+     *   bottom-left - but those are at different heights and never actually
+     *   touch.
+     *
+     *   Mixed-case text reads well from about 0.76 to 0.92; all caps takes
+     *   rather less. Still to be judged on the watch.
+     *
+     * SPACE_WIDTH - how wide a space is. A space is an ordinary cell that
+     * happens to have no ink, so it takes a gap on each side like any other.
+     * Nothing about it is special-cased and there is no separate notion of a
+     * word space.
+     *
+     * VPITCH_OF_TOTAL_HEIGHT - row spacing as a multiple of TOTAL_HEIGHT, so
+     * that shortening the descender closes the rows up by itself rather than
+     * needing a second edit. DELIBERATELY below INK_HEIGHT / TOTAL_HEIGHT =
+     * 1.060, the point at which one row's descenders reach into the row
+     * beneath: tuned by eye on the emulator against digit-heavy samples, where
+     * nothing descends. Rows of text with real descenders will collide at this
+     * setting - revisit when the descender depth itself is revisited.
+     *
+     * DP_GAP_FRACTION - how far across the gap the decimal point and comma
+     * sit, as a fraction of that gap. They belong to the GAP, not to the cell,
+     * which is why this is a fraction rather than an x. Give it a fixed x
+     * instead and tightening the gap leaves the dot standing inside the next
+     * character.
+     */
+
+    // ---- Derived from the tweakables -----------------------------------------
 
     /** Segment A down to the N/O bar - the cap plus the descender. */
     fun totalHeight(descender: Float = DESCENDER_DEPTH): Float = CELL_HEIGHT + descender
@@ -139,70 +195,8 @@ object TalkRpnFont {
     /** [totalHeight] at the font's own descender. */
     const val TOTAL_HEIGHT = CELL_HEIGHT + DESCENDER_DEPTH
 
-    /**
-     * Rendered stroke width, as a fraction of the cell width.
-     *
-     * If this is ever re-measured off a photograph, measure the denominator
-     * CENTRE TO CENTRE, never as the outer ink width: outer width already
-     * contains one stroke, so using it understates the ratio. Centre-to-centre
-     * also makes the measurement robust, since bloom pushes outer edges out and
-     * inner edges in by the same amount and cancels exactly.
-     */
-    const val STROKE = 0.1475f
-
-    /** Rightward lean, in degrees. */
-    const val SLANT_DEGREES = 6.0f
-
-    /**
-     * The default gap: from the LAST lit centreline of one glyph to the FIRST lit
-     * centreline of the next, in cell widths. The layout's one horizontal knob,
-     * and a parameter on every call that lays out text - this is only its default.
-     *
-     * Named DEFAULT_GAP rather than GAP so it cannot be mistaken for the `gap`
-     * parameter it seeds. PowerShell, which mirrors this font, treats $GAP and
-     * $gap as the SAME variable.
-     *
-     * Both ends are centrelines, like every other length in this font. That is
-     * NOT the dark space a reader sees: each glyph's ink overhangs its own
-     * centreline by half a stroke, so the visible dark band is gap - [STROKE].
-     * At the default, 0.67 - 0.1475 = 0.52.
-     *
-     * Measuring centre to centre is what makes the floor fall out directly: the
-     * two inks touch when the gap equals one stroke, so anything above [STROKE]
-     * is physically legal.
-     *
-     * The slant makes it LOOK tight well before that, because one glyph's
-     * top-right passes close to the next one's bottom-left - but those are at
-     * different heights and never actually touch.
-     *
-     * Mixed-case text reads well from about 0.76 to 0.92; all caps takes rather
-     * less. Still to be judged on the watch.
-     */
-    const val DEFAULT_GAP = 0.67f
-
-    /**
-     * How wide a space is, in cell widths.
-     *
-     * A space is an ordinary cell that happens to have no ink, so it takes a gap
-     * on each side like any other. Nothing about it is special-cased and there is
-     * no separate notion of a word space.
-     */
-    const val SPACE_WIDTH = 0.6f
-
     /** Top of segment A's ink to the bottom of the descender bar's ink. */
     const val INK_HEIGHT = TOTAL_HEIGHT + STROKE
-
-    /**
-     * Row spacing as a multiple of [TOTAL_HEIGHT], so that shortening the
-     * descender closes the rows up by itself rather than needing a second edit.
-     *
-     * DELIBERATELY below [INK_HEIGHT] / [TOTAL_HEIGHT] = 1.060, the point at
-     * which one row's descenders reach into the row beneath: tuned by eye on
-     * the emulator against digit-heavy samples, where nothing descends. Rows of
-     * text with real descenders will collide at this setting - revisit when the
-     * descender depth itself is revisited.
-     */
-    private const val VPITCH_OF_TOTAL_HEIGHT = 0.865f
 
     /**
      * VPITCH - vertical distance between successive rows, baseline to baseline,
@@ -215,10 +209,10 @@ object TalkRpnFont {
      */
     const val VPITCH = TOTAL_HEIGHT * VPITCH_OF_TOTAL_HEIGHT
 
+    // ---- The grid the segments hang from ------------------------------------
+
     /** Radius of the two hooks, measured on their centreline. */
     const val HOOK_R = 0.1355f
-
-    // ---- The grid the segments hang from ------------------------------------
 
     private const val X_LEFT = 0f
     private const val X_MID = CELL_WIDTH / 2f
@@ -263,16 +257,6 @@ object TalkRpnFont {
     private const val DP_DROP = 0.3263f
 
     private const val DP_Y = CELL_HEIGHT + DP_DROP
-
-    /**
-     * How far across the gap the decimal point and comma sit, as a fraction of
-     * that gap.
-     *
-     * They belong to the GAP, not to the cell - which is why this is a fraction
-     * rather than an x. Give it a fixed x instead and tightening the gap leaves
-     * the dot standing inside the next character.
-     */
-    const val DP_GAP_FRACTION = 0.337f
 
     /**
      * Where the dot goes after a glyph whose ink ends at [inkRight], at [gap].
