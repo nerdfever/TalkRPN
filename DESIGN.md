@@ -820,8 +820,9 @@ a thousandth of a pixel on the watch.
 | descender depth, below the baseline | 0.7525 |
 | full height, cap plus descender | 2.463 |
 | ink height, top of `A` to bottom of the descender bar | 2.610 |
-| `GAP` — last centreline of one glyph to the first of the next | 0.67 |
-| `VPITCH` — baseline to baseline, = 0.865 × total height | 2.13 |
+| `DEFAULT_GAP` — last centreline of one glyph to the first of the next | 0.67 |
+| `VGAP` — descender bar of one row to the cap line of the next | −0.33 |
+| `VPITCH` — baseline to baseline, = full height + `VGAP` | 2.13 |
 | `SPACE_WIDTH` — a space, ink-free | 0.6 |
 
 The payoff in reading it: since the cell is exactly 1 wide, the gap **is** the
@@ -849,15 +850,17 @@ so no code converts between them.
 
 Two floors fall out of this, both from ink rather than taste:
 
-- **gap ≥ 0.14747** — one stroke, below which neighbours overlap outright.
-  (Equivalently pitch ≥ 1.14747, when both glyphs are full width.) The slant
+- **gap ≥ 0.1475** — one stroke, below which neighbours overlap outright.
+  (Equivalently pitch ≥ 1.1475, when both glyphs are full width.) The slant
   makes it *look* tight well before that, because one cell's top-right passes
   close to the next cell's bottom-left, but those sit at different heights and
   never actually touch. All caps read well from a gap of about 0.45 to 0.80;
   mixed case wants 0.76 to 0.92.
-- **vpitch ≥ 2.61027** — the ink height, below which descenders reach the row
-  beneath. A digits-only display could go far tighter, since a seven-segment font
-  has no descenders at all, but this font has them and letters will use them.
+- **vgap ≥ 0.1475** — the same floor, one stroke, below which one row's
+  descenders overlap the caps beneath. (Equivalently vpitch ≥ 2.610, the ink
+  height.) A digits-only display can go far below it — the current tuning does,
+  at −0.33 — since a seven-segment font has no descenders at all, but this font
+  has them and letters will use them.
 
 Divergences from the DL-3422, all deliberate:
 

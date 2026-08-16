@@ -174,6 +174,18 @@ nothing. Still open: it is deep, against an x-height of half the cap.
 Chosen, not measured. The floor is the ink height, 2.61027, below which
 descenders reach the row beneath.
 
+Retuned by eye on the emulator to 2.13 on 2026-08-14, expressed then as
+`VPITCH_OF_TOTAL_HEIGHT` = 0.865, a multiple of the total height so the rows
+would follow the descender depth. On 2026-08-16 that multiplier — the last
+dimensionless knob in the font — was replaced by `VGAP` = −0.33, the
+centreline clearance between one row's descender bar and the next row's cap
+line, with `VPITCH` derived as total height + `VGAP`. Same rendered pitch
+(2.1325 against 2.1301); better scaling (a deeper descender now preserves the
+tuned clearance instead of eating 13.5% of it). Dave chose the centreline
+reference over an ink-edge one (zero = inks touch) to keep one measuring
+convention everywhere; the inks touch at `VGAP` = one stroke, exactly as
+glyphs do horizontally.
+
 ---
 
 ## The LED colour

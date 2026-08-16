@@ -113,7 +113,7 @@ object TalkRpnFont {
     const val SLANT_DEGREES = 6.0f
     const val DEFAULT_GAP = 0.67f
     const val SPACE_WIDTH = 0.6f
-    private const val VPITCH_OF_TOTAL_HEIGHT = 0.865f
+    const val VGAP = -0.33f
     const val DP_GAP_FRACTION = 0.337f
 
     /*
@@ -172,13 +172,19 @@ object TalkRpnFont {
      * Nothing about it is special-cased and there is no separate notion of a
      * word space.
      *
-     * VPITCH_OF_TOTAL_HEIGHT - row spacing as a multiple of TOTAL_HEIGHT, so
-     * that shortening the descender closes the rows up by itself rather than
-     * needing a second edit. DELIBERATELY below INK_HEIGHT / TOTAL_HEIGHT =
-     * 1.060, the point at which one row's descenders reach into the row
-     * beneath: tuned by eye on the emulator against digit-heavy samples, where
-     * nothing descends. Rows of text with real descenders will collide at this
-     * setting - revisit when the descender depth itself is revisited.
+     * VGAP - the vertical space between rows: one row's descender-bar
+     * centreline down to the next row's cap centreline. The vertical partner
+     * of DEFAULT_GAP, measured the same way - centreline to centreline - so
+     * the two inks touch when it equals STROKE, exactly as glyphs do
+     * horizontally, and anything below that overlaps. Because it is the space
+     * BETWEEN the rows' ink, changing the descender depth moves the rows
+     * apart or together by itself, keeping this clearance as tuned.
+     *
+     *   NEGATIVE on purpose: tuned by eye on the emulator against digit-heavy
+     *   samples, where nothing descends, so one row's descender band reaches
+     *   into the cap band of the next. Rows of text with real descenders will
+     *   collide at this setting - revisit when the descender depth itself is
+     *   revisited.
      *
      * DP_GAP_FRACTION - how far across the gap the decimal point and comma
      * sit, as a fraction of that gap. They belong to the GAP, not to the cell,
@@ -200,14 +206,15 @@ object TalkRpnFont {
 
     /**
      * VPITCH - vertical distance between successive rows, baseline to baseline,
-     * in cell widths.
+     * in cell widths: a row's own centreline span plus the gap to the next -
+     * the vertical twin of the horizontal pen advance, w/2 + gap + w/2.
      *
      * Baseline to baseline - segment D of one row to segment D of the next -
      * rather than gap-between-rows, so that it means the same thing when two
      * adjacent rows are different sizes. It is always measured in the units of
      * the REFERENCE row, so a half-size row does not carry half-size units.
      */
-    const val VPITCH = TOTAL_HEIGHT * VPITCH_OF_TOTAL_HEIGHT
+    const val VPITCH = TOTAL_HEIGHT + VGAP
 
     // ---- The grid the segments hang from ------------------------------------
 

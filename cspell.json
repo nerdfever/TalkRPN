@@ -57,6 +57,7 @@
         "Panamatik",
         "QDSP",
         "unsheared",
+        "vgap",
         "vpitch",
 
         // This project's own vocabulary
