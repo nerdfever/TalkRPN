@@ -106,15 +106,15 @@ object TalkRpnFont {
     // of this file either derives from these or describes the segments'
     // geometry. Each is explained in the block after the values, in this order.
 
-    const val CELL_WIDTH = 1f
-    const val CELL_HEIGHT = 1.710f
-    const val DESCENDER_DEPTH = 0.7525f
-    const val STROKE = 0.1475f
-    const val SLANT_DEGREES = 6.0f
-    const val DEFAULT_GAP = 0.67f
-    const val SPACE_WIDTH = 0.6f
-    const val VGAP = -0.33f
-    const val DP_GAP_FRACTION = 0.337f
+    const val CELL_WIDTH = 1f           // by definition; all other measures are relative to this
+    const val CELL_HEIGHT = 1.710f      // of the top 7 segments, baseline to top
+    const val DESCENDER_DEPTH = 0.7525f // how far the descender hangs below the baseline
+    const val STROKE = 0.1475f          // pen stroke width
+    const val SLANT_DEGREES = 6.0f      // rightward lean, in degrees
+    const val DEFAULT_GAP = 0.67f       // from the last lit centreline of one glyph to the first of the next
+    const val SPACE_WIDTH = 0.6f        // width of blank space (0x20)
+    const val VGAP = -0.33f             // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
+    const val DP_GAP_FRACTION = 0.337f  // how far across the gap the decimal point and comma sit, as a fraction of that gap
 
     /*
      * CELL_WIDTH - segment E/F to segment B/C: the left column to the right
@@ -473,6 +473,13 @@ object TalkRpnFont {
 
     /** How far each bar runs past its end, purely to close antialiasing seams. */
     private const val SEAM_OVERLAP = 0.0015f
+
+    /**
+     * When two endpoint coordinates count as the same point, in cell units.
+     * Generous against float noise, and far below the smallest real separation
+     * anywhere in the geometry (X_N_LEFT = 0.064).
+     */
+    private const val COINCIDENT = 0.001f
 
     /**
      * Add a polygon, wound consistently.
@@ -1134,8 +1141,8 @@ object TalkRpnFont {
 
             fun axisOf(pts: FloatArray): Char = when {
                 pts.size > 4 -> 'C'
-                abs(pts[1] - pts[3]) < 0.0005f -> 'H'
-                abs(pts[0] - pts[2]) < 0.0005f -> 'V'
+                abs(pts[1] - pts[3]) < COINCIDENT -> 'H'
+                abs(pts[0] - pts[2]) < COINCIDENT -> 'V'
                 else -> 'D'
             }
 
@@ -1149,7 +1156,7 @@ object TalkRpnFont {
             fun hasPerpPartner(x: Float, y: Float, perp: Char, self: Char): Boolean {
                 var selfSeen = false
                 for (i in 0 until axes.size) {
-                    if (abs(ends[i * 2] - x) < 0.001f && abs(ends[i * 2 + 1] - y) < 0.001f) {
+                    if (abs(ends[i * 2] - x) < COINCIDENT && abs(ends[i * 2 + 1] - y) < COINCIDENT) {
                         if (!selfSeen && axes[i] == self) { selfSeen = true; continue }
                         if (axes[i] == perp) return true
                     }
@@ -1160,7 +1167,7 @@ object TalkRpnFont {
             // The four points where a bar hands over to a corner arc: never
             // extend into an arc, it puts a bump on the hook's outer edge.
             fun hookPoint(x: Float, y: Float): Boolean {
-                val e = 0.0005f
+                val e = COINCIDENT
                 return (abs(x - X_HOOK_START) < e && abs(y) < e) ||
                     (abs(x) < e && abs(y - Y_F_TOP) < e) ||
                     (abs(x) < e && abs(y - Y_E_BOTTOM) < e) ||
