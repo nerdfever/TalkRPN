@@ -278,9 +278,9 @@ private const val FIT_SLACK_UNITS = 0.001f
  * Ink width of [n] full-width digit positions, in cell units: the cells, the
  * gaps between them, the slant's lean, and the stroke overhanging both ends.
  */
-private fun fieldUnits(n: Int, gap: Float, slantDegrees: Float): Float =
+private fun fieldUnits(n: Int, gap: Float, slantDegrees: Float, descender: Float): Float =
     n * TalkRpnFont.CELL_WIDTH + (n - 1) * gap +
-        (TalkRpnFont.shearedWidth(slantDegrees) - TalkRpnFont.CELL_WIDTH) +
+        (TalkRpnFont.shearedWidth(slantDegrees, descender) - TalkRpnFont.CELL_WIDTH) +
         TalkRpnFont.STROKE
 
 /**
@@ -300,10 +300,11 @@ private fun fieldLeftPx(
     cellHeightPx: Float,
     gapUnits: Float,
     slantDegrees: Float,
+    descenderUnits: Float,
     screenPx: Float,
     leftInRootPx: Float,
 ): Float {
-    val fieldWidthPx = fieldUnits(FIELD_POSITIONS, gapUnits, slantDegrees) *
+    val fieldWidthPx = fieldUnits(FIELD_POSITIONS, gapUnits, slantDegrees, descenderUnits) *
         (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
     return screenPx / 2f - fieldWidthPx / 2f - leftInRootPx
 }
@@ -456,7 +457,7 @@ private fun DisplayTestScreen() {
     val fittedHeightFraction = remember {
         val usablePx = screenPx - 2f * insetPx
         val fieldWidthUnits =
-            fieldUnits(FIELD_POSITIONS, INITIAL_GAP_UNITS, TalkRpnFont.SLANT_DEGREES)
+            fieldUnits(FIELD_POSITIONS, INITIAL_GAP_UNITS, TalkRpnFont.SLANT_DEGREES, TalkRpnFont.DESCENDER_DEPTH)
         (usablePx / fieldWidthUnits * TalkRpnFont.CELL_HEIGHT / screenPx)
             .coerceIn(HEIGHT_FRACTION_MIN, HEIGHT_FRACTION_MAX)
     }
@@ -472,10 +473,6 @@ private fun DisplayTestScreen() {
     // Slant is settled at 6.0 degrees; its knob gave way to the descender's.
     val slantDegrees = TalkRpnFont.SLANT_DEGREES
 
-    // Drive the font's live descender from this screen's state. Idempotent, so
-    // re-running on every recomposition is harmless - and every use of the
-    // font's derived heights below reads the current value.
-    TalkRpnFont.DESCENDER_DEPTH = descenderUnits
 
     // Height is now set directly, not inferred from a cell count.
     val xCellHeightPx = heightFraction * screenPx
@@ -504,9 +501,9 @@ private fun DisplayTestScreen() {
     // the part a single shared gap got wrong: equal gaps between unequal rows put
     // the baselines at unequal distances, which is what the eye actually reads.
 
-    val gapSmallToSmallPx = rowGapPx(vpitchPx, smallCellHeightPx, smallCellHeightPx)
-    val gapSmallToXPx = rowGapPx(vpitchPx, smallCellHeightPx, xCellHeightPx)
-    val gapXToSmallPx = rowGapPx(vpitchPx, xCellHeightPx, smallCellHeightPx)
+    val gapSmallToSmallPx = rowGapPx(vpitchPx, smallCellHeightPx, smallCellHeightPx, descenderUnits)
+    val gapSmallToXPx = rowGapPx(vpitchPx, smallCellHeightPx, xCellHeightPx, descenderUnits)
+    val gapXToSmallPx = rowGapPx(vpitchPx, xCellHeightPx, smallCellHeightPx, descenderUnits)
 
     // ---- Put X's MIDDLE BAR on the screen's diameter --------------------------
     //
@@ -525,7 +522,7 @@ private fun DisplayTestScreen() {
     // an upward offset on the rows below it, so the sum is what counts. Canvas
     // heights repeat the rounding in canvasHeightDp; being a pixel off here
     // moves the chord by nothing measurable.
-    val smallCanvasPx = ceil(inkHeightPx(smallCellHeightPx)) + 1f
+    val smallCanvasPx = ceil(inkHeightPx(smallCellHeightPx, descenderUnits)) + 1f
     val aboveXPx = UPPER_REGISTERS.size * smallCanvasPx +
         (UPPER_REGISTERS.size - 1) * gapSmallToSmallPx +
         gapSmallToXPx
@@ -602,7 +599,7 @@ private fun DisplayTestScreen() {
                 RegisterRow(
                     name, samples[name].orEmpty(), smallCellHeightPx, gapUnits,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
-                    Modifier.offset(y = pxToDp(overlapPx, metrics.density))
+                    descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
 
                 // The last of these sits above X, which is taller, so it needs a
@@ -624,13 +621,13 @@ private fun DisplayTestScreen() {
                 modifier = Modifier
                     .offset(y = pxToDp(overlapPx, metrics.density))
                     .fillMaxWidth()
-                    .height(canvasHeightDp(xCellHeightPx, metrics.density))
+                    .height(canvasHeightDp(xCellHeightPx, metrics.density, descenderUnits))
                     .onGloballyPositioned { xLeftInRootPx = it.positionInRoot().x }
             ) {
                 drawRegister(
                     samples["X"].orEmpty(), xCellHeightPx, gapUnits, LedPalette.LIT,
-                    fieldLeftPx(xCellHeightPx, gapUnits, slantDegrees, screenPx, xLeftInRootPx),
-                    slantDegrees
+                    fieldLeftPx(xCellHeightPx, gapUnits, slantDegrees, descenderUnits, screenPx, xLeftInRootPx),
+                    slantDegrees, descenderUnits
                 )
             }
 
@@ -644,7 +641,7 @@ private fun DisplayTestScreen() {
                 RegisterRow(
                     name, samples[name].orEmpty(), smallCellHeightPx, gapUnits,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
-                    Modifier.offset(y = pxToDp(overlapPx, metrics.density))
+                    descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
 
                 // The trailing one has no row beneath it - it is just the padding
@@ -706,7 +703,7 @@ private fun DisplayTestScreen() {
                     // consequence of the descender knob.
                     text = "cw %.1f dp  th %.2f".format(
                         unitPx / metrics.density,
-                        TalkRpnFont.TOTAL_HEIGHT
+                        TalkRpnFont.totalHeight(descenderUnits)
                     ),
                     color = LedPalette.LABEL,
                     fontSize = TEXT_READOUT,
@@ -815,6 +812,7 @@ private fun RegisterRow(
     screenPx: Float,
     fieldShiftPx: Float,
     slantDegrees: Float,
+    descenderUnits: Float,
     modifier: Modifier = Modifier,
 ) {
     // Where this row sits horizontally, so the screen's axis can be found in
@@ -825,7 +823,7 @@ private fun RegisterRow(
     // widest label block, so LABEL PLUS FIELD is the centred unit. The same
     // shift for every small row keeps their fields aligned with each other.
     val rowFieldLeftPx =
-        fieldLeftPx(cellHeightPx, gapUnits, slantDegrees, screenPx, leftInRootPx) + fieldShiftPx
+        fieldLeftPx(cellHeightPx, gapUnits, slantDegrees, descenderUnits, screenPx, leftInRootPx) + fieldShiftPx
 
     Box(
         modifier = modifier
@@ -836,9 +834,9 @@ private fun RegisterRow(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(canvasHeightDp(cellHeightPx, density))
+                .height(canvasHeightDp(cellHeightPx, density, descenderUnits))
         ) {
-            drawRegister(value, cellHeightPx, gapUnits, color, rowFieldLeftPx, slantDegrees)
+            drawRegister(value, cellHeightPx, gapUnits, color, rowFieldLeftPx, slantDegrees, descenderUnits)
         }
 
         // The label sits just LEFT of the field, right-justified against the
@@ -971,14 +969,15 @@ private fun DrawScope.drawRegister(
     gapUnits: Float,
     color: Color,
     fieldLeftPx: Float,
-    slantDegrees: Float
+    slantDegrees: Float,
+    descenderUnits: Float,
 ) {
     if (value.isEmpty() || cellHeightPx <= 0f) return
 
     val scale = cellHeightPx / TalkRpnFont.CELL_HEIGHT
 
     // The ink width of a run of n full-width digit positions, at this row's size.
-    fun positionsPx(n: Int): Float = fieldUnits(n, gapUnits, slantDegrees) * scale
+    fun positionsPx(n: Int): Float = fieldUnits(n, gapUnits, slantDegrees, descenderUnits) * scale
 
     // THE FIELD: position 1 at [fieldLeftPx], the caller having centred it.
     val fieldRightPx = fieldLeftPx + positionsPx(FIELD_POSITIONS)
@@ -1001,12 +1000,12 @@ private fun DrawScope.drawRegister(
     // costs no position, and may poke past the field into the darkness.
     val mantissaMaxUnits = fieldUnits(
         if (exponent.isEmpty()) FIELD_POSITIONS else FIELD_POSITIONS - EXPONENT_FIELD_POSITIONS,
-        gapUnits, slantDegrees
+        gapUnits, slantDegrees, descenderUnits
     )
 
     fun fits(text: String): Boolean {
         val counted = text.trimEnd(RADIX, GROUP_SEPARATOR)
-        return TalkRpnFont.measureWidth(counted, TalkRpnFont.CELL_HEIGHT, gapUnits, slantDegrees) <=
+        return TalkRpnFont.measureWidth(counted, TalkRpnFont.CELL_HEIGHT, gapUnits, slantDegrees, descenderUnits) <=
             mantissaMaxUnits + FIT_SLACK_UNITS
     }
 
@@ -1030,7 +1029,7 @@ private fun DrawScope.drawRegister(
         }
 
         if (exponent.isNotEmpty()) {
-            val exponentInkPx = measureWidth(exponent, cellHeightPx, gapUnits, slantDegrees)
+            val exponentInkPx = measureWidth(exponent, cellHeightPx, gapUnits, slantDegrees, descenderUnits)
             drawTalkRpnText(
                 text = exponent,
                 inkOrigin = Offset(fieldRightPx - exponentInkPx, 0f),
@@ -1147,38 +1146,21 @@ private fun pxToDp(px: Float, density: Float) = (px / density).dp
  * D's centreline - therefore sits the descender depth plus half a stroke above
  * the bottom. Scales with the row, hence the argument.
  */
-private fun baselineToBottomPx(cellHeightPx: Float) =
-    cellHeightPx * (TalkRpnFont.TOTAL_HEIGHT - TalkRpnFont.CELL_HEIGHT + TalkRpnFont.STROKE / 2f) /
+private fun baselineToBottomPx(cellHeightPx: Float, descenderUnits: Float) =
+    cellHeightPx * (descenderUnits + TalkRpnFont.STROKE / 2f) /
         TalkRpnFont.CELL_HEIGHT
 
-/** Ink from the canvas top down to the baseline: headroom plus the cap height. */
-private fun baselineFromTopPx(cellHeightPx: Float) =
-    cellHeightPx * (1f + TalkRpnFont.STROKE / 2f / TalkRpnFont.CELL_HEIGHT)
-
 /** The full ink height of a row's canvas, for chord limits and canvas sizing. */
-private fun inkHeightPx(cellHeightPx: Float) =
-    cellHeightPx * (TalkRpnFont.TOTAL_HEIGHT + TalkRpnFont.STROKE) / TalkRpnFont.CELL_HEIGHT
+private fun inkHeightPx(cellHeightPx: Float, descenderUnits: Float) =
+    cellHeightPx * (TalkRpnFont.totalHeight(descenderUnits) + TalkRpnFont.STROKE) / TalkRpnFont.CELL_HEIGHT
 
 /**
  * The Column gap that leaves two stacked rows exactly [vpitchPx] apart, baseline
  * to baseline. Depends on both rows, because they may be different sizes.
  */
-private fun rowGapPx(vpitchPx: Float, abovePx: Float, belowPx: Float) =
-    vpitchPx - baselineToBottomPx(abovePx) - (belowPx - baselineToBottomPx(belowPx))
-
-/**
- * The tightest vpitch that keeps every gap in the column at zero or more - that
- * is, the point at which rows start to touch.
- *
- * Checked across all three junctions rather than assumed, since which one binds
- * depends on [SMALL_ROW_SCALE]. It is the small-above-X junction as things stand,
- * because that is where the row below is tallest.
- */
-private fun minVpitchPx(smallPx: Float, xPx: Float) = maxOf(
-    baselineToBottomPx(smallPx) + baselineFromTopPx(smallPx),
-    baselineToBottomPx(smallPx) + baselineFromTopPx(xPx),
-    baselineToBottomPx(xPx) + baselineFromTopPx(smallPx)
-)
+private fun rowGapPx(vpitchPx: Float, abovePx: Float, belowPx: Float, descenderUnits: Float) =
+    vpitchPx - baselineToBottomPx(abovePx, descenderUnits) -
+        (belowPx - baselineToBottomPx(belowPx, descenderUnits))
 
 /**
  * Dp for a Canvas that must be at least [px] tall.
@@ -1192,5 +1174,6 @@ private fun minVpitchPx(smallPx: Float, xPx: Float) = maxOf(
  *
  * Rounding up costs a pixel of layout and removes the failure mode entirely.
  */
-private fun canvasHeightDp(px: Float, density: Float) = ((ceil(inkHeightPx(px)) + 1f) / density).dp
+private fun canvasHeightDp(px: Float, density: Float, descenderUnits: Float) =
+    ((ceil(inkHeightPx(px, descenderUnits)) + 1f) / density).dp
 

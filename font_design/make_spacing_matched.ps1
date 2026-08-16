@@ -71,7 +71,9 @@ function Get-GlyphExtents($names) {
 
     foreach ($n in $names) {
 
-        if (($n -eq "DP") -or ($n -eq "COMMA")) { continue }
+        # The gap-dwellers live outside the glyph, and a DESCENDER tucks under
+        # its neighbour rather than pushing it away - neither counts as width.
+        if (("DP", "COMMA", "M", "N", "O") -contains $n) { continue }
 
         $xs = @()
 

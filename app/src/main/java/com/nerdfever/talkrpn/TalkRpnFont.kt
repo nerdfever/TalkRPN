@@ -123,18 +123,21 @@ object TalkRpnFont {
     /**
      * How far the descender bar hangs below the baseline.
      *
-     * The single number controlling how deep g q y j reach: change it and
-     * [TOTAL_HEIGHT], the descender segments, the slant's lean and the row
-     * spacing all follow - every dependent below is derived per access, so one
-     * change propagates.
+     * The single number controlling how deep g q y j reach: everything that
+     * depends on it - [TOTAL_HEIGHT], the descender segments, the slant's lean,
+     * the row spacing - derives from it, so one change propagates.
      *
-     * A var, not a const, because the display test screen drives it live while
-     * its depth is still being judged. The calculator itself never writes it.
+     * Every drawing and measuring call also takes a descender parameter
+     * DEFAULTING to this, which is how the display test screen previews other
+     * depths without changing anything outside itself.
      */
-    var DESCENDER_DEPTH = 0.7525f
+    const val DESCENDER_DEPTH = 0.7525f
 
     /** Segment A down to the N/O bar - the cap plus the descender. */
-    val TOTAL_HEIGHT: Float get() = CELL_HEIGHT + DESCENDER_DEPTH
+    fun totalHeight(descender: Float = DESCENDER_DEPTH): Float = CELL_HEIGHT + descender
+
+    /** [totalHeight] at the font's own descender. */
+    const val TOTAL_HEIGHT = CELL_HEIGHT + DESCENDER_DEPTH
 
     /**
      * Rendered stroke width, as a fraction of the cell width.
@@ -187,7 +190,7 @@ object TalkRpnFont {
     const val SPACE_WIDTH = 0.6f
 
     /** Top of segment A's ink to the bottom of the descender bar's ink. */
-    val INK_HEIGHT: Float get() = TOTAL_HEIGHT + STROKE
+    const val INK_HEIGHT = TOTAL_HEIGHT + STROKE
 
     /**
      * Row spacing as a multiple of [TOTAL_HEIGHT], so that shortening the
@@ -210,7 +213,7 @@ object TalkRpnFont {
      * adjacent rows are different sizes. It is always measured in the units of
      * the REFERENCE row, so a half-size row does not carry half-size units.
      */
-    val VPITCH: Float get() = TOTAL_HEIGHT * VPITCH_OF_TOTAL_HEIGHT
+    const val VPITCH = TOTAL_HEIGHT * VPITCH_OF_TOTAL_HEIGHT
 
     /** Radius of the two hooks, measured on their centreline. */
     const val HOOK_R = 0.1355f
@@ -224,7 +227,7 @@ object TalkRpnFont {
     private const val Y_TOP = 0f
     private const val Y_MID = CELL_HEIGHT / 2f
     private const val Y_BASE = CELL_HEIGHT
-    private val Y_DESC: Float get() = TOTAL_HEIGHT
+    private const val Y_DESC = TOTAL_HEIGHT
 
     /** Where the top hook lands on the left column, and where the bottom one leaves it. */
     private const val Y_F_TOP = HOOK_R
@@ -294,10 +297,10 @@ object TalkRpnFont {
     private val SHEAR = tan(Math.toRadians(SLANT_DEGREES.toDouble())).toFloat()
 
     /** Added to every x so a slanted cell still starts at x = 0. */
-    private val SHEAR_OFFSET: Float get() = SHEAR * TOTAL_HEIGHT
+    private val SHEAR_OFFSET = SHEAR * TOTAL_HEIGHT
 
     /** Ink width of one slanted cell, before stroke is added. */
-    val SHEARED_WIDTH: Float get() = CELL_WIDTH + SHEAR_OFFSET
+    val SHEARED_WIDTH = CELL_WIDTH + SHEAR_OFFSET
 
     /** Maps an upright cell coordinate to its slanted x. */
     private fun sx(x: Float, y: Float) = x - SHEAR * y + SHEAR_OFFSET
@@ -348,7 +351,7 @@ object TalkRpnFont {
      * overhangs it by STROKE/2 all round - that is expected, and seeing by how
      * much is part of the point.
      */
-    val CELL_OUTLINE: Path get() = path {
+    val CELL_OUTLINE: Path = path {
         moveToSlanted(X_LEFT, Y_TOP)
         lineToSlanted(X_RIGHT, Y_TOP)
         lineToSlanted(X_RIGHT, Y_DESC)
@@ -357,7 +360,7 @@ object TalkRpnFont {
     }
 
     /** Where the baseline sits inside those bounds - the descender hangs below. */
-    val CELL_BASELINE: Path get() = path {
+    val CELL_BASELINE: Path = path {
         moveToSlanted(X_LEFT, Y_BASE)
         lineToSlanted(X_RIGHT, Y_BASE)
     }
@@ -648,7 +651,7 @@ object TalkRpnFont {
     private const val ANGLE_DOWN = (Math.PI / 2).toFloat()
     private const val ANGLE_LEFT = Math.PI.toFloat()
 
-    private fun buildCentrelines(): Map<Seg, FloatArray> = mapOf(
+    private fun buildCentrelines(descender: Float): Map<Seg, FloatArray> = mapOf(
 
         // Top bar, and the two ways to finish its left corner.
         Seg.A1 to line(X_MID, Y_TOP, X_HOOK_START, Y_TOP),
@@ -728,28 +731,27 @@ object TalkRpnFont {
             DOT_AXIS_X - COMMA_TAIL_LEFT, COL2_Y + COMMA_TAIL_DROP
         ),
 
-        // Descender.
-        Seg.M to line(X_MID, Y_BASE, X_MID, Y_DESC),
-        Seg.N to line(X_N_LEFT, Y_DESC, X_MID, Y_DESC),
-        Seg.O to line(X_MID, Y_DESC, X_O_RIGHT, Y_DESC),
+        // Descender, at the depth asked for.
+        Seg.M to line(X_MID, Y_BASE, X_MID, CELL_HEIGHT + descender),
+        Seg.N to line(X_N_LEFT, CELL_HEIGHT + descender, X_MID, CELL_HEIGHT + descender),
+        Seg.O to line(X_MID, CELL_HEIGHT + descender, X_O_RIGHT, CELL_HEIGHT + descender),
     )
 
     /**
      * [buildCentrelines], cached against the descender depth it was built for,
-     * so the live descender control costs one rebuild per change rather than
-     * one per cell per frame.
+     * so the display test screen's live descender control costs one rebuild per
+     * change rather than one per cell per frame.
      */
     private var centrelinesBuiltFor = Float.NaN
     private var centrelinesCache: Map<Seg, FloatArray> = emptyMap()
 
-    private val CENTRELINES: Map<Seg, FloatArray>
-        get() {
-            if (centrelinesBuiltFor != DESCENDER_DEPTH) {
-                centrelinesCache = buildCentrelines()
-                centrelinesBuiltFor = DESCENDER_DEPTH
-            }
-            return centrelinesCache
+    private fun centrelines(descender: Float): Map<Seg, FloatArray> {
+        if (centrelinesBuiltFor != descender) {
+            centrelinesCache = buildCentrelines(descender)
+            centrelinesBuiltFor = descender
         }
+        return centrelinesCache
+    }
 
     /**
      * The colon dots, which sit on the cell's own axis.
@@ -767,7 +769,7 @@ object TalkRpnFont {
      * The shear matrix for a slant - one small allocation per cell per frame,
      * which is nothing next to the path work.
      */
-    private fun shearMatrixFor(slantDegrees: Float): Matrix {
+    private fun shearMatrixFor(slantDegrees: Float, descender: Float): Matrix {
 
         val shear = tan(Math.toRadians(slantDegrees.toDouble())).toFloat()
 
@@ -778,13 +780,16 @@ object TalkRpnFont {
             // which renders as a cell sheared the wrong way and shifted out of
             // its own bounds.
             values[Matrix.SkewX] = -shear
-            values[Matrix.TranslateX] = shear * TOTAL_HEIGHT
+            values[Matrix.TranslateX] = shear * totalHeight(descender)
         }
     }
 
     /** Ink width of one slanted cell at an arbitrary slant, in cell units. */
-    fun shearedWidth(slantDegrees: Float = SLANT_DEGREES): Float =
-        CELL_WIDTH + tan(Math.toRadians(slantDegrees.toDouble())).toFloat() * TOTAL_HEIGHT
+    fun shearedWidth(
+        slantDegrees: Float = SLANT_DEGREES,
+        descender: Float = DESCENDER_DEPTH,
+    ): Float =
+        CELL_WIDTH + tan(Math.toRadians(slantDegrees.toDouble())).toFloat() * totalHeight(descender)
 
     // ---- Text layout ---------------------------------------------------------
     //
@@ -856,6 +861,9 @@ object TalkRpnFont {
     /** The two elements that belong to the gap rather than to the glyph. */
     private val GAP_DWELLERS = Seg.DP.bit or Seg.COMMA.bit
 
+    /** The segments below the baseline, which spacing must not count. */
+    private val DESCENDER_SEGS = Seg.M.bit or Seg.N.bit or Seg.O.bit
+
     /** The text as cells, with '.' and ',' merged into their predecessors. */
     fun textCells(text: String): List<TextCell> {
 
@@ -903,6 +911,10 @@ object TalkRpnFont {
      * carrying one measure a third of a gap wider than it sets, and would push
      * the next glyph away from a dot that is supposed to nestle beside it.
      *
+     * The DESCENDER segments are excluded too: a tail tucks under its neighbour
+     * rather than pushing it away. Counting them opened a hole between q and u,
+     * because q's tail flag reaches nearly a whole cell right of its bowl.
+     *
      * Null when nothing is lit - a space, or a character with no glyph.
      */
     fun inkExtentOf(mask: Long): InkExtent? {
@@ -911,10 +923,12 @@ object TalkRpnFont {
         var right = Float.NEGATIVE_INFINITY
 
         // Every lit centreline's points. Bars carry two, curves carry many; the
-        // extreme is always at a sampled point either way.
-        for ((seg, pts) in CENTRELINES) {
+        // extreme is always at a sampled point either way. The descender depth
+        // does not matter here - only x is read, and no descender is counted.
+        for ((seg, pts) in centrelines(DESCENDER_DEPTH)) {
 
             if (mask and seg.bit == 0L) continue
+            if (seg.bit and DESCENDER_SEGS != 0L) continue
 
             var i = 0
             while (i < pts.size) {
@@ -1011,7 +1025,8 @@ object TalkRpnFont {
         text: String,
         cellHeight: Float,
         gap: Float = DEFAULT_GAP,
-        slantDegrees: Float = SLANT_DEGREES
+        slantDegrees: Float = SLANT_DEGREES,
+        descender: Float = DESCENDER_DEPTH,
     ): Float {
 
         val cells = layout(text, gap)
@@ -1033,7 +1048,7 @@ object TalkRpnFont {
 
         // The slant leans the top of the ink rightward by the full shear offset;
         // the stroke overhangs half a width at each end.
-        val units = rightmost + (shearedWidth(slantDegrees) - CELL_WIDTH) + STROKE
+        val units = rightmost + (shearedWidth(slantDegrees, descender) - CELL_WIDTH) + STROKE
 
         return units * cellHeight / CELL_HEIGHT
     }
@@ -1053,7 +1068,8 @@ object TalkRpnFont {
         color: Color,
         gap: Float = DEFAULT_GAP,
         slantDegrees: Float = SLANT_DEGREES,
-        strokeWidth: Float = STROKE
+        strokeWidth: Float = STROKE,
+        descender: Float = DESCENDER_DEPTH,
     ) {
         val scale = cellHeight / CELL_HEIGHT
 
@@ -1069,7 +1085,8 @@ object TalkRpnFont {
                 color = color,
                 strokeWidth = strokeWidth,
                 dpX = cell.dpXUnits,
-                slantDegrees = slantDegrees
+                slantDegrees = slantDegrees,
+                descender = descender,
             )
         }
     }
@@ -1092,7 +1109,8 @@ object TalkRpnFont {
         color: Color,
         strokeWidth: Float = STROKE,
         dpX: Float = dpXAfter(CELL_WIDTH, DEFAULT_GAP),
-        slantDegrees: Float = SLANT_DEGREES
+        slantDegrees: Float = SLANT_DEGREES,
+        descender: Float = DESCENDER_DEPTH,
     ) {
         if (mask == 0L) return
 
@@ -1130,7 +1148,7 @@ object TalkRpnFont {
                 else -> 'D'
             }
 
-            for ((seg, pts) in CENTRELINES) {
+            for ((seg, pts) in centrelines(descender)) {
                 if (mask and seg.bit == 0L) continue
                 val ax = axisOf(pts)
                 ends.add(pts[0]); ends.add(pts[1]); axes.add(ax)
@@ -1161,7 +1179,7 @@ object TalkRpnFont {
             fun barExtend(x: Float, y: Float, self: Char, perp: Char): Boolean =
                 !hookPoint(x, y) && hasPerpPartner(x, y, perp, self)
 
-            for ((seg, pts) in CENTRELINES) {
+            for ((seg, pts) in centrelines(descender)) {
 
                 if (mask and seg.bit == 0L) continue
 
@@ -1254,7 +1272,7 @@ object TalkRpnFont {
 
                 // Filled INSIDE the shear, so the whole outline leans together.
                 canvas.save()
-                canvas.concat(shearMatrixFor(slantDegrees))
+                canvas.concat(shearMatrixFor(slantDegrees, descender))
                 canvas.drawPath(lit, paint)
                 canvas.restore()
             }
