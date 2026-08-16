@@ -1024,7 +1024,8 @@ private fun DrawScope.drawRegister(
                 cellHeight = cellHeightPx,
                 color = color,
                 gap = gapUnits,
-                slantDegrees = slantDegrees
+                slantDegrees = slantDegrees,
+                descender = descenderUnits
             )
         }
 
@@ -1036,7 +1037,8 @@ private fun DrawScope.drawRegister(
                 cellHeight = cellHeightPx,
                 color = color,
                 gap = gapUnits,
-                slantDegrees = slantDegrees
+                slantDegrees = slantDegrees,
+                descender = descenderUnits
             )
         }
     }
