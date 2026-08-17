@@ -119,7 +119,7 @@ private const val HEIGHT_FRACTION_MAX = 0.25f
  * Starts at the font's own default so the two cannot drift apart. The range
  * brackets it generously - this screen exists to find the value.
  *
- * Independent of the cw control: this moves spacing only. Sizing the cell to
+ * Independent of the hf control: this moves spacing only. Sizing the cell to
  * make a fixed cell count fill the row would let a tighter gap buy taller digits,
  * which is convenient and means neither control does one thing.
  */
@@ -702,22 +702,6 @@ private fun DisplayTestScreen() {
                 // Values live here rather than on the buttons: at this size a
                 // button is only wide enough for its name.
                 Text(
-                    // cw: what ONE CELL WIDTH - the font's unit - renders as on
-                    // this device, in dp. The size readout, since everything
-                    // else on both lines is measured in it. th: the cell's full
-                    // height in cell widths, cap plus descender - the derived
-                    // consequence of the descender knob.
-                    text = "cw %.1f dp  th %.2f".format(
-                        unitPx / metrics.density,
-                        TalkRpnFont.totalHeight(descenderUnits)
-                    ),
-                    color = LedPalette.LABEL,
-                    fontSize = TEXT_READOUT,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Text(
                     // The knobs, all in cell widths, named as the font names
                     // them: g DEFAULT_GAP, vg VGAP, dd DESCENDER_DEPTH - the
                     // values here copy straight back into TalkRpnFont.
@@ -751,7 +735,10 @@ private fun DisplayTestScreen() {
                     // that needs the gap.
                     Spacer(Modifier.width(GAP_SMALL))
 
-                    SplitButton("cw", Modifier.weight(1f),
+                    // hf tunes heightFraction, the one knob that is not font
+                    // geometry: how large the whole display renders, as X's cap
+                    // height in fractions of the screen diameter.
+                    SplitButton("hf", Modifier.weight(1f),
                         onIncrease = {
                             heightFraction = (heightFraction * (1f + ADJUST_STEP_FRACTION))
                                 .coerceAtMost(HEIGHT_FRACTION_MAX)
