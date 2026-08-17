@@ -17,3 +17,9 @@ gradlew.bat text eol=crlf
 *.png binary
 *.jks binary
 *.keystore binary
+
+# PDFs are binary even when they contain no binary bytes: their xref tables
+# index absolute byte offsets, so translating line endings corrupts them.
+# The scanned datasheets dodge auto-detection by containing binary streams;
+# the hand-assembled reference sheets do not, hence the explicit rule.
+*.pdf binary
