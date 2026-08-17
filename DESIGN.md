@@ -820,8 +820,8 @@ a thousandth of a pixel on the watch.
 | full height, cap plus descender | 2.335 |
 | ink height, top of `A` to bottom of the descender bar | 2.483 |
 | `DEFAULT_GAP` — last centreline of one glyph to the first of the next | 1.0 |
-| `VGAP` — descender bar of one row to the cap line of the next | 1.0 |
-| `VPITCH` — baseline to baseline, = full height + `VGAP` | 3.34 |
+| `VGAP` — descender bar of one row to the cap line of the next | 0.78 |
+| `VPITCH` — baseline to baseline, = full height + `VGAP` | 3.12 |
 | `SPACE_WIDTH` — a space, ink-free | 0.6 |
 
 The payoff in reading it: since the cell is exactly 1 wide, the gap **is** the
@@ -859,7 +859,7 @@ Two floors fall out of this, both from ink rather than taste:
   descenders overlap the caps beneath. (Equivalently vpitch ≥ 2.483, the ink
   height.) A digits-only display can go far below it, since a seven-segment
   font has no descenders at all, but this font has them and letters will use
-  them; the current tuning sits at 1.0, comfortably clear.
+  them; the current tuning sits at 0.78, comfortably clear.
 
 Divergences from the DL-3422, all deliberate:
 

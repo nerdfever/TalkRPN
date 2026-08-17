@@ -32,6 +32,15 @@ private const val COLOUR_ON = 0xFFFF0000.toInt()
 /** The unlit state: the grey of the calculator's labels. */
 private const val COLOUR_OFF = 0xFF8A8A8A.toInt()
 
+/** The wedged state: the dot font's neon orange - alarming, and not red. */
+private const val COLOUR_WEDGED = 0xFFFF5F1F.toInt()
+
+/**
+ * How often the system is asked to refresh the tile unprompted, so a wedged
+ * adbd stops showing as ON within a refresh. Advisory - the system may batch.
+ */
+private const val FRESHNESS_MS = 5_000L
+
 /** Text sizes, in sp. */
 private const val TITLE_SP = 24f
 private const val STATE_SP = 40f
@@ -59,16 +68,18 @@ class WdbTileService : TileService() {
         var denied = false
         if (tapped) denied = !wdbSet(this, !wdbIsOn(this))
 
-        // Draw whatever is now true.
+        // Draw whatever is now true - and re-check on a timer even untapped,
+        // so a wedged adbd stops masquerading as ON at the next refresh.
         val tile = TileBuilders.Tile.Builder()
             .setResourcesVersion(RESOURCES_VERSION)
+            .setFreshnessIntervalMillis(FRESHNESS_MS)
             .setTileTimeline(
                 TimelineBuilders.Timeline.Builder()
                     .addTimelineEntry(
                         TimelineBuilders.TimelineEntry.Builder()
                             .setLayout(
                                 LayoutElementBuilders.Layout.Builder()
-                                    .setRoot(layout(wdbIsOn(this), denied))
+                                    .setRoot(layout(wdbState(this), wdbLivePort(), denied))
                                     .build()
                             )
                             .build()
@@ -87,8 +98,12 @@ class WdbTileService : TileService() {
             ResourceBuilders.Resources.Builder().setVersion(RESOURCES_VERSION).build()
         )
 
-    /** The whole face: a tappable box holding a title and the state. */
-    private fun layout(on: Boolean, denied: Boolean): LayoutElementBuilders.LayoutElement {
+    /** The whole face: a tappable box holding a title and the truth. */
+    private fun layout(
+        state: WdbState,
+        livePort: Int,
+        denied: Boolean,
+    ): LayoutElementBuilders.LayoutElement {
 
         // Tapping the box reloads the tile with TOGGLE_ID attached - see above.
         val tapToToggle = ModifiersBuilders.Modifiers.Builder()
@@ -100,9 +115,18 @@ class WdbTileService : TileService() {
             )
             .build()
 
-        // What to say, and in which colour.
-        val stateText = if (denied) "NO PERMIT" else if (on) "ON" else "OFF"
-        val stateColour = if (on && !denied) COLOUR_ON else COLOUR_OFF
+        // What to say, and in which colour. ON is only claimed when adbd is
+        // really listening; a wedged service says so instead.
+        val stateText = when {
+            denied -> "NO PERMIT"
+            else -> state.name
+        }
+        val stateColour = when {
+            denied -> COLOUR_OFF
+            state == WdbState.ON -> COLOUR_ON
+            state == WdbState.WEDGED -> COLOUR_WEDGED
+            else -> COLOUR_OFF
+        }
 
         val column = LayoutElementBuilders.Column.Builder()
             .addContent(text("WDB", TITLE_SP, COLOUR_OFF))
@@ -110,6 +134,16 @@ class WdbTileService : TileService() {
             .apply {
                 // The grant is a PC-side act, so say so on the watch.
                 if (denied) addContent(text("grant via adb", HINT_SP, COLOUR_OFF))
+
+                // Proof of life: the port adbd is listening on.
+                if (!denied && state == WdbState.ON) {
+                    addContent(text(":$livePort", HINT_SP, COLOUR_ON))
+                }
+
+                // The revival ritual: off, then on again.
+                if (!denied && state == WdbState.WEDGED) {
+                    addContent(text("tap twice to revive", HINT_SP, COLOUR_OFF))
+                }
             }
             .build()
 

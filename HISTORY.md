@@ -244,7 +244,9 @@ values; the figures themselves are NOT drawn to their callouts.
 
 With the row-spacing bug fixed and the field boxes visible, Dave settled a
 round of display defaults on the emulator: segment `DEFAULT_GAP` 0.67 → 1.0,
-`VGAP` −0.33 → 1.0 (the first tuning made with honest spacing), dot font
+`VGAP` −0.33 → 1.0 (the first tuning made with honest spacing; later the same
+day, on the real watch, eased to 0.78 - what just fits all of register T on
+the glass), dot font
 `CHARACTER_GAP_COLUMNS` 3.75 → 1.0 (the part's own 3.75 is desk-display
 extravagance), `FIELD_POSITIONS` 15 → 10, and the display height became a
 plain `INITIAL_HEIGHT_FRACTION` = 0.08 - retiring the derive-to-fit rule,

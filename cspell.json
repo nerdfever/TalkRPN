@@ -57,6 +57,8 @@
         "Litronix",
         "Panamatik",
         "QDSP",
+        "getprop",
+        "mdns",
         "unsheared",
         "vgap",
         "vpitch",

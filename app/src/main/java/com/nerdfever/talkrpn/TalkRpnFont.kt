@@ -114,7 +114,7 @@ object TalkRpnFont {
     const val DEFAULT_GAP = 1.0f        // from the last lit centreline of one glyph to the first of the next
     const val SPACE_WIDTH = 0.6f        // width of blank space (0x20)
     const val DOT_SIDE_STROKES = 1.5f   // a dot square's side, in strokes
-    const val VGAP = 1.0f               // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
+    const val VGAP = 0.78f              // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
     const val DP_GAP_FRACTION = 0.337f  // how far across the gap the decimal point and comma sit, as a fraction of that gap
 
     /*
@@ -186,10 +186,11 @@ object TalkRpnFont {
      * BETWEEN the rows' ink, changing the descender depth moves the rows
      * apart or together by itself, keeping this clearance as tuned.
      *
-     *   Tuned by eye on the emulator at a full unit of clearance: the dark
-     *   band a reader sees between one row's tails and the next row's caps is
-     *   VGAP - STROKE = 0.85. (An earlier negative tuning was made against a
-     *   row-spacing bug - HISTORY.md.) Still to be confirmed on the watch.
+     *   Tuned by eye ON THE WATCH: 0.78 is what just brings all of register T
+     *   onto the glass with the stack centred on X. The dark band a reader
+     *   sees between one row's tails and the next row's caps is
+     *   VGAP - STROKE = 0.63. (An earlier negative tuning was made against a
+     *   row-spacing bug - HISTORY.md.)
      *
      * DP_GAP_FRACTION - how far across the gap the decimal point and comma
      * sit, as a fraction of that gap. They belong to the GAP, not to the cell,
