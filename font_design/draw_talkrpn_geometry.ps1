@@ -27,7 +27,7 @@ $OUT = "$PSScriptRoot\$OutputName"
 
 $CELL_WIDTH   = 1.0
 $CELL_HEIGHT  = 1.710      # cap height, segment D to segment A
-$DESCENDER_DEPTH = 0.7525  # how far the N/O bar hangs below the baseline
+$DESCENDER_DEPTH = 0.625   # how far the N/O bar hangs below the baseline
 $TOTAL_HEIGHT = $CELL_HEIGHT + $DESCENDER_DEPTH
 $STROKE       = 0.1475
 $SLANT_DEG    = 6.0

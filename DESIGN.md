@@ -53,15 +53,14 @@ automatic mode switch converts stored values or only changes the default.
 
 **Display**
 
-- **Stroke, gap, vpitch and colour are all still to be judged on the watch.** The
+- **Stroke, gap, vgap and colour are all still to be judged on the watch.** The
   values in `TalkRpnFont` are measurements and starting points; the test screens
   bracket each one.
 - **`Hp01Font`'s 130 advance and 62 cell width are reconstruction figures** with
   no corroboration. `TalkRpnFont` no longer depends on either.
-- **Segment `M` is too deep** — `DESCENDER_DEPTH` is 0.753 against an x-height of
-  0.855, so tails plunge nearly as deep as their bowls are tall. Now on a live
-  knob in the display test screen; pick the depth by eye and set the font's
-  default to it.
+- **Segment `M`'s depth is settled** — the measured 0.7525 plunged tails nearly
+  as deep as their bowls are tall; picked by eye on the live knob and baked in
+  as `DESCENDER_DEPTH` = 0.625. The knob is gone.
 - **`'`, `f` and `t` are still guessed** — the Litronix chart is ambiguous there.
 
 **Deferred by decision, not open** — programs, units, integer/base mode.
@@ -796,14 +795,14 @@ Litronix's published set and then corrected glyph by glyph against it.
 
 **One unit, and every length in the font is a plain length in it.** The unit is
 the left column's centreline to the right column's — the cell width, measured
-where the ink's *middle* is, not where its edge is. Gap, vpitch, stroke, cap
+where the ink's *middle* is, not where its edge is. Gap, vgap, stroke, cap
 height, descender depth, the decimal point's offset: all in that unit, all
 directly comparable, all absolute.
 
-Nothing is expressed as a fraction of anything else. A descender that is "0.44 of
+Nothing is expressed as a fraction of anything else. A descender that is "0.37 of
 the cap height" forces the reader to hold a second reference in their head and
 makes two numbers that look alike incomparable, so those are written as lengths:
-`DESCENDER_DEPTH = 0.753`, not `0.44 × cap`.
+`DESCENDER_DEPTH = 0.625`, not `0.37 × cap`.
 
 Every constant is stated to **four significant figures**, which is far finer than
 anything measurable here: the worst rounding shift is 5×10⁻⁵ of a cell, or about
@@ -817,12 +816,12 @@ a thousandth of a pixel on the watch.
 | x-height, segment G to segment D | 0.855 |
 | hook radius | 0.1355 |
 | stroke | 0.1475 |
-| descender depth, below the baseline | 0.7525 |
-| full height, cap plus descender | 2.463 |
-| ink height, top of `A` to bottom of the descender bar | 2.610 |
+| descender depth, below the baseline | 0.625 |
+| full height, cap plus descender | 2.335 |
+| ink height, top of `A` to bottom of the descender bar | 2.483 |
 | `DEFAULT_GAP` — last centreline of one glyph to the first of the next | 0.67 |
 | `VGAP` — descender bar of one row to the cap line of the next | −0.33 |
-| `VPITCH` — baseline to baseline, = full height + `VGAP` | 2.13 |
+| `VPITCH` — baseline to baseline, = full height + `VGAP` | 2.01 |
 | `SPACE_WIDTH` — a space, ink-free | 0.6 |
 
 The payoff in reading it: since the cell is exactly 1 wide, the gap **is** the
@@ -857,7 +856,7 @@ Two floors fall out of this, both from ink rather than taste:
   never actually touch. All caps read well from a gap of about 0.45 to 0.80;
   mixed case wants 0.76 to 0.92.
 - **vgap ≥ 0.1475** — the same floor, one stroke, below which one row's
-  descenders overlap the caps beneath. (Equivalently vpitch ≥ 2.610, the ink
+  descenders overlap the caps beneath. (Equivalently vpitch ≥ 2.483, the ink
   height.) A digits-only display can go far below it — the current tuning does,
   at −0.33 — since a seven-segment font has no descenders at all, but this font
   has them and letters will use them.
@@ -923,9 +922,9 @@ and an adjacent pair of full-width digits, or the two policies look identical.
 
 | | |
 |---|---|
-| **Segment `M` is too deep** | Not the letter M — the descender stem. `DESCENDER_DEPTH` is 0.753 against an x-height of 0.855, so `g q y j` tails plunge nearly as deep as their bowls are tall. One number: lower it and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all follow. |
+| **Segment `M` depth: settled** | Not the letter M — the descender stem. The measured 0.7525 plunged `g q y j` tails nearly as deep as their bowls are tall; settled by eye at `DESCENDER_DEPTH` = 0.625, and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all followed. |
 | **`'`, `f` and `t` are guessed** | The source is ambiguous at those three. Flagged orange on the reference sheet. |
-| **Gap, stroke, vpitch and colour** | Answered on paper; each still to be judged on the watch. The test screens bracket every one. |
+| **Gap, stroke, vgap and colour** | Answered on paper; each still to be judged on the watch. The test screens bracket every one. |
 | **Bubble-LED glow** | Thin core plus a diffuse scatter, to imitate the epoxy lens. Parked. Interacts with the stroke: with a glow the core probably wants to be under 0.147. |
 | **`Hp01Font` can be retired** | It survives only in `FontCompareActivity` as the comparison reference. |
 

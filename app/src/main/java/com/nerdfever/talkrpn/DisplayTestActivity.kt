@@ -141,7 +141,7 @@ private const val GAP_UNITS_MAX = 3.0f
  * contributes its own half - descender plus half a vgap from the row above,
  * half a vgap plus cap height from the row below - each half at its own row's
  * scale. Between equal rows that is exactly the font's derived VPITCH =
- * totalHeight(dd) + vg; between unequal rows the smaller row brings its
+ * TOTAL_HEIGHT + VGAP; between unequal rows the smaller row brings its
  * smaller units, so spacing scales with the rows it separates. See
  * seamPitchPx in [DisplayTestScreen].
  *
@@ -155,14 +155,14 @@ private val INITIAL_VGAP_UNITS = TalkRpnFont.VGAP
  * The vgap control's range, deliberately far past both touching points: ink
  * meets ink at one stroke, like the horizontal gap, and on a measuring
  * instrument seeing the overlap is more useful than being protected from it.
- * The floor puts every baseline in nearly the same place (vpitch about zero,
- * exactly zero at the font's own descender depth).
+ * The floor puts every baseline of equal-size neighbours in the same place
+ * (vpitch exactly zero).
  */
 private val VGAP_UNITS_MIN = -TalkRpnFont.TOTAL_HEIGHT
 private const val VGAP_UNITS_MAX = 2.0f
 
 /**
- * The gap, vgap and dd knobs step by this, additively - they are lengths, not
+ * The gap and vgap knobs step by this, additively - they are lengths, not
  * proportions. Deliberately fine: the knobs are now used for FINAL tuning, so
  * resolution beats per-press visibility. Kept to a multiple of 0.001 so the
  * three-decimal button readouts stay exact.
@@ -171,14 +171,6 @@ private const val SPACING_STEP_UNITS = 0.006f
 
 /** Every proportional adjustment (hf) moves by this much per press. */
 private const val ADJUST_STEP_FRACTION = 0.0125f
-
-/**
- * The descender knob's range, in cell widths. Wide on purpose: from a stub
- * shallower than the stroke up to well past the authentic depth, so the whole
- * question can be answered by eye.
- */
-private const val DESCENDER_UNITS_MIN = 0.2f
-private const val DESCENDER_UNITS_MAX = 1.2f
 
 /**
  * The floor on how little a press may move the layout, in pixels. At these
@@ -486,12 +478,14 @@ private fun DisplayTestScreen() {
     var heightFraction by remember { mutableStateOf(fittedHeightFraction) }
 
     var vgapUnits by remember { mutableStateOf(INITIAL_VGAP_UNITS) }
-    var descenderUnits by remember { mutableStateOf(TalkRpnFont.DESCENDER_DEPTH) }
     var sampleIndex by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(false) }
 
-    // Slant is settled at 6.0 degrees; its knob gave way to the descender's.
+    // Slant (6.0 degrees) and descender depth (0.625) are settled in the font;
+    // their knobs are gone. Both still travel as plain values so a future knob
+    // could return without re-threading anything.
     val slantDegrees = TalkRpnFont.SLANT_DEGREES
+    val descenderUnits = TalkRpnFont.DESCENDER_DEPTH
 
 
     // Height is now set directly, not inferred from a cell count.
@@ -519,8 +513,8 @@ private fun DisplayTestScreen() {
     // contributes its half at its own size, so the small rows close up by
     // [SMALL_ROW_SCALE] instead of floating in reference-size air.
     //
-    // The dd knob rides along: a deeper descender pushes rows apart by itself,
-    // holding the tuned vgap clearance.
+    // The descender depth rides along: deeper tails push the rows apart by
+    // themselves, holding the tuned vgap clearance.
     fun seamPitchPx(aboveUnitPx: Float, belowUnitPx: Float) =
         (descenderUnits + vgapUnits / 2f) * aboveUnitPx +
             (vgapUnits / 2f + TalkRpnFont.CELL_HEIGHT) * belowUnitPx
@@ -728,12 +722,11 @@ private fun DisplayTestScreen() {
             ) {
 
                 // Each button carries its own value, named as the code names
-                // it: g DEFAULT_GAP, vg VGAP, dd DESCENDER_DEPTH - cell
-                // widths, copying straight back into TalkRpnFont - and hf
-                // heightFraction, the screen's own knob: a fraction of the
-                // diameter. All to three decimals, so no knob's readout is
-                // coarser than another's steps. No separate readout to
-                // cross-reference.
+                // it: g DEFAULT_GAP and vg VGAP in cell widths, copying
+                // straight back into TalkRpnFont - and hf heightFraction, the
+                // screen's own knob: a fraction of the diameter. All to three
+                // decimals, so no knob's readout is coarser than another's
+                // steps. No separate readout to cross-reference.
                 Row(modifier = Modifier.fillMaxWidth()) {
 
                     SplitButton("g %.3f".format(gapUnits), Modifier.weight(1f),
@@ -778,19 +771,6 @@ private fun DisplayTestScreen() {
                         onDecrease = {
                             vgapUnits = (vgapUnits - spacingStepUnits)
                                 .coerceAtLeast(VGAP_UNITS_MIN)
-                        }
-                    )
-
-                    Spacer(Modifier.width(GAP_SMALL))
-
-                    SplitButton("dd %.3f".format(descenderUnits), Modifier.weight(1f),
-                        onIncrease = {
-                            descenderUnits = (descenderUnits + spacingStepUnits)
-                                .coerceAtMost(DESCENDER_UNITS_MAX)
-                        },
-                        onDecrease = {
-                            descenderUnits = (descenderUnits - spacingStepUnits)
-                                .coerceAtLeast(DESCENDER_UNITS_MIN)
                         }
                     )
                 }

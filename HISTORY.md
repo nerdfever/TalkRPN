@@ -167,6 +167,12 @@ point most of the way into the next character.
 144 against 100 on the old grid — exactly 0.44 there too, so naming it moved
 nothing. Still open: it is deep, against an x-height of half the cap.
 
+Later became the length `DESCENDER_DEPTH` = 0.7525 when the reference unit was
+unified. Settled on 2026-08-17 at **0.625**, chosen by eye on the display test
+screen's dd knob against the lowercase sample — the measured depth plunged
+tails nearly as deep as their bowls are tall. The knob was removed the same
+day; the value lives in the font.
+
 ---
 
 ## `VPITCH` = 2.75

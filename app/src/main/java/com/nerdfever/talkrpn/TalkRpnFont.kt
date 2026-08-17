@@ -34,7 +34,7 @@ import kotlin.math.tan
  * THE UNIT: segment E/F to segment B/C is exactly 1. That is the left column's
  * centreline to the right column's - the cell width, measured where the ink's
  * middle is, not where its edge is. Every length in this font and in everything
- * that lays it out - gap, vpitch, stroke, the lot - is in that one unit,
+ * that lays it out - gap, vgap, stroke, the lot - is in that one unit,
  * horizontally and vertically alike. There is no second unit anywhere, and
  * nothing here is in pixels, dp or millimetres.
  *
@@ -108,7 +108,7 @@ object TalkRpnFont {
 
     const val CELL_WIDTH = 1f           // by definition; all other measures are relative to this
     const val CELL_HEIGHT = 1.710f      // of the top 7 segments, baseline to top
-    const val DESCENDER_DEPTH = 0.7525f // how far the descender hangs below the baseline
+    const val DESCENDER_DEPTH = 0.625f  // how far the descender hangs below the baseline
     const val STROKE = 0.1475f          // pen stroke width
     const val SLANT_DEGREES = 6.0f      // rightward lean, in degrees
     const val DEFAULT_GAP = 0.67f       // from the last lit centreline of one glyph to the first of the next
@@ -180,11 +180,11 @@ object TalkRpnFont {
      * BETWEEN the rows' ink, changing the descender depth moves the rows
      * apart or together by itself, keeping this clearance as tuned.
      *
-     *   NEGATIVE on purpose: tuned by eye on the emulator against digit-heavy
-     *   samples, where nothing descends, so one row's descender band reaches
-     *   into the cap band of the next. Rows of text with real descenders will
-     *   collide at this setting - revisit when the descender depth itself is
-     *   revisited.
+     *   NEGATIVE on purpose: the rows interleave. One row's descender band
+     *   reaches into the cap band of the next, visibly - a tail's tip ends
+     *   ABOVE the top of a neighbouring ascender. Ink survives on horizontal
+     *   offset alone, so text that stacks tall letters directly under tails
+     *   will collide. Still to be settled by eye on the watch.
      *
      * DP_GAP_FRACTION - how far across the gap the decimal point and comma
      * sit, as a fraction of that gap. They belong to the GAP, not to the cell,

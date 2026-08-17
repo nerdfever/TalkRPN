@@ -22,7 +22,7 @@ $OUT = "$PSScriptRoot\talkrpn_font_reference.pdf"
 
 $CELL_WIDTH = 1.0            # by definition
 $CELL_HEIGHT = 1.710         # cap height, segment D to segment A
-$DESCENDER_DEPTH = 0.7525    # how far the N/O bar hangs below the baseline
+$DESCENDER_DEPTH = 0.625     # how far the N/O bar hangs below the baseline
 $TOTAL_HEIGHT = $CELL_HEIGHT + $DESCENDER_DEPTH
 
 $STROKE = 0.1475
