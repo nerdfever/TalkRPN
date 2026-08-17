@@ -726,11 +726,12 @@ private fun DisplayTestScreen() {
                 // it: g DEFAULT_GAP, vg VGAP, dd DESCENDER_DEPTH - cell
                 // widths, copying straight back into TalkRpnFont - and hf
                 // heightFraction, the screen's own knob: a fraction of the
-                // diameter, three decimals because its steps are five-percent
-                // multiples. No separate readout to cross-reference.
+                // diameter. All to three decimals, so no knob's readout is
+                // coarser than another's steps. No separate readout to
+                // cross-reference.
                 Row(modifier = Modifier.fillMaxWidth()) {
 
-                    SplitButton("g %.2f".format(gapUnits), Modifier.weight(1f),
+                    SplitButton("g %.3f".format(gapUnits), Modifier.weight(1f),
                         onIncrease = {
                             gapUnits = (gapUnits + spacingStepUnits)
                                 .coerceAtMost(GAP_UNITS_MAX)
@@ -764,7 +765,7 @@ private fun DisplayTestScreen() {
 
                 Row(modifier = Modifier.fillMaxWidth()) {
 
-                    SplitButton("vg %.2f".format(vgapUnits), Modifier.weight(1f),
+                    SplitButton("vg %.3f".format(vgapUnits), Modifier.weight(1f),
                         onIncrease = {
                             vgapUnits = (vgapUnits + spacingStepUnits)
                                 .coerceAtMost(VGAP_UNITS_MAX)
@@ -777,7 +778,7 @@ private fun DisplayTestScreen() {
 
                     Spacer(Modifier.width(GAP_SMALL))
 
-                    SplitButton("dd %.2f".format(descenderUnits), Modifier.weight(1f),
+                    SplitButton("dd %.3f".format(descenderUnits), Modifier.weight(1f),
                         onIncrease = {
                             descenderUnits = (descenderUnits + spacingStepUnits)
                                 .coerceAtMost(DESCENDER_UNITS_MAX)
