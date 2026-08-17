@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The display test's launcher icon: a blocky LED-red D on black, its
+     corners squared off the way the segment display squares them. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- The dark face behind the letter. -->
+    <path
+        android:pathData="M24,0 a24,24 0 1,1 -0.01,0 z"
+        android:fillColor="#FF000000" />
+
+    <!-- The D, four bars: left column, top, bottom, and the inset right
+         column whose cut corners do the rounding. -->
+    <path android:pathData="M14,10 h5 v28 h-5 z" android:fillColor="#FFFF0000" />
+    <path android:pathData="M19,10 h10 v5 h-10 z" android:fillColor="#FFFF0000" />
+    <path android:pathData="M19,33 h10 v5 h-10 z" android:fillColor="#FFFF0000" />
+    <path android:pathData="M29,15 h5 v18 h-5 z" android:fillColor="#FFFF0000" />
+
+</vector>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The speech test's launcher icon: a blocky LED-red S on black, drawn as
+     bars the way the segment display would draw it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- The dark face behind the letter. -->
+    <path
+        android:pathData="M24,0 a24,24 0 1,1 -0.01,0 z"
+        android:fillColor="#FF000000" />
+
+    <!-- The S, five bars: top, upper-left, middle, lower-right, bottom. -->
+    <path android:pathData="M14,10 h20 v5 h-20 z" android:fillColor="#FFFF0000" />
+    <path android:pathData="M14,15 h5 v6.5 h-5 z" android:fillColor="#FFFF0000" />
+    <path android:pathData="M14,21.5 h20 v5 h-20 z" android:fillColor="#FFFF0000" />
+    <path android:pathData="M29,26.5 h5 v6.5 h-5 z" android:fillColor="#FFFF0000" />
+    <path android:pathData="M14,33 h20 v5 h-20 z" android:fillColor="#FFFF0000" />
+
+</vector>

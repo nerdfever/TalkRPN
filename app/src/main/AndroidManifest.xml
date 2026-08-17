@@ -93,10 +93,14 @@
             taskAffinity="" keeps this activity in its own task, which is what Wear OS
             expects - otherwise it can surface oddly in the recents carousel.
 
-            No android:label here: it would only repeat the application label above.
+            The label and icon here override the application's for the launcher
+            entry, so the app list shows the two test rigs as what they are -
+            "speech test" and "display test" - rather than one opaque "TalkRPN".
         -->
         <activity
             android:name=".MainActivity"
+            android:label="speech test"
+            android:icon="@drawable/ic_speech"
             android:taskAffinity=""
             android:theme="@style/Theme.TalkRPN"
             android:exported="true">
@@ -109,21 +113,27 @@
         </activity>
 
         <!--
-            The display-size test. Reached from a button on the main screen rather
-            than from the launcher: it is a measuring instrument, not a second app,
-            and a second icon in the watch's app list would only be in the way.
+            The display-size test, as its own entry in the watch's app list - the
+            tuning sessions run long enough that reaching it should not require a
+            trip through the speech screen or an adb command.
 
-            exported="true" so that `adb shell am start` can open it directly, which
-            is the whole development loop for a screen whose only purpose is to be
-            looked at and adjusted. It displays fixed sample digits and reads nothing,
-            so there is nothing here for another app to reach. Revisit if this screen
-            ever survives into the shipped app.
+            It displays fixed sample digits and reads nothing, so there is nothing
+            here for another app to reach. Revisit if this screen ever survives
+            into the shipped app.
         -->
         <activity
             android:name=".DisplayTestActivity"
+            android:label="display test"
+            android:icon="@drawable/ic_display"
             android:taskAffinity=""
             android:theme="@style/Theme.TalkRPN"
-            android:exported="true" />
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!--
             Four rows of digits at two bar positions and two stroke widths, for
@@ -139,7 +149,7 @@
 
         <!--
             One TalkRpnFont cell, as large as the screen allows, for checking the
-            28-segment geometry before any glyph table exists. Steps through the
+            32-element geometry before any glyph table exists. Steps through the
             segments one at a time so a mislabelled or misplaced one is caught
             before ninety-odd glyphs are drawn against it.
 
