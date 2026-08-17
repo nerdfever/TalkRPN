@@ -100,6 +100,11 @@ class WdbActivity : ComponentActivity() {
                         Text("WEDGED", color = COLOUR_WEDGED, fontSize = STATE_SP)
                         Text("tap twice to revive", color = COLOUR_OFF, fontSize = HINT_SP)
                     }
+
+                    WdbState.UNSURE -> {
+                        Text("ON?", color = COLOUR_ON, fontSize = STATE_SP)
+                        Text("liveness unreadable here", color = COLOUR_OFF, fontSize = HINT_SP)
+                    }
                 }
             }
         }

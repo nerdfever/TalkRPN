@@ -116,14 +116,16 @@ class WdbTileService : TileService() {
             .build()
 
         // What to say, and in which colour. ON is only claimed when adbd is
-        // really listening; a wedged service says so instead.
+        // verifiably listening; a wedged service says so; a device that hides
+        // the service's state gets the honest question mark.
         val stateText = when {
             denied -> "NO PERMIT"
+            state == WdbState.UNSURE -> "ON?"
             else -> state.name
         }
         val stateColour = when {
             denied -> COLOUR_OFF
-            state == WdbState.ON -> COLOUR_ON
+            state == WdbState.ON || state == WdbState.UNSURE -> COLOUR_ON
             state == WdbState.WEDGED -> COLOUR_WEDGED
             else -> COLOUR_OFF
         }

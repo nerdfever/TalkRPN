@@ -513,6 +513,10 @@ private fun DisplayTestScreen() {
     // while the dot font is live, and to gapUnits otherwise.
     var dotGapColumns by remember { mutableStateOf(Hdls1414Font.CHARACTER_GAP_COLUMNS) }
 
+    // The cyan field boxes: measuring aid, on by default, off to judge the
+    // display as a display.
+    var showFieldBoxes by remember { mutableStateOf(true) }
+
     // Slant (6.0 degrees) and descender depth (0.625) are settled in the font;
     // their knobs are gone. Both still travel as plain values so a future knob
     // could return without re-threading anything.
@@ -656,7 +660,7 @@ private fun DisplayTestScreen() {
             for ((index, name) in UPPER_REGISTERS.withIndex()) {
 
                 RegisterRow(
-                    name, samples[name].orEmpty(), fieldPositions, useDotFont,
+                    name, samples[name].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
                     smallCellHeightPx, gapUnits, dotGapColumns,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
                     descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
@@ -685,7 +689,7 @@ private fun DisplayTestScreen() {
                     .onGloballyPositioned { xLeftInRootPx = it.positionInRoot().x }
             ) {
                 drawRegister(
-                    samples["X"].orEmpty(), fieldPositions, useDotFont,
+                    samples["X"].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
                     xCellHeightPx, gapUnits, dotGapColumns, LedPalette.LIT,
                     fieldLeftPx(
                         fieldPositions, xCellHeightPx, gapUnits, slantDegrees,
@@ -703,7 +707,7 @@ private fun DisplayTestScreen() {
             for (name in LOWER_REGISTERS) {
 
                 RegisterRow(
-                    name, samples[name].orEmpty(), fieldPositions, useDotFont,
+                    name, samples[name].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
                     smallCellHeightPx, gapUnits, dotGapColumns,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
                     descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
@@ -854,6 +858,13 @@ private fun DisplayTestScreen() {
                         useDotFont = !useDotFont
                     }
                 }
+
+                Spacer(Modifier.height(GAP_SMALL))
+
+                // Named for what is showing, like sample and font.
+                CompactButton(if (showFieldBoxes) "boxes: on" else "boxes: off", Modifier.fillMaxWidth()) {
+                    showFieldBoxes = !showFieldBoxes
+                }
             }
         }
 
@@ -871,6 +882,7 @@ private fun RegisterRow(
     value: String,
     fieldPositions: Int,
     useDotFont: Boolean,
+    showFieldBox: Boolean,
     cellHeightPx: Float,
     gapUnits: Float,
     dotGapColumns: Float,
@@ -905,7 +917,7 @@ private fun RegisterRow(
                 .height(canvasHeightDp(cellHeightPx, density, descenderUnits))
         ) {
             drawRegister(
-                value, fieldPositions, useDotFont, cellHeightPx, gapUnits, dotGapColumns, color,
+                value, fieldPositions, useDotFont, showFieldBox, cellHeightPx, gapUnits, dotGapColumns, color,
                 rowFieldLeftPx, slantDegrees, descenderUnits
             )
         }
@@ -1045,6 +1057,7 @@ private fun DrawScope.drawRegister(
     value: String,
     fieldPositions: Int,
     useDotFont: Boolean,
+    showFieldBox: Boolean,
     cellHeightPx: Float,
     gapUnits: Float,
     dotGapColumns: Float,
@@ -1065,31 +1078,34 @@ private fun DrawScope.drawRegister(
 
     // The field box made visible, for fitting work: a hairline around the
     // whole register's display area, in the diagnostic cyan so it cannot be
-    // mistaken for lit ink.
+    // mistaken for lit ink. On the boxes button.
     //
     // The rectangle fieldLeft..fieldRight x 0..inkHeight IS the ink envelope -
     // fieldUnits carries the stroke's overhang at both ends, and the row draws
     // its ink from the canvas top - so the box inflates OUTWARD from there by
     // its clearance, plus half its own line so the line's inner edge is what
     // sits at the clearance.
-    val boxOutsetPx = FIELD_BOX_CLEARANCE_PX + FIELD_BOX_STROKE_PX / 2f
+    if (showFieldBox) {
 
-    // The box hugs the ACTIVE font's ink. The dot font has no descender - its
-    // ink stops half a dot below the bottom lattice row - where the segment
-    // font's runs on down through the descender band.
-    val boxInkHeightPx =
-        if (useDotFont) cellHeightPx * Hdls1414Font.INK_HEIGHT / Hdls1414Font.CELL_HEIGHT
-        else inkHeightPx(cellHeightPx, descenderUnits)
+        val boxOutsetPx = FIELD_BOX_CLEARANCE_PX + FIELD_BOX_STROKE_PX / 2f
 
-    drawRect(
-        color = LedPalette.FIELD_BOUNDS,
-        topLeft = Offset(fieldLeftPx - boxOutsetPx, -boxOutsetPx),
-        size = Size(
-            fieldRightPx - fieldLeftPx + 2f * boxOutsetPx,
-            boxInkHeightPx + 2f * boxOutsetPx,
-        ),
-        style = Stroke(width = FIELD_BOX_STROKE_PX),
-    )
+        // The box hugs the ACTIVE font's ink. The dot font has no descender -
+        // its ink stops half a dot below the bottom lattice row - where the
+        // segment font's runs on down through the descender band.
+        val boxInkHeightPx =
+            if (useDotFont) cellHeightPx * Hdls1414Font.INK_HEIGHT / Hdls1414Font.CELL_HEIGHT
+            else inkHeightPx(cellHeightPx, descenderUnits)
+
+        drawRect(
+            color = LedPalette.FIELD_BOUNDS,
+            topLeft = Offset(fieldLeftPx - boxOutsetPx, -boxOutsetPx),
+            size = Size(
+                fieldRightPx - fieldLeftPx + 2f * boxOutsetPx,
+                boxInkHeightPx + 2f * boxOutsetPx,
+            ),
+            style = Stroke(width = FIELD_BOX_STROKE_PX),
+        )
+    }
 
     // Split off the exponent. The marker never reaches the screen: the mantissa
     // is left-justified from position 1, the exponent right-justified into the
