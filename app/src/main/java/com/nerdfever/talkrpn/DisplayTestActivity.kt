@@ -137,16 +137,17 @@ private const val GAP_UNITS_MAX = 3.0f
  * the font's tweakable of the same name: one row's descender-bar centreline
  * down to the next row's cap centreline, negative meaning the bands interleave.
  *
- * The screen spaces rows by the derived vpitch, baseline to baseline:
- * totalHeight(dd) + vg. Baseline to baseline rather than gap-between-rows, so
- * that it keeps meaning the same thing when adjacent rows are different sizes -
- * which they are here, since every row but X is scaled by [SMALL_ROW_SCALE].
- * Measured always in the X row's units, so a smaller row does not bring
- * smaller units with it.
+ * The screen spaces rows baseline to baseline from it, per seam: each row
+ * contributes its own half - descender plus half a vgap from the row above,
+ * half a vgap plus cap height from the row below - each half at its own row's
+ * scale. Between equal rows that is exactly the font's derived VPITCH =
+ * totalHeight(dd) + vg; between unequal rows the smaller row brings its
+ * smaller units, so spacing scales with the rows it separates. See
+ * seamPitchPx in [DisplayTestScreen].
  *
- * A uniform GAP between unequal rows would put the baselines at unequal
- * distances, and the baselines are what the eye reads. Making the spacing
- * uniform means the gaps differ instead, which is the way round that looks even.
+ * Baseline to baseline rather than a uniform gap, because a uniform GAP
+ * between unequal rows puts the baselines at unequal distances, and the
+ * baselines are what the eye reads.
  */
 private val INITIAL_VGAP_UNITS = TalkRpnFont.VGAP
 
@@ -194,60 +195,72 @@ private const val MIN_STEP_PX = 1f
 private val ANNUNCIATOR_BORDER = Color(0xFF4A4A4A)
 
 /**
- * What each register shows, per sample set.
+ * One sample set: the name the sample button shows while it is up, whether its
+ * rows grow to fill the field, and what each register shows.
  *
- * The all-eights set is the one that matters for legibility: every segment lit is
- * the worst case, because adjacent digits then have the least dark space between
- * them.
+ * fillsRow: the realistic and lowercase sets are fixed text, because their
+ * point is to look like something; the fill sets exist to fill the field, so
+ * they follow it.
+ */
+private class SampleSet(val name: String, val fillsRow: Boolean, val values: Map<String, String>)
+
+/**
+ * The all-eights set is the one that matters for legibility: every segment lit
+ * is the worst case, because adjacent digits then have the least dark space
+ * between them.
  */
 private val SAMPLE_SETS = listOf(
     // Something a real calculation would look like, formatted at the DSP default.
-    mapOf(
-        "T" to 0.0,
-        "Z" to 12.0,
-        "Y" to 1.4142136,
-        "X" to 3.1415927,
-        "LASTX" to 2.7182818,
-        "STO" to 6.02e23,
-    ).mapValues { (_, v) -> dsp(v) },
-    // Worst case: every segment lit, every cell full.
-    mapOf(
-        "T" to "8",
-        "Z" to "8",
-        "Y" to "8",
-        "X" to "8",
-        "LASTX" to "8",
-        "STO" to "8",
+    SampleSet(
+        "calc", fillsRow = false,
+        mapOf(
+            "T" to 0.0,
+            "Z" to 12.0,
+            "Y" to 1.4142136,
+            "X" to 3.1415927,
+            "LASTX" to 2.7182818,
+            "STO" to 6.02e23,
+        ).mapValues { (_, v) -> dsp(v) }
     ),
-    // Every glyph, so no digit hides behind another.
-    mapOf(
-        "T" to "1234567890",
-        "Z" to "1234567890",
-        "Y" to "1234567890",
-        "X" to "1234567890",
-        "LASTX" to "1234567890",
-        "STO" to "1234567890",
+    // Worst case: every segment lit, every cell full.
+    SampleSet(
+        "eights", fillsRow = true,
+        mapOf(
+            "T" to "8",
+            "Z" to "8",
+            "Y" to "8",
+            "X" to "8",
+            "LASTX" to "8",
+            "STO" to "8",
+        )
+    ),
+    // Every digit, so none hides behind another.
+    SampleSet(
+        "digits", fillsRow = true,
+        mapOf(
+            "T" to "1234567890",
+            "Z" to "1234567890",
+            "Y" to "1234567890",
+            "X" to "1234567890",
+            "LASTX" to "1234567890",
+            "STO" to "1234567890",
+        )
     ),
     // Lower case, heavy on descenders, so g j p q y can be judged - especially
     // whether one row's tails collide with the row beneath at the current
-    // vpitch, which sits below the descender-clearance point by design.
-    mapOf(
-        "T" to "jaggy pyjamas",
-        "Z" to "happy pygmy jog",
-        "Y" to "Syntax error",
-        "X" to "quick jazzy pig",
-        "LASTX" to "grumpy dog",
-        "STO" to "type gyp quay",
+    // vgap, which sits below the descender-clearance point by design.
+    SampleSet(
+        "lower", fillsRow = false,
+        mapOf(
+            "T" to "jaggy pyjamas",
+            "Z" to "happy pygmy jog",
+            "Y" to "Syntax error",
+            "X" to "quick jazzy pig",
+            "LASTX" to "grumpy dog",
+            "STO" to "type gyp quay",
+        )
     ),
 )
-
-/**
- * Whether each sample set should be grown to whatever number of cells now fits.
- *
- * The realistic and lowercase sets are fixed text, because their point is to
- * look like something; the fill sets exist to fill the field, so they follow it.
- */
-private val SAMPLE_FILLS_ROW = listOf(false, true, true, false)
 
 /**
  * THE FIELD: every register shows its value in this many digit positions.
@@ -400,7 +413,6 @@ private val TEXT_REGISTER_LABEL = 9.sp
 /** Air between a label's right end and the field it names. */
 private val LABEL_FIELD_CLEARANCE = 4.dp
 private val TEXT_ANNUNCIATOR = 10.sp
-private val TEXT_READOUT = 8.sp
 private val TEXT_BUTTON = 9.sp
 
 private val ANNUNCIATOR_PAD_H = 6.dp
@@ -487,29 +499,40 @@ private fun DisplayTestScreen() {
     // size. The font's coordinates are cell widths and so are this screen's, so
     // there is nothing to convert between them.
 
-    // Pixels per cell width, always at the X row's size - that is the reference
-    // the vertical spacing is quoted in, so a smaller row must not redefine it.
+    // Pixels per cell width, at each row's own size. X's is the reference unit
+    // the knobs are quoted in; the small rows carry their own smaller unit, so
+    // their spacing scales down with them.
     val unitPx = xCellHeightPx / TalkRpnFont.CELL_HEIGHT
+    val smallUnitPx = smallCellHeightPx / TalkRpnFont.CELL_HEIGHT
 
-    // The derived vertical pitch, exactly as the font derives VPITCH: the row's
-    // span at the CURRENT descender, plus the tuned gap between rows. This is
-    // what makes the dd knob carry the rows with it.
-    val vpitchPx = (TalkRpnFont.totalHeight(descenderUnits) + vgapUnits) * unitPx
-
-    // ---- Row spacing, from the derived vpitch ---------------------------------
+    // ---- Row spacing: each row owns half the vgap, in its own units -----------
     //
-    // A Column stacks canvases and separates them with gaps, but vpitch is stated
-    // baseline to baseline - so each gap is vpitch minus the ink already lying
-    // between those two baselines: the tail of the row above, plus the whole of
-    // the row below down to its own baseline.
+    // Every row is a box reaching from half a vgap above its cap line to half a
+    // vgap below its descender bar, all at the row's own scale, and the boxes
+    // stack touching. Between equal rows a seam's pitch is then exactly the
+    // font's VPITCH = TOTAL_HEIGHT + VGAP; between unequal rows each side
+    // contributes its half at its own size, so the small rows close up by
+    // [SMALL_ROW_SCALE] instead of floating in reference-size air.
     //
-    // Three junctions, because X is a different size from its neighbours. This is
-    // the part a single shared gap got wrong: equal gaps between unequal rows put
-    // the baselines at unequal distances, which is what the eye actually reads.
+    // The dd knob rides along: a deeper descender pushes rows apart by itself,
+    // holding the tuned vgap clearance.
+    fun seamPitchPx(aboveUnitPx: Float, belowUnitPx: Float) =
+        (descenderUnits + vgapUnits / 2f) * aboveUnitPx +
+            (vgapUnits / 2f + TalkRpnFont.CELL_HEIGHT) * belowUnitPx
 
-    val gapSmallToSmallPx = rowGapPx(vpitchPx, smallCellHeightPx, smallCellHeightPx, descenderUnits)
-    val gapSmallToXPx = rowGapPx(vpitchPx, smallCellHeightPx, xCellHeightPx, descenderUnits)
-    val gapXToSmallPx = rowGapPx(vpitchPx, xCellHeightPx, smallCellHeightPx, descenderUnits)
+    // A Column stacks canvases and separates them with gaps, but pitch is stated
+    // baseline to baseline - so each gap is its seam's pitch minus the ink
+    // already lying between those two baselines: the tail of the row above,
+    // plus the whole of the row below down to its own baseline.
+    //
+    // Three junctions, because X is a different size from its neighbours.
+
+    val gapSmallToSmallPx =
+        rowGapPx(seamPitchPx(smallUnitPx, smallUnitPx), smallCellHeightPx, smallCellHeightPx, descenderUnits)
+    val gapSmallToXPx =
+        rowGapPx(seamPitchPx(smallUnitPx, unitPx), smallCellHeightPx, xCellHeightPx, descenderUnits)
+    val gapXToSmallPx =
+        rowGapPx(seamPitchPx(unitPx, smallUnitPx), xCellHeightPx, smallCellHeightPx, descenderUnits)
 
     // ---- Put X's MIDDLE BAR on the screen's diameter --------------------------
     //
@@ -555,10 +578,10 @@ private fun DisplayTestScreen() {
     // Fit the digits to the field, then punctuate: the radix and the separators
     // are narrower than a digit position, so counting them would under-fill it.
     // The draw step trims by measurement whatever still overruns.
-    val samples = SAMPLE_SETS[sampleIndex].mapValues { (_, text) ->
+    val samples = SAMPLE_SETS[sampleIndex].values.mapValues { (_, text) ->
 
         val fitted = when {
-            SAMPLE_FILLS_ROW[sampleIndex] ->
+            SAMPLE_SETS[sampleIndex].fillsRow ->
                 buildString { while (length < FIELD_POSITIONS) append(text) }.take(FIELD_POSITIONS)
             // Left-justified, so an over-long value loses its right end.
             text.length > FIELD_POSITIONS -> text.take(FIELD_POSITIONS)
@@ -699,31 +722,15 @@ private fun DisplayTestScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // Values live here rather than on the buttons: at this size a
-                // button is only wide enough for its name.
-                Text(
-                    // The knobs, named as the code names them: g DEFAULT_GAP,
-                    // vg VGAP, dd DESCENDER_DEPTH - cell widths, copying
-                    // straight back into TalkRpnFont - and hf heightFraction,
-                    // the screen's own knob: a fraction of the diameter, three
-                    // decimals because its steps are five-percent multiples.
-                    text = "g%.2f hf%.3f vg%.2f dd%.2f".format(
-                        gapUnits,
-                        heightFraction,
-                        vgapUnits,
-                        descenderUnits
-                    ),
-                    color = LedPalette.LABEL,
-                    fontSize = TEXT_READOUT,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(Modifier.height(GAP_SMALL))
-
+                // Each button carries its own value, named as the code names
+                // it: g DEFAULT_GAP, vg VGAP, dd DESCENDER_DEPTH - cell
+                // widths, copying straight back into TalkRpnFont - and hf
+                // heightFraction, the screen's own knob: a fraction of the
+                // diameter, three decimals because its steps are five-percent
+                // multiples. No separate readout to cross-reference.
                 Row(modifier = Modifier.fillMaxWidth()) {
 
-                    SplitButton("gap", Modifier.weight(1f),
+                    SplitButton("g %.2f".format(gapUnits), Modifier.weight(1f),
                         onIncrease = {
                             gapUnits = (gapUnits + spacingStepUnits)
                                 .coerceAtMost(GAP_UNITS_MAX)
@@ -741,7 +748,7 @@ private fun DisplayTestScreen() {
                     // hf tunes heightFraction, the one knob that is not font
                     // geometry: how large the whole display renders, as X's cap
                     // height in fractions of the screen diameter.
-                    SplitButton("hf", Modifier.weight(1f),
+                    SplitButton("hf %.3f".format(heightFraction), Modifier.weight(1f),
                         onIncrease = {
                             heightFraction = (heightFraction * (1f + ADJUST_STEP_FRACTION))
                                 .coerceAtMost(HEIGHT_FRACTION_MAX)
@@ -757,7 +764,7 @@ private fun DisplayTestScreen() {
 
                 Row(modifier = Modifier.fillMaxWidth()) {
 
-                    SplitButton("vgap", Modifier.weight(1f),
+                    SplitButton("vg %.2f".format(vgapUnits), Modifier.weight(1f),
                         onIncrease = {
                             vgapUnits = (vgapUnits + spacingStepUnits)
                                 .coerceAtMost(VGAP_UNITS_MAX)
@@ -770,7 +777,7 @@ private fun DisplayTestScreen() {
 
                     Spacer(Modifier.width(GAP_SMALL))
 
-                    SplitButton("dd", Modifier.weight(1f),
+                    SplitButton("dd %.2f".format(descenderUnits), Modifier.weight(1f),
                         onIncrease = {
                             descenderUnits = (descenderUnits + spacingStepUnits)
                                 .coerceAtMost(DESCENDER_UNITS_MAX)
@@ -784,7 +791,8 @@ private fun DisplayTestScreen() {
 
                 Spacer(Modifier.height(GAP_SMALL))
 
-                CompactButton("sample", Modifier.fillMaxWidth()) {
+                // Named for the set it is SHOWING, not the one a tap brings.
+                CompactButton("sample: " + SAMPLE_SETS[sampleIndex].name, Modifier.fillMaxWidth()) {
                     sampleIndex = (sampleIndex + 1) % SAMPLE_SETS.size
                 }
             }
