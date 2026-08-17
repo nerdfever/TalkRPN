@@ -72,7 +72,7 @@ object Hdls1414Font {
     const val COLUMN_PITCH = 1f            // by definition; all other measures are relative to this
     const val ROW_PITCH = 1.098f           // dot centre to dot centre, down
     const val DOT_SIDE = 0.7033f           // side of one lit dot's square
-    const val CHARACTER_GAP_COLUMNS = 3.75f // blank columns between one character's cell and the next
+    const val CHARACTER_GAP_COLUMNS = 1.0f // blank columns between one character's cell and the next
     const val VGAP = 3.562f                // vertical space between lines: bottom dot row to next line's top dot row
     val NEON_ORANGE = Color(0xFFFF5F1F)    // the default ink colour
 
@@ -96,9 +96,10 @@ object Hdls1414Font {
      *
      * CHARACTER_GAP_COLUMNS - blank columns between one character's five and
      * the next character's five. In COLUMNS rather than in the unit directly,
-     * because that is how the eye reads it on a lattice. The value is the real
-     * part's: character centres sit 8.75 column pitches apart, which leaves
-     * 3.75 blank columns between neighbouring cells. A fraction is legal and
+     * because that is how the eye reads it on a lattice. Tuned by eye for the
+     * watch: the real part spaces its characters far wider (3.75 blank
+     * columns - HISTORY.md), an extravagance a 4-character desk display can
+     * afford and a 10-position watch field cannot. A fraction is legal and
      * changes only the spacing, never the lattice inside a cell.
      *
      * VGAP - the vertical space between stacked lines of characters: one

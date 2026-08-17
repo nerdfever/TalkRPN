@@ -94,10 +94,12 @@ private const val SMALL_ROW_SCALE = 0.70f
  * millimetres dialled in there would not carry across - a fraction of the screen
  * does, and lands on the real watch looking the same.
  *
- * There is no INITIAL constant: the starting height is DERIVED as the tallest
- * digits at which the full field still fits the widest chord, so the field's
- * size and the gap decide it. See the derivation in [DisplayTestScreen].
+ * The default is settled by eye. It replaced an earlier derive-to-fit rule
+ * (the tallest digits whose full field spans the widest chord), which made
+ * sense while the field size was fixed; with fp on a knob, the height is its
+ * own decision.
  */
+private const val INITIAL_HEIGHT_FRACTION = 0.08f
 private const val HEIGHT_FRACTION_MIN = 0.03f
 private const val HEIGHT_FRACTION_MAX = 0.25f
 
@@ -281,7 +283,7 @@ private val SAMPLE_SETS = listOf(
  * This is the fp knob's DEFAULT - the field width is being fitted by eye, and
  * the initial height derivation below also sizes against it.
  */
-private const val FIELD_POSITIONS = 15
+private const val FIELD_POSITIONS = 10
 
 /**
  * The exponent's share of the field, at the right end: a blank - or the minus,
@@ -424,14 +426,6 @@ private val LOWER_REGISTERS = listOf("LASTX", "STO")
 /** Breathing room at each end of a register row. */
 private val SIDE_MARGIN = 6.dp
 
-/**
- * Extra inset from the glass edge, beyond what the round-screen geometry demands.
- *
- * The chord calculation says where the circle is; this says how close to it we are
- * willing to put ink. Curved glass and the bezel eat the last millimetre.
- */
-private val BEZEL_INSET = 3.dp
-
 /** Vertical space between register rows. */
 
 /** Space between the register block and the annunciators. */
@@ -444,6 +438,12 @@ private val TEXT_REGISTER_LABEL = 9.sp
 
 /** Air between a label's right end and the field it names. */
 private val LABEL_FIELD_CLEARANCE = 4.dp
+
+/**
+ * The label whose width sets the small rows' centring shift - a single letter,
+ * the common case, so the field earns most of the glass.
+ */
+private const val SHIFT_REFERENCE_LABEL = "T"
 private val TEXT_ANNUNCIATOR = 10.sp
 private val TEXT_BUTTON = 9.sp
 
@@ -495,22 +495,10 @@ private fun DisplayTestScreen() {
     // The screen is round, and the layout has to know it. Taken as a circle whose
     // diameter is the narrower side.
     val screenPx = minOf(metrics.widthPixels, metrics.heightPixels).toFloat()
-    val insetPx = BEZEL_INSET.value * metrics.density
 
-    // The two independent adjustments. Neither moves the other once running -
-    // but the STARTING height is derived from the field: the tallest digits at
-    // which all FIELD_POSITIONS fit the widest chord at the default gap. X sits
-    // on the diameter, so its chord is the screen less the bezel insets.
-    val fittedHeightFraction = remember {
-        val usablePx = screenPx - 2f * insetPx
-        val fieldWidthUnits =
-            fieldUnits(FIELD_POSITIONS, INITIAL_GAP_UNITS, TalkRpnFont.SLANT_DEGREES, TalkRpnFont.DESCENDER_DEPTH)
-        (usablePx / fieldWidthUnits * TalkRpnFont.CELL_HEIGHT / screenPx)
-            .coerceIn(HEIGHT_FRACTION_MIN, HEIGHT_FRACTION_MAX)
-    }
-
+    // The two independent adjustments. Neither moves the other once running.
     var gapUnits by remember { mutableStateOf(INITIAL_GAP_UNITS) }
-    var heightFraction by remember { mutableStateOf(fittedHeightFraction) }
+    var heightFraction by remember { mutableStateOf(INITIAL_HEIGHT_FRACTION) }
 
     var vgapUnits by remember { mutableStateOf(INITIAL_VGAP_UNITS) }
     var fieldPositions by remember { mutableStateOf(FIELD_POSITIONS) }
@@ -601,15 +589,16 @@ private fun DisplayTestScreen() {
 
     // The small rows centre "label + field" as one unit, so a labelled register
     // reads as the centred thing - X, having no label, centres its field alone.
-    // ONE shift for every small row, half the widest label's block, so the
-    // fields all stay aligned with each other; shorter labels just leave a
-    // little slack to their left.
+    // ONE shift for every small row, so the fields all stay aligned with each
+    // other - and it is half of a SINGLE-LETTER label's block, not the widest:
+    // T Z Y are the common case, and charging every row for LASTX dragged the
+    // whole stack left of where the eye wants it. The two long labels simply
+    // overhang further into the left margin.
     val textMeasurer = rememberTextMeasurer()
     val smallFieldShiftPx = remember(metrics.density) {
-        val widestLabelPx = (UPPER_REGISTERS + LOWER_REGISTERS).maxOf { label ->
-            textMeasurer.measure(label, TextStyle(fontSize = TEXT_REGISTER_LABEL)).size.width
-        }
-        (widestLabelPx + LABEL_FIELD_CLEARANCE.value * metrics.density) / 2f
+        val referenceLabelPx =
+            textMeasurer.measure(SHIFT_REFERENCE_LABEL, TextStyle(fontSize = TEXT_REGISTER_LABEL)).size.width
+        (referenceLabelPx + LABEL_FIELD_CLEARANCE.value * metrics.density) / 2f
     }
 
     // One press must move the layout at least one pixel; below that the control

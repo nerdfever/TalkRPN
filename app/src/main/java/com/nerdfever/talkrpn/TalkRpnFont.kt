@@ -111,9 +111,9 @@ object TalkRpnFont {
     const val DESCENDER_DEPTH = 0.625f  // how far the descender hangs below the baseline
     const val STROKE = 0.1475f          // pen stroke width
     const val SLANT_DEGREES = 6.0f      // rightward lean, in degrees
-    const val DEFAULT_GAP = 0.67f       // from the last lit centreline of one glyph to the first of the next
+    const val DEFAULT_GAP = 1.0f        // from the last lit centreline of one glyph to the first of the next
     const val SPACE_WIDTH = 0.6f        // width of blank space (0x20)
-    const val VGAP = -0.33f             // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
+    const val VGAP = 1.0f               // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
     const val DP_GAP_FRACTION = 0.337f  // how far across the gap the decimal point and comma sit, as a fraction of that gap
 
     /*
@@ -155,7 +155,7 @@ object TalkRpnFont {
      *   Both ends are centrelines, like every other length in this font. That
      *   is NOT the dark space a reader sees: each glyph's ink overhangs its
      *   own centreline by half a stroke, so the visible dark band is
-     *   gap - STROKE. At the default, 0.67 - 0.1475 = 0.52.
+     *   gap - STROKE. At the default, 1.0 - 0.1475 = 0.85.
      *
      *   Measuring centre to centre is what makes the floor fall out directly:
      *   the two inks touch when the gap equals one stroke, so anything above
@@ -180,11 +180,10 @@ object TalkRpnFont {
      * BETWEEN the rows' ink, changing the descender depth moves the rows
      * apart or together by itself, keeping this clearance as tuned.
      *
-     *   NEGATIVE on purpose: the rows interleave. One row's descender band
-     *   reaches into the cap band of the next, visibly - a tail's tip ends
-     *   ABOVE the top of a neighbouring ascender. Ink survives on horizontal
-     *   offset alone, so text that stacks tall letters directly under tails
-     *   will collide. Still to be settled by eye on the watch.
+     *   Tuned by eye on the emulator at a full unit of clearance: the dark
+     *   band a reader sees between one row's tails and the next row's caps is
+     *   VGAP - STROKE = 0.85. (An earlier negative tuning was made against a
+     *   row-spacing bug - HISTORY.md.) Still to be confirmed on the watch.
      *
      * DP_GAP_FRACTION - how far across the gap the decimal point and comma
      * sit, as a fraction of that gap. They belong to the GAP, not to the cell,
@@ -273,9 +272,9 @@ object TalkRpnFont {
      * out at a fixed x where a full-width cell would have put it. The dot beside
      * a 1 belongs beside the 1.
      *
-     * The dot is 2 x [STROKE] across, so its right edge lands
-     * 0.663 x gap - STROKE/2 clear of the next glyph's ink: positive for any gap
-     * above 0.11, which is tighter than the ink itself allows.
+     * The dot is one [STROKE] across, so its right edge lands
+     * 0.663 x gap - STROKE clear of the next glyph's ink: positive for any gap
+     * above 0.23.
      */
     fun dpXAfter(inkRight: Float, gap: Float) = inkRight + DP_GAP_FRACTION * gap
 
@@ -1236,15 +1235,17 @@ object TalkRpnFont {
                     strokeWidth
                 )
 
-            // Dots are squares of side twice the stroke, matching the separate
-            // rectangular dies a real display's segments are beaded out of.
+            // Dots are squares of ONE stroke's side, so a dot weighs the same
+            // as a bar is thick - trying this against the earlier two-stroke
+            // squares, which read heavy beside the strokes they punctuate.
             // Sheared with everything else, so they lean rather than sitting
             // upright among leaning bars.
             fun addDot(cx: Float, cy: Float) {
-                lit.moveTo(cx - strokeWidth, cy - strokeWidth)
-                lit.lineTo(cx + strokeWidth, cy - strokeWidth)
-                lit.lineTo(cx + strokeWidth, cy + strokeWidth)
-                lit.lineTo(cx - strokeWidth, cy + strokeWidth)
+                val half = strokeWidth / 2f
+                lit.moveTo(cx - half, cy - half)
+                lit.lineTo(cx + half, cy - half)
+                lit.lineTo(cx + half, cy + half)
+                lit.lineTo(cx - half, cy + half)
                 lit.close()
             }
 
