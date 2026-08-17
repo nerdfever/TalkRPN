@@ -58,6 +58,7 @@
         "Panamatik",
         "QDSP",
         "AOSP",
+        "dumpsys",
         "getprop",
         "mdns",
         "unsheared",
