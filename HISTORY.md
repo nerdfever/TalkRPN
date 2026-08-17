@@ -175,6 +175,24 @@ day; the value lives in the font.
 
 ---
 
+## `VGAP` = −0.33 was tuned against a spacing bug
+
+Dave noticed (2026-08-17) that at VGAP −0.33 the tails and the caps of
+adjacent equal-size rows showed clear space where the numbers said they should
+interleave by 0.48 units. The cause was in `rowGapPx`: the below row's
+top-to-baseline span was computed as `cellHeight − (baseline-to-ink-bottom)`,
+treating the cap height as if it were the full ink height. Every row gap was
+inflated by descender-plus-stroke in the below row's units — about 0.77 — plus
+the canvas rounding padding. (A correct `baselineFromTopPx` helper had existed
+and was deleted as "dead" earlier the same week; it was dead because this
+formula had wrongly absorbed its job.) Fixed by reintroducing it and charging
+the above row for its canvas padding too, so baselines now land exactly
+`vpitch` apart. Consequence: every vg value tuned before the fix, −0.33
+included, describes a look about 0.77 units tighter than it produced; vg needs
+re-tuning by eye.
+
+---
+
 ## `VPITCH` = 2.75
 
 Chosen, not measured. The floor is the ink height, 2.61027, below which

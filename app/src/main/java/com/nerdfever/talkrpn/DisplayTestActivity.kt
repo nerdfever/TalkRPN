@@ -547,10 +547,8 @@ private fun DisplayTestScreen() {
 
     // What sits above X's canvas: the upper rows' canvases and the gaps between.
     // RAW gaps, negative included - a clamped spacer's shortfall comes back as
-    // an upward offset on the rows below it, so the sum is what counts. Canvas
-    // heights repeat the rounding in canvasHeightDp; being a pixel off here
-    // moves the chord by nothing measurable.
-    val smallCanvasPx = ceil(inkHeightPx(smallCellHeightPx, descenderUnits)) + 1f
+    // an upward offset on the rows below it, so the sum is what counts.
+    val smallCanvasPx = canvasPx(smallCellHeightPx, descenderUnits)
     val aboveXPx = UPPER_REGISTERS.size * smallCanvasPx +
         (UPPER_REGISTERS.size - 1) * gapSmallToSmallPx +
         gapSmallToXPx
@@ -1131,29 +1129,38 @@ private fun groupDigits(value: String): String {
 /** Device pixels to Dp. Compose lays out in Dp; the font works in pixels. */
 private fun pxToDp(px: Float, density: Float) = (px / density).dp
 
-/**
- * How far a row's baseline sits above the bottom edge of its own canvas.
- *
- * The canvas holds the full ink: half a stroke of headroom, the cap, the
- * descender, and half a stroke below the descender bar. The baseline - segment
- * D's centreline - therefore sits the descender depth plus half a stroke above
- * the bottom. Scales with the row, hence the argument.
- */
-private fun baselineToBottomPx(cellHeightPx: Float, descenderUnits: Float) =
-    cellHeightPx * (descenderUnits + TalkRpnFont.STROKE / 2f) /
-        TalkRpnFont.CELL_HEIGHT
-
 /** The full ink height of a row's canvas, for chord limits and canvas sizing. */
 private fun inkHeightPx(cellHeightPx: Float, descenderUnits: Float) =
     cellHeightPx * (TalkRpnFont.totalHeight(descenderUnits) + TalkRpnFont.STROKE) / TalkRpnFont.CELL_HEIGHT
 
 /**
+ * A row canvas's exact laid-out height in pixels: its ink rounded up, plus the
+ * safety pixel - the same arithmetic [canvasHeightDp] hands to Compose, kept in
+ * one place so spacing and sizing can never disagree about it.
+ */
+private fun canvasPx(cellHeightPx: Float, descenderUnits: Float) =
+    ceil(inkHeightPx(cellHeightPx, descenderUnits)) + 1f
+
+/**
+ * How far a row's baseline sits below the TOP of its own canvas: half a stroke
+ * of headroom above the cap line, then the cap height. Rows draw their ink box
+ * from the canvas top, so this needs no descender term.
+ */
+private fun baselineFromTopPx(cellHeightPx: Float) =
+    cellHeightPx * (TalkRpnFont.STROKE / 2f + TalkRpnFont.CELL_HEIGHT) /
+        TalkRpnFont.CELL_HEIGHT
+
+/**
  * The Column gap that leaves two stacked rows exactly [vpitchPx] apart, baseline
- * to baseline. Depends on both rows, because they may be different sizes.
+ * to baseline: the pitch, less everything already lying between the two
+ * baselines - the ABOVE row from its baseline down to its canvas bottom
+ * (descender, half stroke, and the canvas's rounding padding), and the BELOW
+ * row from its canvas top down to its baseline. Depends on both rows, because
+ * they may be different sizes.
  */
 private fun rowGapPx(vpitchPx: Float, abovePx: Float, belowPx: Float, descenderUnits: Float) =
-    vpitchPx - baselineToBottomPx(abovePx, descenderUnits) -
-        (belowPx - baselineToBottomPx(belowPx, descenderUnits))
+    vpitchPx - (canvasPx(abovePx, descenderUnits) - baselineFromTopPx(abovePx)) -
+        baselineFromTopPx(belowPx)
 
 /**
  * Dp for a Canvas that must be at least [px] tall.
@@ -1168,5 +1175,5 @@ private fun rowGapPx(vpitchPx: Float, abovePx: Float, belowPx: Float, descenderU
  * Rounding up costs a pixel of layout and removes the failure mode entirely.
  */
 private fun canvasHeightDp(px: Float, density: Float, descenderUnits: Float) =
-    ((ceil(inkHeightPx(px, descenderUnits)) + 1f) / density).dp
+    (canvasPx(px, descenderUnits) / density).dp
 
