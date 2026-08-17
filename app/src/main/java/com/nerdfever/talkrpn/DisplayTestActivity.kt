@@ -163,13 +163,14 @@ private const val VGAP_UNITS_MAX = 2.0f
 
 /**
  * The gap, vgap and dd knobs step by this, additively - they are lengths, not
- * proportions. A fortieth of a cell width, which is fine enough to tune with and
- * coarse enough that a press is always visible at a readable size.
+ * proportions. Deliberately fine: the knobs are now used for FINAL tuning, so
+ * resolution beats per-press visibility. Kept to a multiple of 0.001 so the
+ * three-decimal button readouts stay exact.
  */
-private const val SPACING_STEP_UNITS = 0.025f
+private const val SPACING_STEP_UNITS = 0.006f
 
-/** Every proportional adjustment moves by this much per press. */
-private const val ADJUST_STEP_FRACTION = 0.05f
+/** Every proportional adjustment (hf) moves by this much per press. */
+private const val ADJUST_STEP_FRACTION = 0.0125f
 
 /**
  * The descender knob's range, in cell widths. Wide on purpose: from a stub
@@ -180,16 +181,20 @@ private const val DESCENDER_UNITS_MIN = 0.2f
 private const val DESCENDER_UNITS_MAX = 1.2f
 
 /**
- * A press must never move the layout by less than one pixel. A step that lands
- * below the display's resolution spends several clicks crossing each pixel
- * boundary, and reads as a control that is broken or laggy.
+ * The floor on how little a press may move the layout, in pixels. At these
+ * sizes a cell unit is a few pixels, so without a floor a step could sit far
+ * below the display's resolution and spend many clicks crossing one pixel.
+ *
+ * A QUARTER pixel, by choice: for final tuning, resolution matters more than
+ * every single press being visible, and the readout on the button moves every
+ * press even when the pixels have not caught up yet.
  *
  * Units are the right thing to STORE - they transfer to the watch, where a pixel
- * figure tuned on the emulator would not - but the wrong thing to step by blindly,
- * because a unit is smaller than a pixel at these sizes. So the step is whichever
- * is larger: the nominal step above, or one pixel's worth of units.
+ * figure tuned on the emulator would not - but the wrong thing to step by blindly.
+ * So the step is whichever is larger: the nominal step above, or this floor's
+ * worth of units.
  */
-private const val MIN_STEP_PX = 1f
+private const val MIN_STEP_PX = 0.25f
 
 /** The annunciator box outline. */
 private val ANNUNCIATOR_BORDER = Color(0xFF4A4A4A)
