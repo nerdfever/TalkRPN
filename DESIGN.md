@@ -53,9 +53,16 @@ automatic mode switch converts stored values or only changes the default.
 
 **Display**
 
-- **Stroke, gap, vgap and colour are all still to be judged on the watch.** The
-  values in `TalkRpnFont` are measurements and starting points; the test screens
-  bracket each one.
+- **The font is a user setting** (UI to be decided - probably spoken): the
+  segment font in its LED red, or the HDLS-1414 dot font in its neon orange.
+  One colour per font, fixed.
+- **The display runs at full brightness while the calculator is up**, via the
+  window brightness override; the panel's sunlight-boost headroom is
+  system-owned and not reachable from an app. Each colour is already at its
+  hue's OLED ceiling - a brighter red exists only by paling toward white.
+- **Stroke and gap are still to be judged on the watch.** The values in
+  `TalkRpnFont` are measurements and starting points; the test screens bracket
+  each one.
 - **`Hp01Font`'s 130 advance and 62 cell width are reconstruction figures** with
   no corroboration. `TalkRpnFont` no longer depends on either.
 - **Segment `M`'s depth is settled** — the measured 0.7525 plunged tails nearly

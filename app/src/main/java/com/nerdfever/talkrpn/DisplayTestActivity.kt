@@ -477,6 +477,15 @@ class DisplayTestActivity : ComponentActivity() {
         // Judging legibility needs the screen to stay up while you look at it.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        // And at full brightness: this overrides the user's dimmer (and
+        // auto-brightness resting below maximum) for THIS window only, and
+        // reverts on leaving. It cannot reach the panel's sunlight-boost
+        // nits - that headroom is sensor-driven and system-owned - but it
+        // guarantees everything the slider can give.
+        window.attributes = window.attributes.apply {
+            screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+        }
+
         setContent {
             AppScaffold {
                 DisplayTestScreen()
