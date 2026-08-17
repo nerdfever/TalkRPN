@@ -702,11 +702,14 @@ private fun DisplayTestScreen() {
                 // Values live here rather than on the buttons: at this size a
                 // button is only wide enough for its name.
                 Text(
-                    // The knobs, all in cell widths, named as the font names
-                    // them: g DEFAULT_GAP, vg VGAP, dd DESCENDER_DEPTH - the
-                    // values here copy straight back into TalkRpnFont.
-                    text = "g%.2f vg%.2f dd%.2f".format(
+                    // The knobs, named as the code names them: g DEFAULT_GAP,
+                    // vg VGAP, dd DESCENDER_DEPTH - cell widths, copying
+                    // straight back into TalkRpnFont - and hf heightFraction,
+                    // the screen's own knob: a fraction of the diameter, three
+                    // decimals because its steps are five-percent multiples.
+                    text = "g%.2f hf%.3f vg%.2f dd%.2f".format(
                         gapUnits,
+                        heightFraction,
                         vgapUnits,
                         descenderUnits
                     ),
