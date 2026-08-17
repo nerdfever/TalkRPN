@@ -259,6 +259,31 @@ beside the bars, one read thin.
 
 ---
 
+## Why the WDB app says "ON?" on the Watch7
+
+The app was meant to show the wireless-debugging service's REAL state, not
+just the setting, after a day of adbd wedging under a live setting. Every
+probe an app could use was tested on the actual watch (2026-08-17):
+
+- `service.adb.tls.port` - AOSP adbd publishes its live TLS port here. The
+  Watch7 never sets it: empty even from the adb shell while a session was
+  demonstrably connected. Enumerating `getprop | grep adb` shows Samsung
+  publishes no wireless-adb property at all.
+- `dumpsys adb` - contains `connected_to_adb`, a genuine host-attached flag,
+  and works from the shell. But the service manager hides the `adb` service
+  from app uids ("Can't find service: adb"), even with DUMP granted via pm.
+
+So on this hardware the app cannot know, and says `ON?`. The remaining
+untried route is NsdManager self-discovery of `_adb-tls-connect._tcp` (needs
+INTERNET on the wdbtile app); parked unless the uncertainty starts to hurt.
+
+Also learned: the PC-side adb server's mdns cache goes stale - after the
+watch cycles wireless debugging, `adb kill-server` is what makes the fresh
+advertisement visible. Two "watch unreachable" verdicts today were actually
+cache staleness.
+
+---
+
 ## The LED colour
 
 Both datasheets state the peak outright — no reconstruction needed. HP 5082-7400
