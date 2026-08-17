@@ -252,7 +252,8 @@ which made sense only while the field size was fixed. The small rows' centring
 shift changed from half of "LASTX" to half of "T": single-letter labels are
 the common case, and charging every row for the widest label dragged the
 stack left. The segment font's dots also shrank from two strokes square to
-one, to be judged.
+one, then settled at 1.5 (`DOT_SIDE_STROKES`) on the watch: two read heavy
+beside the bars, one read thin.
 
 ---
 

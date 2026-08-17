@@ -113,6 +113,7 @@ object TalkRpnFont {
     const val SLANT_DEGREES = 6.0f      // rightward lean, in degrees
     const val DEFAULT_GAP = 1.0f        // from the last lit centreline of one glyph to the first of the next
     const val SPACE_WIDTH = 0.6f        // width of blank space (0x20)
+    const val DOT_SIDE_STROKES = 1.5f   // a dot square's side, in strokes
     const val VGAP = 1.0f               // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
     const val DP_GAP_FRACTION = 0.337f  // how far across the gap the decimal point and comma sit, as a fraction of that gap
 
@@ -171,6 +172,11 @@ object TalkRpnFont {
      * happens to have no ink, so it takes a gap on each side like any other.
      * Nothing about it is special-cased and there is no separate notion of a
      * word space.
+     *
+     * DOT_SIDE_STROKES - the side of the square drawn for every dot (decimal
+     * point, comma, the colon dots), in strokes, so the dots keep their weight
+     * relative to the bars if the stroke is retuned. Settled by eye: two
+     * strokes read heavy beside the bars, one read thin; 1.5 sits right.
      *
      * VGAP - the vertical space between rows: one row's descender-bar
      * centreline down to the next row's cap centreline. The vertical partner
@@ -272,9 +278,9 @@ object TalkRpnFont {
      * out at a fixed x where a full-width cell would have put it. The dot beside
      * a 1 belongs beside the 1.
      *
-     * The dot is one [STROKE] across, so its right edge lands
-     * 0.663 x gap - STROKE clear of the next glyph's ink: positive for any gap
-     * above 0.23.
+     * The dot is [DOT_SIDE_STROKES] x [STROKE] across, so its right edge lands
+     * 0.663 x gap - 1.25 x STROKE clear of the next glyph's ink: positive for
+     * any gap above 0.28.
      */
     fun dpXAfter(inkRight: Float, gap: Float) = inkRight + DP_GAP_FRACTION * gap
 
@@ -1235,13 +1241,12 @@ object TalkRpnFont {
                     strokeWidth
                 )
 
-            // Dots are squares of ONE stroke's side, so a dot weighs the same
-            // as a bar is thick - trying this against the earlier two-stroke
-            // squares, which read heavy beside the strokes they punctuate.
-            // Sheared with everything else, so they lean rather than sitting
-            // upright among leaning bars.
+            // Dots are squares of [DOT_SIDE_STROKES] strokes' side - see the
+            // tweakable for how that weight was chosen. Sheared with
+            // everything else, so they lean rather than sitting upright among
+            // leaning bars.
             fun addDot(cx: Float, cy: Float) {
-                val half = strokeWidth / 2f
+                val half = strokeWidth * DOT_SIDE_STROKES / 2f
                 lit.moveTo(cx - half, cy - half)
                 lit.lineTo(cx + half, cy - half)
                 lit.lineTo(cx + half, cy + half)
