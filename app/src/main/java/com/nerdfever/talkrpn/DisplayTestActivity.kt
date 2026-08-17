@@ -265,6 +265,9 @@ private val SAMPLE_SETS = listOf(
  * A position is one full-width cell plus one gap. The field's right edge goes as
  * far right as the glass allows; the mantissa is left-justified from position 1,
  * and an exponent occupies the rightmost [EXPONENT_FIELD_POSITIONS].
+ *
+ * This is the fp knob's DEFAULT - the field width is being fitted by eye, and
+ * the initial height derivation below also sizes against it.
  */
 private const val FIELD_POSITIONS = 15
 
@@ -273,6 +276,14 @@ private const val FIELD_POSITIONS = 15
  * when the exponent is negative - then two digits. HP convention; no marker.
  */
 private const val EXPONENT_FIELD_POSITIONS = 3
+
+/**
+ * The fp knob's range: the floor is the exponent's share plus one mantissa
+ * position, below which the field cannot say anything; the ceiling is past
+ * anything the glass could hold at a readable size.
+ */
+private const val FIELD_POSITIONS_MIN = EXPONENT_FIELD_POSITIONS + 1
+private const val FIELD_POSITIONS_MAX = 20
 
 /** Places shown after the radix - the DSP mode. DSP 3 is the default. */
 private const val DSP_PLACES = 3
@@ -310,6 +321,7 @@ private fun midBarYPx(cellHeightPx: Float): Float =
  * on the SCREEN's vertical axis, labels not counted.
  */
 private fun fieldLeftPx(
+    fieldPositions: Int,
     cellHeightPx: Float,
     gapUnits: Float,
     slantDegrees: Float,
@@ -317,7 +329,7 @@ private fun fieldLeftPx(
     screenPx: Float,
     leftInRootPx: Float,
 ): Float {
-    val fieldWidthPx = fieldUnits(FIELD_POSITIONS, gapUnits, slantDegrees, descenderUnits) *
+    val fieldWidthPx = fieldUnits(fieldPositions, gapUnits, slantDegrees, descenderUnits) *
         (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
     return screenPx / 2f - fieldWidthPx / 2f - leftInRootPx
 }
@@ -478,8 +490,13 @@ private fun DisplayTestScreen() {
     var heightFraction by remember { mutableStateOf(fittedHeightFraction) }
 
     var vgapUnits by remember { mutableStateOf(INITIAL_VGAP_UNITS) }
+    var fieldPositions by remember { mutableStateOf(FIELD_POSITIONS) }
     var sampleIndex by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(false) }
+
+    // Which font draws the registers: the segment font, or the HDLS-1414 dot
+    // matrix. Same field box either way, so the two are judged in one frame.
+    var useDotFont by remember { mutableStateOf(false) }
 
     // Slant (6.0 degrees) and descender depth (0.625) are settled in the font;
     // their knobs are gone. Both still travel as plain values so a future knob
@@ -579,9 +596,9 @@ private fun DisplayTestScreen() {
 
         val fitted = when {
             SAMPLE_SETS[sampleIndex].fillsRow ->
-                buildString { while (length < FIELD_POSITIONS) append(text) }.take(FIELD_POSITIONS)
+                buildString { while (length < fieldPositions) append(text) }.take(fieldPositions)
             // Left-justified, so an over-long value loses its right end.
-            text.length > FIELD_POSITIONS -> text.take(FIELD_POSITIONS)
+            text.length > fieldPositions -> text.take(fieldPositions)
             else -> text
         }
 
@@ -623,7 +640,8 @@ private fun DisplayTestScreen() {
             for ((index, name) in UPPER_REGISTERS.withIndex()) {
 
                 RegisterRow(
-                    name, samples[name].orEmpty(), smallCellHeightPx, gapUnits,
+                    name, samples[name].orEmpty(), fieldPositions, useDotFont,
+                    smallCellHeightPx, gapUnits,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
                     descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
@@ -651,8 +669,12 @@ private fun DisplayTestScreen() {
                     .onGloballyPositioned { xLeftInRootPx = it.positionInRoot().x }
             ) {
                 drawRegister(
-                    samples["X"].orEmpty(), xCellHeightPx, gapUnits, LedPalette.LIT,
-                    fieldLeftPx(xCellHeightPx, gapUnits, slantDegrees, descenderUnits, screenPx, xLeftInRootPx),
+                    samples["X"].orEmpty(), fieldPositions, useDotFont,
+                    xCellHeightPx, gapUnits, LedPalette.LIT,
+                    fieldLeftPx(
+                        fieldPositions, xCellHeightPx, gapUnits, slantDegrees,
+                        descenderUnits, screenPx, xLeftInRootPx
+                    ),
                     slantDegrees, descenderUnits
                 )
             }
@@ -665,7 +687,8 @@ private fun DisplayTestScreen() {
             for (name in LOWER_REGISTERS) {
 
                 RegisterRow(
-                    name, samples[name].orEmpty(), smallCellHeightPx, gapUnits,
+                    name, samples[name].orEmpty(), fieldPositions, useDotFont,
+                    smallCellHeightPx, gapUnits,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
                     descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
@@ -771,13 +794,38 @@ private fun DisplayTestScreen() {
                                 .coerceAtLeast(VGAP_UNITS_MIN)
                         }
                     )
+
+                    Spacer(Modifier.width(GAP_SMALL))
+
+                    // fp tunes fieldPositions - how many digit positions each
+                    // register's field holds. An integer: whole cells only.
+                    SplitButton("fp %d".format(fieldPositions), Modifier.weight(1f),
+                        onIncrease = {
+                            fieldPositions = (fieldPositions + 1)
+                                .coerceAtMost(FIELD_POSITIONS_MAX)
+                        },
+                        onDecrease = {
+                            fieldPositions = (fieldPositions - 1)
+                                .coerceAtLeast(FIELD_POSITIONS_MIN)
+                        }
+                    )
                 }
 
                 Spacer(Modifier.height(GAP_SMALL))
 
-                // Named for the set it is SHOWING, not the one a tap brings.
-                CompactButton("sample: " + SAMPLE_SETS[sampleIndex].name, Modifier.fillMaxWidth()) {
-                    sampleIndex = (sampleIndex + 1) % SAMPLE_SETS.size
+                Row(modifier = Modifier.fillMaxWidth()) {
+
+                    // Named for the set it is SHOWING, not the one a tap brings.
+                    CompactButton("sample: " + SAMPLE_SETS[sampleIndex].name, Modifier.weight(1f)) {
+                        sampleIndex = (sampleIndex + 1) % SAMPLE_SETS.size
+                    }
+
+                    Spacer(Modifier.width(GAP_SMALL))
+
+                    // Likewise: the font on screen now, not the one a tap brings.
+                    CompactButton(if (useDotFont) "font: dot" else "font: seg", Modifier.weight(1f)) {
+                        useDotFont = !useDotFont
+                    }
                 }
             }
         }
@@ -794,6 +842,8 @@ private fun DisplayTestScreen() {
 private fun RegisterRow(
     name: String,
     value: String,
+    fieldPositions: Int,
+    useDotFont: Boolean,
     cellHeightPx: Float,
     gapUnits: Float,
     color: Color,
@@ -812,7 +862,8 @@ private fun RegisterRow(
     // widest label block, so LABEL PLUS FIELD is the centred unit. The same
     // shift for every small row keeps their fields aligned with each other.
     val rowFieldLeftPx =
-        fieldLeftPx(cellHeightPx, gapUnits, slantDegrees, descenderUnits, screenPx, leftInRootPx) + fieldShiftPx
+        fieldLeftPx(fieldPositions, cellHeightPx, gapUnits, slantDegrees, descenderUnits, screenPx, leftInRootPx) +
+            fieldShiftPx
 
     Box(
         modifier = modifier
@@ -825,7 +876,10 @@ private fun RegisterRow(
                 .fillMaxWidth()
                 .height(canvasHeightDp(cellHeightPx, density, descenderUnits))
         ) {
-            drawRegister(value, cellHeightPx, gapUnits, color, rowFieldLeftPx, slantDegrees, descenderUnits)
+            drawRegister(
+                value, fieldPositions, useDotFont, cellHeightPx, gapUnits, color,
+                rowFieldLeftPx, slantDegrees, descenderUnits
+            )
         }
 
         // The label sits just LEFT of the field, right-justified against the
@@ -871,7 +925,9 @@ private fun CompactButton(label: String, modifier: Modifier = Modifier, onClick:
             .padding(vertical = CONTROL_PAD_V),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = LedPalette.LABEL, fontSize = TEXT_BUTTON)
+        // One line, always - a label that wraps inside a button this small
+        // reads as two buttons.
+        Text(label, color = LedPalette.LABEL, fontSize = TEXT_BUTTON, maxLines = 1, softWrap = false)
     }
 }
 
@@ -941,19 +997,26 @@ private fun Annunciator(text: String) {
 }
 
 /**
- * Draws one register's value into its [FIELD_POSITIONS]-position field, whose
+ * Draws one register's value into its [fieldPositions]-position field, whose
  * position 1 begins at [fieldLeftPx] - the caller centres the field on the
  * screen's vertical axis via [fieldLeftPx] (the function of the same name).
  *
  * Mantissa left-justified from position 1; exponent, when there is one,
  * right-justified into the last [EXPONENT_FIELD_POSITIONS] with no marker.
  *
- * Anything the font has no glyph for is dropped by the layout, so a gap in the
- * glyph table shows as missing ink rather than crashing. Radix and comma need
- * no cell of their own: they merge into the preceding cell's DP/COMMA element.
+ * TWO FONTS, ONE FIELD BOX. The field is always laid out in the segment font's
+ * positions, so swapping fonts changes the ink and nothing else - the frame the
+ * two are judged in stays put. The dot font draws in its own default colour
+ * (its whole point is looking different) and in its own fixed pitch, where '.'
+ * and ',' take a whole cell rather than living in a gap.
+ *
+ * Anything the segment font has no glyph for is dropped by its layout; the dot
+ * font draws a blank cell instead, which is what fixed pitch means.
  */
 private fun DrawScope.drawRegister(
     value: String,
+    fieldPositions: Int,
+    useDotFont: Boolean,
     cellHeightPx: Float,
     gapUnits: Float,
     color: Color,
@@ -969,7 +1032,7 @@ private fun DrawScope.drawRegister(
     fun positionsPx(n: Int): Float = fieldUnits(n, gapUnits, slantDegrees, descenderUnits) * scale
 
     // THE FIELD: position 1 at [fieldLeftPx], the caller having centred it.
-    val fieldRightPx = fieldLeftPx + positionsPx(FIELD_POSITIONS)
+    val fieldRightPx = fieldLeftPx + positionsPx(fieldPositions)
 
     // Split off the exponent. The marker never reaches the screen: the mantissa
     // is left-justified from position 1, the exponent right-justified into the
@@ -981,16 +1044,47 @@ private fun DrawScope.drawRegister(
 
     // The mantissa may not enter the exponent's positions. Overflow loses its
     // RIGHT end - it is the left-justified block.
-    //
+    val mantissaPositions =
+        if (exponent.isEmpty()) fieldPositions else fieldPositions - EXPONENT_FIELD_POSITIONS
+
+    if (useDotFont) {
+
+        // Fixed pitch makes the fit check trivial - and the segment gap knob
+        // does not apply; the dot font's own character gap rules its spacing.
+        with(Hdls1414Font) {
+
+            val mantissaMaxPx = positionsPx(mantissaPositions)
+
+            while (mantissa.isNotEmpty() && measureWidth(mantissa, cellHeightPx) > mantissaMaxPx) {
+                mantissa = mantissa.dropLast(1)
+            }
+
+            if (mantissa.isNotEmpty()) {
+                drawHdls1414Text(
+                    text = mantissa,
+                    inkOrigin = Offset(fieldLeftPx, 0f),
+                    cellHeight = cellHeightPx,
+                )
+            }
+
+            if (exponent.isNotEmpty()) {
+                drawHdls1414Text(
+                    text = exponent,
+                    inkOrigin = Offset(fieldRightPx - measureWidth(exponent, cellHeightPx), 0f),
+                    cellHeight = cellHeightPx,
+                )
+            }
+        }
+
+        return
+    }
+
     // The check runs in the font's own UNITS, not pixels, so every row reaches
     // the same verdict for the same text - checked in pixels, the small rows'
     // different rounding could disagree with X's at the same gap. A TRAILING
     // radix or separator is not counted: it lives in the gap after its digit,
     // costs no position, and may poke past the field into the darkness.
-    val mantissaMaxUnits = fieldUnits(
-        if (exponent.isEmpty()) FIELD_POSITIONS else FIELD_POSITIONS - EXPONENT_FIELD_POSITIONS,
-        gapUnits, slantDegrees, descenderUnits
-    )
+    val mantissaMaxUnits = fieldUnits(mantissaPositions, gapUnits, slantDegrees, descenderUnits)
 
     fun fits(text: String): Boolean {
         val counted = text.trimEnd(RADIX, GROUP_SEPARATOR)
