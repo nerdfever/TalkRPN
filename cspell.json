@@ -77,8 +77,10 @@
         "fonttools",
         "Segoe",
 
-        // PDF syntax written by the generator scripts, where a preceding \n in a
-        // PowerShell string runs into the keyword: \nendobj, \nstream and so on.
+        // PDF syntax written by the generator scripts - the keyword itself, and
+        // the forms where a preceding \n in a PowerShell string runs into it:
+        // \nendobj, \nstream and so on.
+        "endstream",
         "nendobj",
         "nendstream",
         "nstartxref",
