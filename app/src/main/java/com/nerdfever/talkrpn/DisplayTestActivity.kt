@@ -291,6 +291,17 @@ private const val FIELD_POSITIONS_MAX = 20
 private const val DSP_PLACES = 3
 
 /**
+ * The cyan field box's clearance: how far its line's INNER edge sits outside
+ * the field's ink envelope, in pixels. Just enough that the hairline never
+ * touches a glyph's outermost ink; any more and the box stops honestly
+ * marking where the field is.
+ */
+private const val FIELD_BOX_CLEARANCE_PX = 2f
+
+/** The field box hairline's width, in pixels. */
+private const val FIELD_BOX_STROKE_PX = 1f
+
+/**
  * Slack for the does-it-fit comparison, in cell units.
  *
  * A full field of full-width digits measures EXACTLY the field's width, so the
@@ -1039,11 +1050,22 @@ private fun DrawScope.drawRegister(
     // The field box made visible, for fitting work: a hairline around the
     // whole register's display area, in the diagnostic cyan so it cannot be
     // mistaken for lit ink.
+    //
+    // The rectangle fieldLeft..fieldRight x 0..inkHeight IS the ink envelope -
+    // fieldUnits carries the stroke's overhang at both ends, and the row draws
+    // its ink from the canvas top - so the box inflates OUTWARD from there by
+    // its clearance, plus half its own line so the line's inner edge is what
+    // sits at the clearance.
+    val boxOutsetPx = FIELD_BOX_CLEARANCE_PX + FIELD_BOX_STROKE_PX / 2f
+
     drawRect(
         color = LedPalette.FIELD_BOUNDS,
-        topLeft = Offset(fieldLeftPx, 0f),
-        size = Size(fieldRightPx - fieldLeftPx, inkHeightPx(cellHeightPx, descenderUnits)),
-        style = Stroke(width = 1f),
+        topLeft = Offset(fieldLeftPx - boxOutsetPx, -boxOutsetPx),
+        size = Size(
+            fieldRightPx - fieldLeftPx + 2f * boxOutsetPx,
+            inkHeightPx(cellHeightPx, descenderUnits) + 2f * boxOutsetPx,
+        ),
+        style = Stroke(width = FIELD_BOX_STROKE_PX),
     )
 
     // Split off the exponent. The marker never reaches the screen: the mantissa
