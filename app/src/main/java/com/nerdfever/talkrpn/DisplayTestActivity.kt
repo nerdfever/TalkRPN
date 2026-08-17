@@ -135,6 +135,16 @@ private val GAP_UNITS_MIN = TalkRpnFont.STROKE
 private const val GAP_UNITS_MAX = 3.0f
 
 /**
+ * The g knob's step and range when the DOT font is live, in blank columns -
+ * that font's own gap unit. A quarter of a column per press: fine enough to
+ * tune with, and at register sizes roughly a pixel, so every press shows.
+ * Zero means adjacent cells - the lattices touch, ink one dot apart.
+ */
+private const val DOT_GAP_STEP_COLUMNS = 0.25f
+private const val DOT_GAP_COLUMNS_MIN = 0f
+private const val DOT_GAP_COLUMNS_MAX = 8f
+
+/**
  * VGAP - the vertical space between rows, in the same units. The knob mirrors
  * the font's tweakable of the same name: one row's descender-bar centreline
  * down to the next row's cap centreline, negative meaning the bands interleave.
@@ -511,6 +521,10 @@ private fun DisplayTestScreen() {
     // matrix. Same field box either way, so the two are judged in one frame.
     var useDotFont by remember { mutableStateOf(false) }
 
+    // The dot font's own gap, in blank columns - the g knob binds to this
+    // while the dot font is live, and to gapUnits otherwise.
+    var dotGapColumns by remember { mutableStateOf(Hdls1414Font.CHARACTER_GAP_COLUMNS) }
+
     // Slant (6.0 degrees) and descender depth (0.625) are settled in the font;
     // their knobs are gone. Both still travel as plain values so a future knob
     // could return without re-threading anything.
@@ -654,7 +668,7 @@ private fun DisplayTestScreen() {
 
                 RegisterRow(
                     name, samples[name].orEmpty(), fieldPositions, useDotFont,
-                    smallCellHeightPx, gapUnits,
+                    smallCellHeightPx, gapUnits, dotGapColumns,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
                     descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
@@ -683,7 +697,7 @@ private fun DisplayTestScreen() {
             ) {
                 drawRegister(
                     samples["X"].orEmpty(), fieldPositions, useDotFont,
-                    xCellHeightPx, gapUnits, LedPalette.LIT,
+                    xCellHeightPx, gapUnits, dotGapColumns, LedPalette.LIT,
                     fieldLeftPx(
                         fieldPositions, xCellHeightPx, gapUnits, slantDegrees,
                         descenderUnits, screenPx, xLeftInRootPx
@@ -701,7 +715,7 @@ private fun DisplayTestScreen() {
 
                 RegisterRow(
                     name, samples[name].orEmpty(), fieldPositions, useDotFont,
-                    smallCellHeightPx, gapUnits,
+                    smallCellHeightPx, gapUnits, dotGapColumns,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
                     descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
@@ -763,13 +777,24 @@ private fun DisplayTestScreen() {
                 // steps. No separate readout to cross-reference.
                 Row(modifier = Modifier.fillMaxWidth()) {
 
-                    SplitButton("g %.3f".format(gapUnits), Modifier.weight(1f),
+                    // One knob, two tweakables: g binds to whichever font is
+                    // live - the segment font's DEFAULT_GAP in cell widths, or
+                    // the dot font's CHARACTER_GAP_COLUMNS in blank columns.
+                    // The value shown is always the live one.
+                    SplitButton(
+                        if (useDotFont) "g %.2f".format(dotGapColumns)
+                        else "g %.3f".format(gapUnits),
+                        Modifier.weight(1f),
                         onIncrease = {
-                            gapUnits = (gapUnits + spacingStepUnits)
+                            if (useDotFont) dotGapColumns = (dotGapColumns + DOT_GAP_STEP_COLUMNS)
+                                .coerceAtMost(DOT_GAP_COLUMNS_MAX)
+                            else gapUnits = (gapUnits + spacingStepUnits)
                                 .coerceAtMost(GAP_UNITS_MAX)
                         },
                         onDecrease = {
-                            gapUnits = (gapUnits - spacingStepUnits)
+                            if (useDotFont) dotGapColumns = (dotGapColumns - DOT_GAP_STEP_COLUMNS)
+                                .coerceAtLeast(DOT_GAP_COLUMNS_MIN)
+                            else gapUnits = (gapUnits - spacingStepUnits)
                                 .coerceAtLeast(GAP_UNITS_MIN)
                         }
                     )
@@ -859,6 +884,7 @@ private fun RegisterRow(
     useDotFont: Boolean,
     cellHeightPx: Float,
     gapUnits: Float,
+    dotGapColumns: Float,
     color: Color,
     density: Float,
     screenPx: Float,
@@ -890,7 +916,7 @@ private fun RegisterRow(
                 .height(canvasHeightDp(cellHeightPx, density, descenderUnits))
         ) {
             drawRegister(
-                value, fieldPositions, useDotFont, cellHeightPx, gapUnits, color,
+                value, fieldPositions, useDotFont, cellHeightPx, gapUnits, dotGapColumns, color,
                 rowFieldLeftPx, slantDegrees, descenderUnits
             )
         }
@@ -1032,6 +1058,7 @@ private fun DrawScope.drawRegister(
     useDotFont: Boolean,
     cellHeightPx: Float,
     gapUnits: Float,
+    dotGapColumns: Float,
     color: Color,
     fieldLeftPx: Float,
     slantDegrees: Float,
@@ -1090,13 +1117,16 @@ private fun DrawScope.drawRegister(
 
     if (useDotFont) {
 
-        // Fixed pitch makes the fit check trivial - and the segment gap knob
-        // does not apply; the dot font's own character gap rules its spacing.
+        // Fixed pitch makes the fit check trivial. The g knob binds to
+        // [dotGapColumns] while this font is live - the dot font's own gap, in
+        // its own unit of blank columns.
         with(Hdls1414Font) {
 
             val mantissaMaxPx = positionsPx(mantissaPositions)
 
-            while (mantissa.isNotEmpty() && measureWidth(mantissa, cellHeightPx) > mantissaMaxPx) {
+            while (mantissa.isNotEmpty() &&
+                measureWidth(mantissa, cellHeightPx, dotGapColumns) > mantissaMaxPx
+            ) {
                 mantissa = mantissa.dropLast(1)
             }
 
@@ -1105,14 +1135,19 @@ private fun DrawScope.drawRegister(
                     text = mantissa,
                     inkOrigin = Offset(fieldLeftPx, 0f),
                     cellHeight = cellHeightPx,
+                    gapColumns = dotGapColumns,
                 )
             }
 
             if (exponent.isNotEmpty()) {
                 drawHdls1414Text(
                     text = exponent,
-                    inkOrigin = Offset(fieldRightPx - measureWidth(exponent, cellHeightPx), 0f),
+                    inkOrigin = Offset(
+                        fieldRightPx - measureWidth(exponent, cellHeightPx, dotGapColumns),
+                        0f,
+                    ),
                     cellHeight = cellHeightPx,
+                    gapColumns = dotGapColumns,
                 )
             }
         }
