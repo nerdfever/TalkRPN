@@ -212,6 +212,34 @@ glyphs do horizontally.
 
 ---
 
+## The HDLS-1414 dot font's geometry: chart against callouts
+
+The glyphs were recovered from the datasheet's character chart, which is
+vector artwork - 1,631 identical drawn squares - so the dot patterns are
+exact, not read from a scan. One cell was ambiguous: 0x0E (E-acute) draws two
+body rows compressed, drifting up to half a column off the lattice; it was
+read as full-width bars matching the plain E, the only reading fitting the
+dot count. Dave checked the result against the sheet on 2026-08-17 and
+confirmed it.
+
+The chart's page geometry and the part's physical dimension callouts
+disagree, and the callouts won for layout, the chart for appearance:
+
+| quantity | chart artwork | part callouts | adopted |
+|---|---|---|---|
+| row pitch / column pitch | 1.0649 | 1.098 (0.022/0.020 inch) | 1.098 |
+| dot size / column pitch | 0.7033 | 0.4902 (the die) | 0.7033 |
+| blank columns between characters | 2.163 | 3.75 (8.75-pitch spacing) | 3.75 |
+| vertical gap between lines | 3.562 | none - single-line part | 3.562 |
+
+The dot size keeps the chart's figure because a lit LED behind its diffuser
+reads far fatter than its die - which is presumably why the datasheet's own
+chart fattens it. The callouts were verified against the drawings' leader
+lines, and both character-envelope equations close exactly on round inch
+values; the figures themselves are NOT drawn to their callouts.
+
+---
+
 ## The LED colour
 
 Both datasheets state the peak outright — no reconstruction needed. HP 5082-7400

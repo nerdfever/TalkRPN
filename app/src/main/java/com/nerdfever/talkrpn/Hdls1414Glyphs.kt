@@ -44,15 +44,9 @@ import com.nerdfever.talkrpn.Hdls1414Font.packRows as dots
  *  - The apostrophe carries a tail, so it is a raised comma rather than a
  *    plain tick.
  *
- * ---------------------------------------------------------------------------
- * Uncertain reads
- * ---------------------------------------------------------------------------
- * One character only. In 0x0E the two rows of body dots are drawn slightly
- * compressed, drifting up to half a column left of the lattice by the right-
- * hand end, so the last dot of row 2 and the last of row 4 do not sit under
- * a column. Read as full-width bars starting at column 0, which is the only
- * reading that fits the dot COUNT and matches the plain E at 0x45. Every other
- * dot in the set sits within a fifth of a pitch of its lattice point.
+ * Every glyph here was recovered dot-for-dot from the datasheet chart's vector
+ * artwork and verified by eye against it; the one ambiguous cell and how it
+ * was resolved are recorded in HISTORY.md.
  */
 
 object Hdls1414Glyphs {

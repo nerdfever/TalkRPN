@@ -76,6 +76,9 @@ object LedPalette {
      */
     val CELL_BOUNDS = Color(0xFF3D8B96)
 
+    /** A register's whole field box - the same diagnostic cyan, one size up. */
+    val FIELD_BOUNDS = CELL_BOUNDS
+
     /** Outlines on controls and annunciator boxes. */
     val BORDER = Color(0xFF5A5A5A)
 

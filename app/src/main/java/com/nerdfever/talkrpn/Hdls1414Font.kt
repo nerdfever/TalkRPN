@@ -1,6 +1,7 @@
 package com.nerdfever.talkrpn
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 
@@ -13,9 +14,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
  * ---------------------------------------------------------------------------
  * Coordinate system
  * ---------------------------------------------------------------------------
- * Everything here is a DOT CENTRE. Dots are drawn as circles at those centres,
- * so a cell is a lattice of 35 points until it is drawn. Origin is the centre
- * of the top-left dot; x runs right, y runs down.
+ * Everything here is a DOT CENTRE. Dots are drawn as squares centred on those
+ * points, so a cell is a lattice of 35 points until it is drawn. Origin is the
+ * centre of the top-left dot; x runs right, y runs down.
  *
  * THE UNIT: one column pitch - dot centre to dot centre, across - is exactly 1.
  * Every length in this file is in that one unit, horizontally and vertically
@@ -69,9 +70,10 @@ object Hdls1414Font {
     // values, in this order.
 
     const val COLUMN_PITCH = 1f            // by definition; all other measures are relative to this
-    const val ROW_PITCH = 1.065f           // dot centre to dot centre, down
-    const val DOT_DIAMETER = 0.70f         // width of one lit dot
-    const val CHARACTER_GAP_COLUMNS = 1f   // blank columns between one character's cell and the next
+    const val ROW_PITCH = 1.098f           // dot centre to dot centre, down
+    const val DOT_SIDE = 0.7033f           // side of one lit dot's square
+    const val CHARACTER_GAP_COLUMNS = 3.75f // blank columns between one character's cell and the next
+    const val VGAP = 3.562f                // vertical space between lines: bottom dot row to next line's top dot row
     val NEON_ORANGE = Color(0xFFFF5F1F)    // the default ink colour
 
     /*
@@ -79,23 +81,32 @@ object Hdls1414Font {
      * definition, so it is 1 by construction and must never be anything else.
      *
      * ROW_PITCH - dot centre to dot centre down a column. NOT equal to the
-     * column pitch: the character is taller than seven square cells would make
-     * it, both in the part's own dimensions and in its data sheet's artwork.
-     * Set it to 1 and the whole font squats.
+     * column pitch: the part's dimension callouts put a dot column 0.020 inch
+     * apart and a dot row 0.022 - a ratio of exactly 1.10, stated here to the
+     * millimetre callouts' precision. Set it to 1 and the whole font squats.
      *
-     * DOT_DIAMETER - how wide a lit dot is drawn, as a fraction of the column
-     * pitch, since that is the unit. Below 1 the dots stand separate, which is
-     * what a dot matrix looks like; at 1 the dots in a row just touch, and a
-     * horizontal run reads as a bar while a vertical one still does not,
-     * because the row pitch is wider. Nothing stops it going above 1 - a heavy,
+     * DOT_SIDE - the side of one lit dot's square, as a fraction of the column
+     * pitch, since that is the unit. The value is what the datasheet's own
+     * character chart draws; the physical die is smaller (0.4902 of the
+     * pitch), but a lit LED reads far fatter than its die, which is surely why
+     * the chart fattens it. Below 1 the dots stand separate, which is what a
+     * dot matrix looks like; nothing stops it going above 1 - a heavy,
      * blooming look, worth trying on the watch where small text needs the
      * weight.
      *
      * CHARACTER_GAP_COLUMNS - blank columns between one character's five and
      * the next character's five. In COLUMNS rather than in the unit directly,
-     * because that is how the eye reads it on a lattice: one clear column
-     * between neighbours, not "0.9 of something". A fraction is legal and
+     * because that is how the eye reads it on a lattice. The value is the real
+     * part's: character centres sit 8.75 column pitches apart, which leaves
+     * 3.75 blank columns between neighbouring cells. A fraction is legal and
      * changes only the spacing, never the lattice inside a cell.
+     *
+     * VGAP - the vertical space between stacked lines of characters: one
+     * line's bottom dot-centre row down to the next line's top dot-centre row.
+     * The part itself is a single line, so no physical spacing exists; this is
+     * the spacing the datasheet's chart puts between its rows of characters,
+     * the only vertical rhythm the sheet exhibits. Nothing consumes it yet -
+     * it waits for the multi-line calculator display.
      *
      * NEON_ORANGE - the colour the font draws in unless told otherwise. Neon
      * (fluorescent) orange proper lies outside what any screen can show; this
@@ -113,8 +124,8 @@ object Hdls1414Font {
     const val CELL_HEIGHT = (DOT_ROWS - 1) * ROW_PITCH
 
     /** Ink box of one cell: the centres, plus half a dot overhanging each side. */
-    const val INK_WIDTH = CELL_WIDTH + DOT_DIAMETER
-    const val INK_HEIGHT = CELL_HEIGHT + DOT_DIAMETER
+    const val INK_WIDTH = CELL_WIDTH + DOT_SIDE
+    const val INK_HEIGHT = CELL_HEIGHT + DOT_SIDE
 
     /**
      * One character's origin to the next character's origin.
@@ -221,12 +232,12 @@ object Hdls1414Font {
         cellHeight: Float,
         color: Color = NEON_ORANGE,
         gapColumns: Float = CHARACTER_GAP_COLUMNS,
-        dotDiameter: Float = DOT_DIAMETER,
+        dotSide: Float = DOT_SIDE,
     ) {
         val scale = cellHeight / CELL_HEIGHT
 
         // In from the ink's corner to the first dot centre, on both axes.
-        val overhang = dotDiameter / 2f * scale
+        val overhang = dotSide / 2f * scale
 
         val advance = (DOT_COLUMNS + gapColumns) * COLUMN_PITCH * scale
 
@@ -239,7 +250,7 @@ object Hdls1414Font {
                 origin = Offset(inkOrigin.x + overhang + index * advance, inkOrigin.y + overhang),
                 cellHeight = cellHeight,
                 color = color,
-                dotDiameter = dotDiameter,
+                dotSide = dotSide,
             )
         }
     }
@@ -252,42 +263,41 @@ object Hdls1414Font {
      *
      * [cellHeight] is the rendered distance from the top row of dot centres to
      * the bottom row of dot centres, in pixels; everything else scales from it.
-     * Note that ink extends [dotDiameter] / 2 beyond the cell on every side.
+     * Note that ink extends [dotSide] / 2 beyond the cell on every side.
      *
-     * Round dots, not square ones: the part is an LED matrix, and each lit
-     * element is a die seen through a diffuser rather than a printed square.
-     * The data sheet's own chart draws them square, which is a printing
-     * convenience and not what the display looks like.
+     * SQUARE dots, exactly as the datasheet's own character chart draws them -
+     * each lit element a small filled square centred on its lattice point.
      */
     fun DrawScope.drawHdls1414Cell(
         mask: Long,
         origin: Offset,
         cellHeight: Float,
         color: Color = NEON_ORANGE,
-        dotDiameter: Float = DOT_DIAMETER,
+        dotSide: Float = DOT_SIDE,
     ) {
         if (mask == 0L) return
 
         val scale = cellHeight / CELL_HEIGHT
 
-        val radius = dotDiameter / 2f * scale
+        val sidePx = dotSide * scale
+        val half = sidePx / 2f
 
-        // Drawn one circle at a time rather than unioned into a path, as
+        // Drawn one square at a time rather than unioned into a path, as
         // TalkRpnFont does with its segments: dots never touch unless the
-        // caller asks for a diameter above the pitch, so there are no overlaps
+        // caller asks for a side above the pitch, so there are no overlaps
         // for the antialiasing to double up on.
         for (row in 0 until DOT_ROWS) {
             for (column in 0 until DOT_COLUMNS) {
 
                 if (mask and dotBit(row, column) == 0L) continue
 
-                drawCircle(
+                drawRect(
                     color = color,
-                    radius = radius,
-                    center = Offset(
-                        origin.x + column * COLUMN_PITCH * scale,
-                        origin.y + row * ROW_PITCH * scale,
+                    topLeft = Offset(
+                        origin.x + column * COLUMN_PITCH * scale - half,
+                        origin.y + row * ROW_PITCH * scale - half,
                     ),
+                    size = Size(sidePx, sidePx),
                 )
             }
         }
