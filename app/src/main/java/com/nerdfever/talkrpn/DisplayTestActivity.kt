@@ -1058,12 +1058,19 @@ private fun DrawScope.drawRegister(
     // sits at the clearance.
     val boxOutsetPx = FIELD_BOX_CLEARANCE_PX + FIELD_BOX_STROKE_PX / 2f
 
+    // The box hugs the ACTIVE font's ink. The dot font has no descender - its
+    // ink stops half a dot below the bottom lattice row - where the segment
+    // font's runs on down through the descender band.
+    val boxInkHeightPx =
+        if (useDotFont) cellHeightPx * Hdls1414Font.INK_HEIGHT / Hdls1414Font.CELL_HEIGHT
+        else inkHeightPx(cellHeightPx, descenderUnits)
+
     drawRect(
         color = LedPalette.FIELD_BOUNDS,
         topLeft = Offset(fieldLeftPx - boxOutsetPx, -boxOutsetPx),
         size = Size(
             fieldRightPx - fieldLeftPx + 2f * boxOutsetPx,
-            inkHeightPx(cellHeightPx, descenderUnits) + 2f * boxOutsetPx,
+            boxInkHeightPx + 2f * boxOutsetPx,
         ),
         style = Stroke(width = FIELD_BOX_STROKE_PX),
     )
