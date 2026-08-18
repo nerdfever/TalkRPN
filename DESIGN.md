@@ -826,7 +826,7 @@ a thousandth of a pixel on the watch.
 | descender depth, below the baseline | 0.625 |
 | full height, cap plus descender | 2.335 |
 | ink height, top of `A` to bottom of the descender bar | 2.483 |
-| `DEFAULT_GAP` — last centreline of one glyph to the first of the next | 1.0 |
+| `DEFAULT_GAP` — last centreline of one glyph to the first of the next | 1.1 |
 | `VGAP` — descender bar of one row to the cap line of the next | 0.78 |
 | `VPITCH` — baseline to baseline, = full height + `VGAP` | 3.12 |
 | `SPACE_WIDTH` — a space, ink-free | 0.6 |

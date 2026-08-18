@@ -57,7 +57,7 @@ $DP_Y = $CELL_HEIGHT
 
 # From the last lit centreline of one glyph to the first of the next. Mirrors
 # TalkRpnFont's DEFAULT_GAP.
-$GAP = 1.0
+$GAP = 1.1
 
 # Where the dot lands after a full-width cell: the exact middle of the gap -
 # which is every cell on the reference sheet, since each glyph is drawn in a

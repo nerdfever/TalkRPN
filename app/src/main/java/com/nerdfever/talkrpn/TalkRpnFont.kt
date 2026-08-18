@@ -111,7 +111,7 @@ object TalkRpnFont {
     const val DESCENDER_DEPTH = 0.625f  // how far the descender hangs below the baseline
     const val STROKE = 0.1475f          // pen stroke width
     const val SLANT_DEGREES = 6.0f      // rightward lean, in degrees
-    const val DEFAULT_GAP = 1.0f        // from the last lit centreline of one glyph to the first of the next
+    const val DEFAULT_GAP = 1.1f        // from the last lit centreline of one glyph to the first of the next
     const val SPACE_WIDTH = 0.6f        // width of blank space (0x20)
     const val DOT_SIDE_STROKES = 1.5f   // a dot square's side, in strokes
     const val VGAP = 0.78f              // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
@@ -155,7 +155,7 @@ object TalkRpnFont {
      *   Both ends are centrelines, like every other length in this font. That
      *   is NOT the dark space a reader sees: each glyph's ink overhangs its
      *   own centreline by half a stroke, so the visible dark band is
-     *   gap - STROKE. At the default, 1.0 - 0.1475 = 0.85.
+     *   gap - STROKE. At the default, 1.1 - 0.1475 = 0.95.
      *
      *   Measuring centre to centre is what makes the floor fall out directly:
      *   the two inks touch when the gap equals one stroke, so anything above

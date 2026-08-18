@@ -56,7 +56,7 @@ $COL2_Y = 1.378
 
 # From the last lit centreline of one glyph to the first of the next. Mirrors
 # TalkRpnFont's DEFAULT_GAP.
-$GAP = 1.0
+$GAP = 1.1
 
 # The dot: in the exact middle of the gap, ON the baseline level with segment
 # D. Both mirror TalkRpnFont.

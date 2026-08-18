@@ -99,7 +99,7 @@ private const val SMALL_ROW_SCALE = 0.70f
  * sense while the field size was fixed; with fp on a knob, the height is its
  * own decision.
  */
-private const val INITIAL_HEIGHT_FRACTION = 0.08f
+private const val INITIAL_HEIGHT_FRACTION = 0.092f
 private const val HEIGHT_FRACTION_MIN = 0.03f
 private const val HEIGHT_FRACTION_MAX = 0.25f
 
@@ -283,7 +283,7 @@ private val SAMPLE_SETS = listOf(
  * This is the fp knob's DEFAULT - the field width is being fitted by eye, and
  * the initial height derivation below also sizes against it.
  */
-private const val FIELD_POSITIONS = 10
+private const val FIELD_POSITIONS = 7
 
 /**
  * The exponent's share of the field, at the right end: a blank - or the minus,
