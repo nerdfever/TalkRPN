@@ -115,7 +115,7 @@ foreach ($c in $CANDIDATES) {
     $prevX = $null
 
     $gapUnits = $PITCH - $CELL_WIDTH
-    $dpShift = ($CELL_WIDTH + $DP_GAP_FRACTION * $gapUnits - $DP_X) * $SCALE
+    $dpShift = ($CELL_WIDTH + $gapUnits / 2 - $DP_X) * $SCALE
 
     foreach ($ch in $SAMPLE.ToCharArray()) {
 

@@ -52,17 +52,17 @@ $XO = 0.9359
 $COL1_Y = 0.3504
 $COL2_Y = 1.378
 
-$DP_DROP = 0.3263            # how far the decimal point sits below the baseline
-$DP_Y = $CELL_HEIGHT + $DP_DROP
+# The dot sits ON the baseline, level with segment D. Mirrors TalkRpnFont.
+$DP_Y = $CELL_HEIGHT
 
-# From the last lit centreline of one glyph to the first of the next, and how far across it
-# the decimal point sits. Both mirror TalkRpnFont.
-$GAP = 0.67
-$DP_GAP_FRACTION = 0.337
+# From the last lit centreline of one glyph to the first of the next. Mirrors
+# TalkRpnFont's DEFAULT_GAP.
+$GAP = 1.0
 
-# Where the dot lands after a full-width cell - which is every cell on the
-# reference sheet, since each glyph is drawn in a box of its own.
-$DP_X = $CELL_WIDTH + $DP_GAP_FRACTION * $GAP
+# Where the dot lands after a full-width cell: the exact middle of the gap -
+# which is every cell on the reference sheet, since each glyph is drawn in a
+# box of its own. Mirrors TalkRpnFont's dpXAfter.
+$DP_X = $CELL_WIDTH + $GAP / 2
 
 # What two FULL-WIDTH glyphs sit apart at that gap - the widest any pair gets.
 # The app spaces proportionally and has no fixed pitch; the comparison sheets

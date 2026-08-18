@@ -54,14 +54,14 @@ $X_O_RIGHT = 0.9359
 $COL1_Y = 0.3504
 $COL2_Y = 1.378
 
-# From the last lit centreline of one glyph to the first of the next, and how far across
-# it the decimal point sits. Both mirror TalkRpnFont.
-$GAP = 0.67
-$DP_GAP_FRACTION = 0.337
+# From the last lit centreline of one glyph to the first of the next. Mirrors
+# TalkRpnFont's DEFAULT_GAP.
+$GAP = 1.0
 
-$DP_DROP = 0.3263          # how far the decimal point sits below the baseline
-$DP_X   = $CELL_WIDTH + $DP_GAP_FRACTION * $GAP
-$DP_Y   = $CELL_HEIGHT + $DP_DROP
+# The dot: in the exact middle of the gap, ON the baseline level with segment
+# D. Both mirror TalkRpnFont.
+$DP_X   = $CELL_WIDTH + $GAP / 2
+$DP_Y   = $CELL_HEIGHT
 
 # What two FULL-WIDTH glyphs sit apart at that gap - the widest any pair gets.
 $PITCH = $CELL_WIDTH + $GAP

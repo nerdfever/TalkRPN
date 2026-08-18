@@ -25,9 +25,8 @@ foreach ($e in $GLYPHS) { $MAP[[char]$e.C] = $e.S }
 # same unit measures pitch and vpitch, horizontally and vertically alike. The one
 # exception is $SCALE, which is the px-per-unit conversion, and it says so.
 #
-# $CELL_WIDTH, $PITCH, $DP_X and $DP_GAP_FRACTION all come from the borrowed
-# tables above - this file no longer restates them, so there is one mirror rather
-# than two.
+# $CELL_WIDTH, $PITCH, $DP_X and $GAP all come from the borrowed tables above -
+# this file no longer restates them, so there is one mirror rather than two.
 
 # A space is half a pitch wide, which is a display-layer decision rather than a
 # font one: full-width spaces read as chasms in running text.
@@ -124,10 +123,10 @@ foreach ($l in $LINES) {
 
     $adv = $l.P * $SCALE
 
-    # How far the decimal point has to move left at this pitch to stay the same
-    # fraction of the way across a gap that has shrunk. Zero at the design pitch.
+    # How far the decimal point has to move left at this pitch to stay in the
+    # MIDDLE of a gap that has shrunk. Zero at the design pitch.
     $gapUnits = $l.P - $CELL_WIDTH
-    $dpShift = ($CELL_WIDTH + $DP_GAP_FRACTION * $gapUnits - $DP_X) * $SCALE
+    $dpShift = ($CELL_WIDTH + $gapUnits / 2 - $DP_X) * $SCALE
 
     $x = $MARGIN + $LABEL_W
     $prevX = $null

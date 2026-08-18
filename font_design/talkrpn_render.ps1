@@ -353,10 +353,11 @@ function Draw-TalkRpnCell($g, $names, $ox, $oy, $k, $colour, $slantTan = $null, 
             Add-Diagonal $path $COMMA_TAIL[0] $COMMA_TAIL[1] $COMMA_TAIL[2] $COMMA_TAIL[3] $barWidth
         }
 
-        # Dots are squares of side twice the stroke, sheared with everything else.
+        # Dots are squares of 1.5 strokes' side (mirrors DOT_SIDE_STROKES in
+        # TalkRpnFont), sheared with everything else.
         if ($SEG_DOTS.Contains($n)) {
             $s = $SEG_DOTS[$n]
-            $r = $barWidth
+            $r = $barWidth * 1.5 / 2
             $pts = @(
                 (New-Object System.Drawing.PointF ([float]($s[0] - $r), [float]($s[1] - $r)))
                 (New-Object System.Drawing.PointF ([float]($s[0] + $r), [float]($s[1] - $r)))

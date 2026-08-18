@@ -284,6 +284,22 @@ cache staleness.
 
 ---
 
+## The decimal point's three homes in one day
+
+2026-08-18. The dot started at `DP_GAP_FRACTION` = 0.337 of the gap (itself a
+datasheet-derived accident) and 0.3263 below the baseline. Dave suspected the
+fraction was a patch; the morning's replacement was `DP_ADVANCE`, a fixed
+0.2 past the glyph's ink, argued from hardware (a DP die is bolted to its
+digit). It lived about an hour: Dave then proposed the third model - the dot
+as the BOUNDARY'S mark, dead-centred in the gap (`inkRight + gap/2`) and
+raised onto the baseline, level with segment D. That one won because it is
+not a constant at all: no knob, symmetric clearance by construction, scales
+with the gap naturally. Two tweakables (`DP_ADVANCE`, `DP_DROP`) died with
+it, and `DP_GAP_FRACTION` never reached a release. The vertical move also
+returned 0.33 units of clearance to the row below.
+
+---
+
 ## The LED colour
 
 Both datasheets state the peak outright — no reconstruction needed. HP 5082-7400
