@@ -115,7 +115,6 @@ object TalkRpnFont {
     const val SPACE_WIDTH = 0.6f        // width of blank space (0x20)
     const val DOT_SIDE_STROKES = 1.5f   // a dot square's side, in strokes
     const val VGAP = 0.78f              // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
-    const val DP_ADVANCE = 0.2f         // from a glyph's last lit centreline to its decimal point's centre
 
     /*
      * CELL_WIDTH - segment E/F to segment B/C: the left column to the right
@@ -191,15 +190,6 @@ object TalkRpnFont {
      *   sees between one row's tails and the next row's caps is
      *   VGAP - STROKE = 0.63. (An earlier negative tuning was made against a
      *   row-spacing bug - HISTORY.md.)
-     *
-     * DP_ADVANCE - from a glyph's LAST LIT CENTRELINE to the centre of its
-     * decimal point or comma, a plain length like everything else. The dot is
-     * the GLYPH'S property - on the real hardware the DP die sits at a fixed
-     * offset from its digit - so widening the layout gap must not drag a
-     * number's point away from the digit that owns it. (It once did: the
-     * offset was a fraction of the gap - HISTORY.md.) Being ink-relative, the
-     * dot follows a narrow glyph in rather than waiting at a cell boundary:
-     * the dot beside a 1 belongs beside the 1.
      */
 
     // ---- Derived from the tweakables -----------------------------------------
@@ -269,21 +259,23 @@ object TalkRpnFont {
     private const val COL1_Y = 0.3504f
     private const val COL2_Y = 1.378f
 
-    /** How far the dot sits below the baseline. */
-    private const val DP_DROP = 0.3263f
-
-    private const val DP_Y = CELL_HEIGHT + DP_DROP
+    // The dot sits ON the baseline, centred on segment D's centreline, so a
+    // dotted number reads as one line of ink rather than digits with
+    // something dangling beneath. The comma's tail still descends from there.
+    private const val DP_Y = CELL_HEIGHT
 
     /**
      * Where the dot's centre goes after a glyph whose ink ends at [inkRight]:
-     * a fixed [dpAdvance] past it, whatever the layout gap is doing. See
-     * DP_ADVANCE in the tweakables for why the offset belongs to the glyph.
+     * the exact MIDDLE of the gap.
      *
-     * The dot's ink can meet the NEXT glyph's when the gap gets small: their
-     * edges touch at gap = dpAdvance + ([DOT_SIDE_STROKES] + 1) x [STROKE] / 2
-     * - about 0.38 at the defaults, well under any legible gap.
+     * The dot is the BOUNDARY'S mark, not either neighbour's property.
+     * Centring it makes every dotted gap the same visual event, keeps it
+     * clear of both neighbours by construction at any gap, scales with the
+     * gap naturally, and costs no constant of its own. Its ink meets a
+     * neighbour's only below gap = ([DOT_SIDE_STROKES] + 1) x [STROKE] -
+     * about 0.37, well under any legible gap.
      */
-    fun dpXAfter(inkRight: Float, dpAdvance: Float = DP_ADVANCE) = inkRight + dpAdvance
+    fun dpXAfter(inkRight: Float, gap: Float) = inkRight + gap / 2f
 
     /** The comma's tail, relative to its dot. */
     private const val COMMA_TAIL_DROP = 0.3551f
@@ -844,7 +836,7 @@ object TalkRpnFont {
     //         cellOrigin = pen - (inkLeft + inkRight)/2
     //
     //     its dot, if any, goes at
-    //         dpX = inkRight + DP_ADVANCE
+    //         dpX = inkRight + gap / 2
     //
     // Two full-width glyphs therefore sit 1 + gap apart, which is the widest any
     // pair gets - all-caps text is spaced as though it were on a grid. It is only
@@ -970,11 +962,7 @@ object TalkRpnFont {
      * A leading space contributes nothing, since there is no ink before it for
      * its blank to separate from.
      */
-    fun layout(
-        text: String,
-        gap: Float = DEFAULT_GAP,
-        dpAdvance: Float = DP_ADVANCE,
-    ): List<PlacedCell> {
+    fun layout(text: String, gap: Float = DEFAULT_GAP): List<PlacedCell> {
 
         val placed = ArrayList<PlacedCell>(text.length)
 
@@ -1014,7 +1002,7 @@ object TalkRpnFont {
                 PlacedCell(
                     mask = cell.mask,
                     originUnits = pen - centre,
-                    dpXUnits = dpXAfter(inkRight, dpAdvance)
+                    dpXUnits = dpXAfter(inkRight, gap)
                 )
             )
         }
@@ -1035,10 +1023,9 @@ object TalkRpnFont {
         gap: Float = DEFAULT_GAP,
         slantDegrees: Float = SLANT_DEGREES,
         descender: Float = DESCENDER_DEPTH,
-        dpAdvance: Float = DP_ADVANCE,
     ): Float {
 
-        val cells = layout(text, gap, dpAdvance)
+        val cells = layout(text, gap)
         if (cells.isEmpty()) return 0f
 
         var rightmost = 0f
@@ -1079,14 +1066,13 @@ object TalkRpnFont {
         slantDegrees: Float = SLANT_DEGREES,
         strokeWidth: Float = STROKE,
         descender: Float = DESCENDER_DEPTH,
-        dpAdvance: Float = DP_ADVANCE,
     ) {
         val scale = cellHeight / CELL_HEIGHT
 
         // In from the ink's corner to the first centreline, on both axes.
         val overhang = strokeWidth / 2f * scale
 
-        for (cell in layout(text, gap, dpAdvance)) {
+        for (cell in layout(text, gap)) {
 
             drawTalkRpnCell(
                 mask = cell.mask,
@@ -1118,7 +1104,7 @@ object TalkRpnFont {
         cellHeight: Float,
         color: Color,
         strokeWidth: Float = STROKE,
-        dpX: Float = dpXAfter(CELL_WIDTH),
+        dpX: Float = dpXAfter(CELL_WIDTH, DEFAULT_GAP),
         slantDegrees: Float = SLANT_DEGREES,
         descender: Float = DESCENDER_DEPTH,
     ) {

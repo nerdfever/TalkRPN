@@ -137,14 +137,6 @@ private val GAP_UNITS_MIN = TalkRpnFont.STROKE
 private const val GAP_UNITS_MAX = 3.0f
 
 /**
- * The dp knob's range: zero puts the dot's centre ON the glyph's last
- * centreline (ink overlapping - a measuring instrument shows the overlap),
- * and the ceiling is far past anything the eye would keep.
- */
-private const val DP_ADVANCE_UNITS_MIN = 0f
-private const val DP_ADVANCE_UNITS_MAX = 1.0f
-
-/**
  * The g knob's step and range when the DOT font is live, in blank columns -
  * that font's own gap unit. A quarter of a column per press: fine enough to
  * tune with, and at register sizes roughly a pixel, so every press shows.
@@ -534,11 +526,6 @@ private fun DisplayTestScreen() {
     // display as a display.
     var showFieldBoxes by remember { mutableStateOf(true) }
 
-    // The decimal point's advance past its glyph's ink - the dp knob mirrors
-    // the font's DP_ADVANCE, segment font only (the dot font's radix is an
-    // ordinary fixed-pitch cell).
-    var dpAdvanceUnits by remember { mutableStateOf(TalkRpnFont.DP_ADVANCE) }
-
     // Slant (6.0 degrees) and descender depth (0.625) are settled in the font;
     // their knobs are gone. Both still travel as plain values so a future knob
     // could return without re-threading anything.
@@ -683,7 +670,7 @@ private fun DisplayTestScreen() {
 
                 RegisterRow(
                     name, samples[name].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
-                    smallCellHeightPx, gapUnits, dotGapColumns, dpAdvanceUnits,
+                    smallCellHeightPx, gapUnits, dotGapColumns,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
                     descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
@@ -712,7 +699,7 @@ private fun DisplayTestScreen() {
             ) {
                 drawRegister(
                     samples["X"].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
-                    xCellHeightPx, gapUnits, dotGapColumns, dpAdvanceUnits, LedPalette.LIT,
+                    xCellHeightPx, gapUnits, dotGapColumns, LedPalette.LIT,
                     fieldLeftPx(
                         fieldPositions, xCellHeightPx, gapUnits, slantDegrees,
                         descenderUnits, screenPx, xLeftInRootPx
@@ -730,7 +717,7 @@ private fun DisplayTestScreen() {
 
                 RegisterRow(
                     name, samples[name].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
-                    smallCellHeightPx, gapUnits, dotGapColumns, dpAdvanceUnits,
+                    smallCellHeightPx, gapUnits, dotGapColumns,
                     LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
                     descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
                 )
@@ -883,26 +870,9 @@ private fun DisplayTestScreen() {
 
                 Spacer(Modifier.height(GAP_SMALL))
 
-                Row(modifier = Modifier.fillMaxWidth()) {
-
-                    // Named for what is showing, like sample and font.
-                    CompactButton(if (showFieldBoxes) "boxes: on" else "boxes: off", Modifier.weight(1f)) {
-                        showFieldBoxes = !showFieldBoxes
-                    }
-
-                    Spacer(Modifier.width(GAP_SMALL))
-
-                    // dp tunes DP_ADVANCE - segment font only.
-                    SplitButton("dp %.3f".format(dpAdvanceUnits), Modifier.weight(1f),
-                        onIncrease = {
-                            dpAdvanceUnits = (dpAdvanceUnits + spacingStepUnits)
-                                .coerceAtMost(DP_ADVANCE_UNITS_MAX)
-                        },
-                        onDecrease = {
-                            dpAdvanceUnits = (dpAdvanceUnits - spacingStepUnits)
-                                .coerceAtLeast(DP_ADVANCE_UNITS_MIN)
-                        }
-                    )
+                // Named for what is showing, like sample and font.
+                CompactButton(if (showFieldBoxes) "boxes: on" else "boxes: off", Modifier.fillMaxWidth()) {
+                    showFieldBoxes = !showFieldBoxes
                 }
             }
         }
@@ -925,7 +895,6 @@ private fun RegisterRow(
     cellHeightPx: Float,
     gapUnits: Float,
     dotGapColumns: Float,
-    dpAdvanceUnits: Float,
     color: Color,
     density: Float,
     screenPx: Float,
@@ -958,7 +927,7 @@ private fun RegisterRow(
         ) {
             drawRegister(
                 value, fieldPositions, useDotFont, showFieldBox, cellHeightPx, gapUnits, dotGapColumns,
-                dpAdvanceUnits, color, rowFieldLeftPx, slantDegrees, descenderUnits
+                color, rowFieldLeftPx, slantDegrees, descenderUnits
             )
         }
 
@@ -1101,7 +1070,6 @@ private fun DrawScope.drawRegister(
     cellHeightPx: Float,
     gapUnits: Float,
     dotGapColumns: Float,
-    dpAdvanceUnits: Float,
     color: Color,
     fieldLeftPx: Float,
     slantDegrees: Float,
@@ -1210,9 +1178,8 @@ private fun DrawScope.drawRegister(
 
     fun fits(text: String): Boolean {
         val counted = text.trimEnd(RADIX, GROUP_SEPARATOR)
-        return TalkRpnFont.measureWidth(
-            counted, TalkRpnFont.CELL_HEIGHT, gapUnits, slantDegrees, descenderUnits, dpAdvanceUnits
-        ) <= mantissaMaxUnits + FIT_SLACK_UNITS
+        return TalkRpnFont.measureWidth(counted, TalkRpnFont.CELL_HEIGHT, gapUnits, slantDegrees, descenderUnits) <=
+            mantissaMaxUnits + FIT_SLACK_UNITS
     }
 
     while (mantissa.isNotEmpty() && !fits(mantissa)) {
@@ -1231,14 +1198,12 @@ private fun DrawScope.drawRegister(
                 color = color,
                 gap = gapUnits,
                 slantDegrees = slantDegrees,
-                descender = descenderUnits,
-                dpAdvance = dpAdvanceUnits
+                descender = descenderUnits
             )
         }
 
         if (exponent.isNotEmpty()) {
-            val exponentInkPx =
-                measureWidth(exponent, cellHeightPx, gapUnits, slantDegrees, descenderUnits, dpAdvanceUnits)
+            val exponentInkPx = measureWidth(exponent, cellHeightPx, gapUnits, slantDegrees, descenderUnits)
             drawTalkRpnText(
                 text = exponent,
                 inkOrigin = Offset(fieldRightPx - exponentInkPx, 0f),
@@ -1246,8 +1211,7 @@ private fun DrawScope.drawRegister(
                 color = color,
                 gap = gapUnits,
                 slantDegrees = slantDegrees,
-                descender = descenderUnits,
-                dpAdvance = dpAdvanceUnits
+                descender = descenderUnits
             )
         }
     }
