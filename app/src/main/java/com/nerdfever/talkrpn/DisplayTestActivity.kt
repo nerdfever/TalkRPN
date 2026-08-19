@@ -283,7 +283,7 @@ private val SAMPLE_SETS = listOf(
  * This is the fp knob's DEFAULT - the field width is being fitted by eye, and
  * the initial height derivation below also sizes against it.
  */
-private const val FIELD_POSITIONS = 7
+private const val FIELD_POSITIONS = 9
 
 /**
  * The exponent's share of the field, at the right end: a blank - or the minus,
