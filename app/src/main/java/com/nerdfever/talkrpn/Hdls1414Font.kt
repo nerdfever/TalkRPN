@@ -216,6 +216,23 @@ object Hdls1414Font {
     }
 
     /**
+     * Ink width of a field of [positions] fixed-pitch cells, in pixels - what
+     * [measureWidth] says for ANY string of that many characters, fixed pitch
+     * making them all alike. Register fields size themselves with this while
+     * the dot font is live, so a field position means THIS font's cell.
+     */
+    fun fieldWidth(
+        positions: Int,
+        cellHeight: Float,
+        gapColumns: Float = CHARACTER_GAP_COLUMNS,
+    ): Float {
+
+        val advance = (DOT_COLUMNS + gapColumns) * COLUMN_PITCH
+
+        return ((positions - 1) * advance + INK_WIDTH) * cellHeight / CELL_HEIGHT
+    }
+
+    /**
      * Draws [text] with the TOP LEFT CORNER OF ITS INK at [inkOrigin].
      *
      * Note that this is an ink box, not a cell origin - unlike

@@ -347,15 +347,24 @@ private fun midBarYPx(cellHeightPx: Float): Float =
  */
 private fun fieldLeftPx(
     fieldPositions: Int,
+    useDotFont: Boolean,
     cellHeightPx: Float,
     gapUnits: Float,
+    dotGapColumns: Float,
     slantDegrees: Float,
     descenderUnits: Float,
     screenPx: Float,
     leftInRootPx: Float,
 ): Float {
-    val fieldWidthPx = fieldUnits(fieldPositions, gapUnits, slantDegrees, descenderUnits) *
-        (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
+
+    // A field position is the LIVE font's cell: fp means seven of WHATEVER is
+    // showing, not seven segment positions with nine narrower dot cells
+    // rattling around inside them.
+    val fieldWidthPx =
+        if (useDotFont) Hdls1414Font.fieldWidth(fieldPositions, cellHeightPx, dotGapColumns)
+        else fieldUnits(fieldPositions, gapUnits, slantDegrees, descenderUnits) *
+            (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
+
     return screenPx / 2f - fieldWidthPx / 2f - leftInRootPx
 }
 
@@ -706,8 +715,8 @@ private fun DisplayTestScreen() {
                     samples["X"].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
                     xCellHeightPx, gapUnits, dotGapColumns, LedPalette.LIT,
                     fieldLeftPx(
-                        fieldPositions, xCellHeightPx, gapUnits, slantDegrees,
-                        descenderUnits, screenPx, xLeftInRootPx
+                        fieldPositions, useDotFont, xCellHeightPx, gapUnits, dotGapColumns,
+                        slantDegrees, descenderUnits, screenPx, xLeftInRootPx
                     ),
                     slantDegrees, descenderUnits
                 )
@@ -917,8 +926,10 @@ private fun RegisterRow(
     // widest label block, so LABEL PLUS FIELD is the centred unit. The same
     // shift for every small row keeps their fields aligned with each other.
     val rowFieldLeftPx =
-        fieldLeftPx(fieldPositions, cellHeightPx, gapUnits, slantDegrees, descenderUnits, screenPx, leftInRootPx) +
-            fieldShiftPx
+        fieldLeftPx(
+            fieldPositions, useDotFont, cellHeightPx, gapUnits, dotGapColumns,
+            slantDegrees, descenderUnits, screenPx, leftInRootPx
+        ) + fieldShiftPx
 
     Box(
         modifier = modifier
@@ -1059,11 +1070,14 @@ private fun Annunciator(text: String) {
  * Mantissa left-justified from position 1; exponent, when there is one,
  * right-justified into the last [EXPONENT_FIELD_POSITIONS] with no marker.
  *
- * TWO FONTS, ONE FIELD BOX. The field is always laid out in the segment font's
- * positions, so swapping fonts changes the ink and nothing else - the frame the
- * two are judged in stays put. The dot font draws in its own default colour
- * (its whole point is looking different) and in its own fixed pitch, where '.'
- * and ',' take a whole cell rather than living in a gap.
+ * TWO FONTS, ONE FIELD MEANING. A field position is one cell OF THE LIVE FONT,
+ * so fp = 7 means seven segment positions or seven dot cells, whichever is
+ * showing - the box resizes with the font rather than leaving the narrower
+ * dot cells rattling inside a segment-sized frame. The dot font draws in its
+ * own default colour (its whole point is looking different) and its own fixed
+ * pitch, where '.' and ',' take a whole cell rather than living in a gap -
+ * which the formatter does not yet know, so a dotted number spends one more
+ * dot position than dsp() planned for.
  *
  * Anything the segment font has no glyph for is dropped by its layout; the dot
  * font draws a blank cell instead, which is what fixed pitch means.
@@ -1088,8 +1102,11 @@ private fun DrawScope.drawRegister(
     // The ink width of a run of n full-width digit positions, at this row's size.
     fun positionsPx(n: Int): Float = fieldUnits(n, gapUnits, slantDegrees, descenderUnits) * scale
 
-    // THE FIELD: position 1 at [fieldLeftPx], the caller having centred it.
-    val fieldRightPx = fieldLeftPx + positionsPx(fieldPositions)
+    // THE FIELD: position 1 at [fieldLeftPx], the caller having centred it -
+    // and its width in the LIVE font's positions, matching fieldLeftPx.
+    val fieldRightPx = fieldLeftPx +
+        if (useDotFont) Hdls1414Font.fieldWidth(fieldPositions, cellHeightPx, dotGapColumns)
+        else positionsPx(fieldPositions)
 
     // The field box made visible, for fitting work: a hairline around the
     // whole register's display area, in the diagnostic cyan so it cannot be
@@ -1142,7 +1159,7 @@ private fun DrawScope.drawRegister(
         // its own unit of blank columns.
         with(Hdls1414Font) {
 
-            val mantissaMaxPx = positionsPx(mantissaPositions)
+            val mantissaMaxPx = fieldWidth(mantissaPositions, cellHeightPx, dotGapColumns)
 
             while (mantissa.isNotEmpty() &&
                 measureWidth(mantissa, cellHeightPx, dotGapColumns) > mantissaMaxPx
