@@ -300,6 +300,21 @@ returned 0.33 units of clearance to the row below.
 
 ---
 
+## The glass ring cannot be drawn outside
+
+2026-08-18. Dave saw the glass-edge ring on the real watch and asked for it
+just OUTSIDE the display circle instead of just inside. Tried; a pixel scan
+of the emulator framebuffer then found no ring pixels anywhere, including on
+the diagonals where nothing could clip it: the platform's round-screen mask
+swallows outside-the-circle drawing on the emulator exactly as on the watch.
+The code's own comment had recorded this ("the boundary cannot be marked from
+without") and was overridden anyway; it was right. Resolution: the ring stays
+inside - the only place it can exist - and the display test screen joined
+every other screen in showing it via GlassEdgeIfEmulator, so the wrist never
+sees it.
+
+---
+
 ## The LED colour
 
 Both datasheets state the peak outright — no reconstruction needed. HP 5082-7400

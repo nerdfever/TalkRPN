@@ -883,9 +883,10 @@ private fun DisplayTestScreen() {
         }
 
         // Where the round glass ends. Drawn last, over everything, so it marks
-        // controls as well as digits - and unconditionally, not just on the
-        // emulator, because this screen IS the measuring instrument.
-        GlassEdge()
+        // controls as well as digits - and EMULATOR ONLY: the ring can only
+        // exist inside the glass, where a real watch would show it as a lit
+        // circle. On the wrist the glass edge marks itself.
+        GlassEdgeIfEmulator()
     }
 }
 

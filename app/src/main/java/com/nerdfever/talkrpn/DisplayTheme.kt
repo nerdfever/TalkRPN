@@ -106,12 +106,12 @@ private val GLASS_EDGE_RING_WIDTH = 1.dp
  * fine on the emulator and lose a digit on the wrist. Every screen shows it on
  * the emulator, per standing instruction.
  *
- * The ring is drawn just OUTSIDE the circle - its ink's inner edge exactly on
- * the boundary - so the round watch, which has nothing beyond the boundary to
- * show it with, never displays it, while the emulator's square framebuffer
- * does. (Drawn inside, it was visible on the wrist.) The square framebuffer
- * ends AT the circle's four tangent points, so the emulator's ring fades out
- * briefly at twelve, three, six and nine o'clock - the corners carry it.
+ * The ring is drawn just INSIDE the circle, because the round-screen mask
+ * swallows anything painted outside it - on the EMULATOR as well as the
+ * watch, which a pixel scan confirmed after an attempt to draw it outside
+ * rendered nothing anywhere (HISTORY.md). Inside is the only place it can
+ * exist - which also means the watch shows it, so screens that reach the
+ * wrist must use [GlassEdgeIfEmulator], never this directly.
  */
 @Composable
 fun GlassEdge() {
@@ -121,7 +121,7 @@ fun GlassEdge() {
 
         drawCircle(
             color = LedPalette.GLASS_EDGE,
-            radius = radius + GLASS_EDGE_RING_WIDTH.toPx() / 2f,
+            radius = radius - GLASS_EDGE_RING_WIDTH.toPx() / 2f,
             center = Offset(size.width / 2f, size.height / 2f),
             style = Stroke(width = GLASS_EDGE_RING_WIDTH.toPx()),
         )
