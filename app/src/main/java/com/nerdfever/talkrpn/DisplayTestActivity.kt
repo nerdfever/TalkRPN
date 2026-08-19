@@ -626,8 +626,13 @@ private fun DisplayTestScreen() {
         val fitted = when {
             SAMPLE_SETS[sampleIndex].fillsRow ->
                 buildString { while (length < fieldPositions) append(text) }.take(fieldPositions)
-            // Left-justified, so an over-long value loses its right end.
-            text.length > fieldPositions -> text.take(fieldPositions)
+            // Fixed TEXT is trimmed by characters, left-justified, losing its
+            // right end. NUMBERS are not: drawRegister trims them by
+            // measurement and owns the exponent block, and a character count
+            // here would eat an exponent's last digit - "602.0E21" is eight
+            // characters but only seven positions, since the marker, radix
+            // and separators never reach the screen.
+            !isNumeric(text) && text.length > fieldPositions -> text.take(fieldPositions)
             else -> text
         }
 
@@ -1248,14 +1253,23 @@ private fun ensureRadix(value: String): String {
 }
 
 /**
- * DSP - fixed-point to [places] after the radix, scientific when fixed form
- * cannot say anything useful: when the integer part outgrows the mantissa's
- * share of the field, or when the value is so small that every shown place
- * would be zero.
+ * DSP - fixed-point to [places] after the radix, falling back to ENG notation
+ * when fixed form cannot say anything useful: when the digits outgrow the
+ * field, or when the value is so small that every shown place would be zero.
  *
- * A sketch of the real formatter, good enough to feed the samples. The real one
- * inherits its edge cases: rounding that carries into a new digit, exponents of
- * three digits, and the exact fixed-to-scientific switchover.
+ * Fixed form owns the WHOLE field, since it shows no exponent. Eng form gives
+ * the field's last [EXPONENT_FIELD_POSITIONS] to the exponent block - a blank
+ * (or the minus) then TWO digits, zero-padded - the exponent is a multiple of
+ * three, and the mantissa takes however many places still fit its share.
+ *
+ * Only SIGNS AND DIGITS cost field positions: the radix and the group
+ * separators live in the gaps between cells and cost nothing, which is
+ * exactly why "1.414" fits a four-position share.
+ *
+ * A sketch of the real formatter, good enough to feed the samples. The real
+ * one inherits its edge cases: rounding that carries into a new digit
+ * (999.96 becoming 1000.0), exponents of three digits, and reformatting live
+ * when the fp knob moves - this sketch bakes [FIELD_POSITIONS] in at start.
  */
 private fun dsp(value: Double, places: Int = DSP_PLACES): String {
 
@@ -1263,24 +1277,33 @@ private fun dsp(value: Double, places: Int = DSP_PLACES): String {
 
     val magnitude = abs(value)
 
-    // How many digits fixed form needs left of the radix, sign aside.
+    // The positions fixed form needs: the sign and the digits, nothing else.
     val integerDigits = maxOf(floor(log10(magnitude)).toInt() + 1, 1)
-
-    // Everything the mantissa's share of the field must hold in fixed form:
-    // integer digits, their group separators, the radix, and the places.
-    val separators = if (GROUP_DIGITS) (integerDigits - 1) / GROUP_SIZE else 0
     val sign = if (value < 0) 1 else 0
-    val fixedLength = sign + integerDigits + separators + 1 + places
+    val fixedPositions = sign + integerDigits + places
 
-    val tooBig = fixedLength > FIELD_POSITIONS - EXPONENT_FIELD_POSITIONS
+    val tooBig = fixedPositions > FIELD_POSITIONS
     val tooSmall = magnitude < 10.0.pow(-places)
 
     if (!tooBig && !tooSmall) return "%.${places}f".format(value)
 
-    val exponent = floor(log10(magnitude)).toInt()
-    val mantissa = value / 10.0.pow(exponent)
+    // Eng: pull the exponent down to a multiple of three, leaving the
+    // mantissa in [1, 1000).
+    val engExponent = Math.floorDiv(floor(log10(magnitude)).toInt(), 3) * 3
+    val mantissa = value / 10.0.pow(engExponent)
 
-    return "%.${places}fE%d".format(mantissa, exponent)
+    // The mantissa's share is what the exponent block leaves; spend what
+    // remains after its own sign and integer digits on decimal places.
+    val mantissaIntegerDigits = maxOf(floor(log10(abs(mantissa))).toInt() + 1, 1)
+    val mantissaShare = FIELD_POSITIONS - EXPONENT_FIELD_POSITIONS
+    val mantissaPlaces = (mantissaShare - sign - mantissaIntegerDigits).coerceAtLeast(0)
+
+    // Two digits always, zero-padded; the minus rides ahead of them and takes
+    // the block's blank cell.
+    val exponentBlock =
+        if (engExponent < 0) "-%02d".format(-engExponent) else "%02d".format(engExponent)
+
+    return "%.${mantissaPlaces}fE%s".format(mantissa, exponentBlock)
 }
 
 private fun groupDigits(value: String): String {
