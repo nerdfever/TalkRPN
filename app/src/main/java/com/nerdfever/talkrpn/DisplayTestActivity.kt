@@ -1295,10 +1295,8 @@ private fun DrawScope.drawRegister(
 
             // Drawn CELL BY CELL, each character in its own full-width
             // position, exactly as fixed-cell hardware holds its exponent -
-            // so a 1 lights the right column OF ITS CELL rather than
-            // collapsing to a proportional zero-width stem, "11" keeps the
-            // digit rhythm, and every exponent's right edge lands on the
-            // field's. A position is a full cell plus its leading gap.
+            // the block's geometry must never depend on which characters it
+            // holds. A position is a full cell plus its leading gap.
             val positionPitchPx = (TalkRpnFont.CELL_WIDTH + gapUnits) * scale
             val overhangPx = TalkRpnFont.STROKE / 2f * scale
 

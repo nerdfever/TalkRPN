@@ -315,6 +315,22 @@ sees it.
 
 ---
 
+## The digit 1 loses its narrowness
+
+2026-08-19. The zero-width 1 (B/C, ink at the cell's right edge) was
+proportional spacing's showcase - 11,190's even gaps were the argument that
+won policy C. It was also a running nuisance everywhere digits carry meaning
+by POSITION: exponent digits slid out of their columns, dots and separators
+sat differently beside a 1, and register rows of equal digit count set to
+different lengths. Dave called it: "allowing 1 to be narrower than the other
+digits was a mistake." The glyph moved to the centre column (P/Q) and the
+layout decrees it a full cell (DIGIT_ONE_MASK), so digits now set on a grid
+while text stays proportional. The exponent block had already gone
+cell-by-cell the same day for the same disease; the spacing-comparison sheets
+in font_design record the original argument.
+
+---
+
 ## The LED colour
 
 Both datasheets state the peak outright — no reconstruction needed. HP 5082-7400

@@ -100,14 +100,17 @@ object TalkRpnGlyphs {
 
         // ---- Digits ---------------------------------------------------------
         //
-        // FULL WIDTH: right vertical is B/C, bars run the whole cell. A
-        // half-width digit on P/Q would hold 5 and S further apart, but the full
-        // width is what gives the digits their proportions.
+        // FULL WIDTH, every one - the 1 included: its stem is the CENTRE
+        // column, and the layout decrees it a whole cell (TalkRpnFont's
+        // DIGIT_ONE_MASK), so digit strings keep one rhythm and equal digit
+        // counts set to equal lengths. The rest: right vertical is B/C, bars
+        // run the whole cell - that full width is what gives the digits
+        // their proportions.
         //
         // Hooked corners on 0 2 3 5 7 8 9; short left side on 4; 6 stays square.
 
         '0' to (TOP_HOOK or UL_SHORT or UR or LL_SHORT or LR or BOT_HOOK),
-        '1' to (UR or LR),
+        '1' to STEM,
         '2' to (TOP_HOOK or UR or MID or LL_SHORT or BOT_HOOK),
         '3' to (TOP_HOOK or UR or MID or LR or BOT_HOOK),
         '4' to (UL_SHORT or MID or UR or LR),

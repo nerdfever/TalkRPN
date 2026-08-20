@@ -909,13 +909,18 @@ cell. On a fixed pitch that spreads a single number over a 3× range of gaps:
 | full digit — `1` | 0.980 | 0.920 |
 | `1` — `1` | 1.480 | 0.920 |
 
-`11,190.11` on a fixed pitch reads as `1 1,190. 1 1`; `2,345.67` at the same
-setting has its digits nearly touching.
+`11,190.11` on a fixed pitch read as `1 1,190. 1 1` while the `1` was two
+verticals at the cell's right edge with no ink width. That digit is now the
+CENTRE column, decreed a full cell wide (`DIGIT_ONE_MASK` in `TalkRpnFont`),
+so the table above no longer has a case: **every digit is full width and
+numbers set on an even grid**, one rhythm, equal digit counts to equal
+lengths. Proportional-by-ink remains for text, where i, l and the lower case
+genuinely are narrow.
 
 Consequences, accepted:
 
-- **Decimal points do not line up down the X/Y/Z/T stack**, since `11,190.11`
-  sets much shorter than `22,290.22`. X is always bigger than Y, Z and T anyway.
+- **Decimal points line up down the stack** for equal digit counts, digits
+  being uniform; text rows still set to their ink.
 - **No kerning table.** Spacing is by ink extent alone, so a pair whose ink hugs
   the facing edges of both cells gets the same gap as any other. This is where
   hand-tuning would go if it is ever needed.

@@ -794,14 +794,16 @@ object TalkRpnFont {
     // the width of its own ink, and every glyph is separated from the next by the
     // same clear space, [DEFAULT_GAP].
     //
-    // Why not a grid, when the hardware this font records plainly had one: a real
-    // display's cells are all the same width because each is a physical digit
-    // position, but its GLYPHS are not - a 1 is two verticals on the right-hand
-    // edge with no width at all, and i, l and most lower case are narrower than
-    // the cell. Give each of those a whole cell and the spacing swings over a 3x
-    // range inside a single number: 11,190 sets its 1s three times further apart
-    // than its 190. Spacing by ink instead makes every gap equal, which is what
-    // the eye is actually reading.
+    // Why not a grid, when the hardware this font records plainly had one: a
+    // real display's cells are all the same width because each is a physical
+    // digit position, but its TEXT glyphs are not - i, l and most lower case
+    // are narrower than the cell, and giving each a whole cell blows a word
+    // apart. Spacing by ink makes every gap equal, which is what the eye is
+    // actually reading.
+    //
+    // DIGITS are the exception, and set on a grid after all: every digit is
+    // full width, the 1 by decree ([DIGIT_ONE_MASK]) - so a number keeps one
+    // rhythm and equal digit counts set to equal lengths.
     //
     // Two conventions the layer above needs:
     //
@@ -824,7 +826,8 @@ object TalkRpnFont {
     //     for each cell:
     //         inkLeft, inkRight = leftmost and rightmost LIT CENTRELINE
     //                             (the dot and comma excluded - they live in
-    //                              the gap, not in the glyph)
+    //                              the gap, not in the glyph; the digit 1 is
+    //                              decreed 0..1, a full cell)
     //         width = if it is a space:      SPACE_WIDTH
     //                 if it has no ink:      CELL_WIDTH   (a lone leading dot)
     //                 otherwise:             inkRight - inkLeft
@@ -860,6 +863,21 @@ object TalkRpnFont {
 
     /** The segments below the baseline, which spacing must not count. */
     private val DESCENDER_SEGS = Seg.M.bit or Seg.N.bit or Seg.O.bit
+
+    /**
+     * The digit 1 - the bare centre column - whose width is a DECREE, not a
+     * measurement: a full cell, though its ink has no width at all.
+     *
+     * Digits are what this display is for, and packing the 1 by ink made
+     * every number holding one lurch - 11,190 read three rhythms in one
+     * number, and exponent digits fell out of their columns. So every digit
+     * is full width and numbers set on a grid; proportional packing stays
+     * for TEXT, where narrowness is character rather than accident.
+     *
+     * Matched with the gap-dwellers stripped, so "1." and "1," qualify too;
+     * '|' does not - it carries the descender.
+     */
+    private val DIGIT_ONE_MASK = Seg.P.bit or Seg.Q.bit
 
     /** The text as cells, with '.' and ',' merged into their predecessors. */
     fun textCells(text: String): List<TextCell> {
@@ -915,6 +933,11 @@ object TalkRpnFont {
      * Null when nothing is lit - a space, or a character with no glyph.
      */
     fun inkExtentOf(mask: Long): InkExtent? {
+
+        // The one glyph whose width is a decree rather than a measurement.
+        if (mask and GAP_DWELLERS.inv() == DIGIT_ONE_MASK) {
+            return InkExtent(0f, CELL_WIDTH)
+        }
 
         var left = Float.POSITIVE_INFINITY
         var right = Float.NEGATIVE_INFINITY
