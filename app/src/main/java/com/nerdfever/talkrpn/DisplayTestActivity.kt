@@ -278,7 +278,8 @@ private val SAMPLE_SETS = listOf(
  *
  * A position is one full-width cell plus one gap. The field's right edge goes as
  * far right as the glass allows; the mantissa is left-justified from position 1,
- * and an exponent occupies the rightmost [EXPONENT_FIELD_POSITIONS].
+ * and an exponent occupies just its own characters at the right end - see
+ * [EXPONENT_DIGITS] for the zero-width blank.
  *
  * This is the fp knob's DEFAULT - the field width is being fitted by eye, and
  * the initial height derivation below also sizes against it.
@@ -286,17 +287,22 @@ private val SAMPLE_SETS = listOf(
 private const val FIELD_POSITIONS = 9
 
 /**
- * The exponent's share of the field, at the right end: a blank - or the minus,
- * when the exponent is negative - then two digits. HP convention; no marker.
+ * The exponent's digits, right-justified at the field's end with no marker.
+ *
+ * The HP convention's separating BLANK CELL has ZERO WIDTH here: under
+ * proportional spacing the ordinary inter-cell gap already draws a clear dark
+ * band, so a reserved blank position only doubled it. The exponent block
+ * costs exactly its characters - two digits, or three positions with the
+ * minus - and the mantissa keeps the rest.
  */
-private const val EXPONENT_FIELD_POSITIONS = 3
+private const val EXPONENT_DIGITS = 2
 
 /**
- * The fp knob's range: the floor is the exponent's share plus one mantissa
- * position, below which the field cannot say anything; the ceiling is past
- * anything the glass could hold at a readable size.
+ * The fp knob's range: the floor is the exponent's digits, its possible
+ * minus, and one mantissa position; the ceiling is past anything the glass
+ * could hold at a readable size.
  */
-private const val FIELD_POSITIONS_MIN = EXPONENT_FIELD_POSITIONS + 1
+private const val FIELD_POSITIONS_MIN = EXPONENT_DIGITS + 2
 private const val FIELD_POSITIONS_MAX = 20
 
 /** Places shown after the radix - the DSP mode. DSP 3 is the default. */
@@ -1068,7 +1074,8 @@ private fun Annunciator(text: String) {
  * screen's vertical axis via [fieldLeftPx] (the function of the same name).
  *
  * Mantissa left-justified from position 1; exponent, when there is one,
- * right-justified into the last [EXPONENT_FIELD_POSITIONS] with no marker.
+ * right-justified into exactly its own characters' positions, no marker, the
+ * separating blank zero-width - see [EXPONENT_DIGITS].
  *
  * TWO FONTS, ONE FIELD MEANING. A field position is one cell OF THE LIVE FONT,
  * so fp = 7 means seven segment positions or seven dot cells, whichever is
@@ -1141,16 +1148,17 @@ private fun DrawScope.drawRegister(
 
     // Split off the exponent. The marker never reaches the screen: the mantissa
     // is left-justified from position 1, the exponent right-justified into the
-    // field's last EXPONENT_FIELD_POSITIONS, and the darkness between them is
-    // the HP convention's blank.
+    // field's last positions, and the inter-cell gap between the two blocks
+    // is all the separating the eye needs - the blank is zero-width.
     val markerAt = exponentMarkerAt(value)
     var mantissa = if (markerAt >= 0) value.take(markerAt) else value
     val exponent = if (markerAt >= 0) value.substring(markerAt + 1) else ""
 
-    // The mantissa may not enter the exponent's positions. Overflow loses its
-    // RIGHT end - it is the left-justified block.
+    // The mantissa may not enter the exponent's positions - exactly the
+    // exponent's characters, the minus included, the zero-width blank not.
+    // Overflow loses its RIGHT end - it is the left-justified block.
     val mantissaPositions =
-        if (exponent.isEmpty()) fieldPositions else fieldPositions - EXPONENT_FIELD_POSITIONS
+        if (exponent.isEmpty()) fieldPositions else fieldPositions - exponent.length
 
     if (useDotFont) {
 
@@ -1276,9 +1284,10 @@ private fun ensureRadix(value: String): String {
  * field, or when the value is so small that every shown place would be zero.
  *
  * Fixed form owns the WHOLE field, since it shows no exponent. Eng form gives
- * the field's last [EXPONENT_FIELD_POSITIONS] to the exponent block - a blank
- * (or the minus) then TWO digits, zero-padded - the exponent is a multiple of
- * three, and the mantissa takes however many places still fit its share.
+ * the field's end to the exponent block - TWO digits, zero-padded, a minus
+ * ahead when negative, the separating blank zero-width - the exponent is a
+ * multiple of three, and the mantissa takes however many places still fit
+ * its share.
  *
  * Only SIGNS AND DIGITS cost field positions: the radix and the group
  * separators live in the gaps between cells and cost nothing, which is
@@ -1306,20 +1315,20 @@ private fun dsp(value: Double, places: Int = DSP_PLACES): String {
     if (!tooBig && !tooSmall) return "%.${places}f".format(value)
 
     // Eng: pull the exponent down to a multiple of three, leaving the
-    // mantissa in [1, 1000).
+    // mantissa in [1, 1000). Two digits always, zero-padded, the minus ahead
+    // of them when negative.
     val engExponent = Math.floorDiv(floor(log10(magnitude)).toInt(), 3) * 3
     val mantissa = value / 10.0.pow(engExponent)
 
-    // The mantissa's share is what the exponent block leaves; spend what
-    // remains after its own sign and integer digits on decimal places.
-    val mantissaIntegerDigits = maxOf(floor(log10(abs(mantissa))).toInt() + 1, 1)
-    val mantissaShare = FIELD_POSITIONS - EXPONENT_FIELD_POSITIONS
-    val mantissaPlaces = (mantissaShare - sign - mantissaIntegerDigits).coerceAtLeast(0)
-
-    // Two digits always, zero-padded; the minus rides ahead of them and takes
-    // the block's blank cell.
     val exponentBlock =
         if (engExponent < 0) "-%02d".format(-engExponent) else "%02d".format(engExponent)
+
+    // The mantissa's share is what the exponent's own characters leave - the
+    // separating blank is zero-width; spend what remains after the sign and
+    // the integer digits on decimal places.
+    val mantissaIntegerDigits = maxOf(floor(log10(abs(mantissa))).toInt() + 1, 1)
+    val mantissaShare = FIELD_POSITIONS - exponentBlock.length
+    val mantissaPlaces = (mantissaShare - sign - mantissaIntegerDigits).coerceAtLeast(0)
 
     return "%.${mantissaPlaces}fE%s".format(mantissa, exponentBlock)
 }
