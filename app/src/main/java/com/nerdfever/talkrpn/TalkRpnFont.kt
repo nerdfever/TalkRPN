@@ -164,8 +164,9 @@ object TalkRpnFont {
      *   bottom-left - but those are at different heights and never actually
      *   touch.
      *
-     *   Mixed-case text reads well from about 0.76 to 0.92; all caps takes
-     *   rather less. Still to be judged on the watch.
+     *   Settled at 1.1 by eye on the watch, for digit-heavy register rows.
+     *   Earlier reading notes, for when mixed-case text matters: it reads
+     *   well from about 0.76 to 0.92, all caps rather less.
      *
      * SPACE_WIDTH - how wide a space is. A space is an ordinary cell that
      * happens to have no ink, so it takes a gap on each side like any other.

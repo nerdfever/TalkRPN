@@ -60,9 +60,11 @@ automatic mode switch converts stored values or only changes the default.
   window brightness override; the panel's sunlight-boost headroom is
   system-owned and not reachable from an app. Each colour is already at its
   hue's OLED ceiling - a brighter red exists only by paling toward white.
-- **Stroke and gap are still to be judged on the watch.** The values in
-  `TalkRpnFont` are measurements and starting points; the test screens bracket
-  each one.
+- **The display's geometry is settled, on the real watch**: gap 1.1, vgap
+  0.78, descender 0.625, dot size and spacing, the field conventions. Two
+  values may yet be revisited by eye, or may not - the stroke (0.1475, the
+  measured figure) and `SMALL_ROW_SCALE` (0.70); the test screens still
+  bracket both.
 - **`Hp01Font`'s 130 advance and 62 cell width are reconstruction figures** with
   no corroboration. `TalkRpnFont` no longer depends on either.
 - **Segment `M`'s depth is settled** — the measured 0.7525 plunged tails nearly
@@ -931,7 +933,7 @@ and an adjacent pair of full-width digits, or the two policies look identical.
 |---|---|
 | **Segment `M` depth: settled** | Not the letter M — the descender stem. The measured 0.7525 plunged `g q y j` tails nearly as deep as their bowls are tall; settled by eye at `DESCENDER_DEPTH` = 0.625, and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all followed. |
 | **`'`, `f` and `t` are guessed** | The source is ambiguous at those three. Flagged orange on the reference sheet. |
-| **Gap, stroke, vgap and colour** | Answered on paper; each still to be judged on the watch. The test screens bracket every one. |
+| **Gap, vgap and colour: settled on the watch** | Gap 1.1, vgap 0.78; LED red for the segment font, neon orange for the dot font. The stroke stays at its measured 0.1475 unless a later eye disagrees. |
 | **Bubble-LED glow** | Thin core plus a diffuse scatter, to imitate the epoxy lens. Parked. Interacts with the stroke: with a glow the core probably wants to be under 0.147. |
 | **`Hp01Font` can be retired** | It survives only in `FontCompareActivity` as the comparison reference. |
 
