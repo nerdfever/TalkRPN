@@ -302,17 +302,17 @@ private const val SEGMENT_FIELD_POSITIONS = 9
 private const val DOT_FIELD_POSITIONS = 10
 
 /**
- * The exponent's digits, at the field's end with no marker, ONE reserved
- * blank position ahead of them (plus a third position for the minus when
- * negative).
+ * The exponent's digits, at the field's end with no marker. The block is
+ * ALWAYS [EXPONENT_DIGITS] + 1 positions: a lead position holding a blank -
+ * or the MINUS, when the exponent is negative, which spends the separator's
+ * seat exactly as the HP hardware did - then the two digits, zero-padded, in
+ * the same two positions regardless of sign.
  *
- * The block is placed BY POSITION - its ink starts at its first position's
+ * The block is placed BY POSITION - each character at its position's
  * boundary - not right-justified by measured ink. Ink-justification made the
  * separation depend on which digits the exponent held: a 1 is zero-width in
  * the segment font, so "21" left more dark than "24" would, and a full
  * mantissa against "24" closed to less than the ordinary inter-digit gap.
- * Position placement makes the dark span constant: one blank cell and its
- * two gaps, in whichever font is live.
  */
 private const val EXPONENT_DIGITS = 2
 
@@ -1184,11 +1184,18 @@ private fun DrawScope.drawRegister(
     var mantissa = if (markerAt >= 0) value.take(markerAt) else value
     val exponent = if (markerAt >= 0) value.substring(markerAt + 1) else ""
 
-    // The mantissa may not enter the exponent's positions: its characters,
-    // the minus included, plus the one reserved blank. Overflow loses its
-    // RIGHT end - it is the left-justified block.
+    // The mantissa may not enter the exponent block, which is a constant
+    // EXPONENT_DIGITS + 1 positions whatever the sign - the minus, when
+    // there is one, sits in the blank's seat. Overflow loses its RIGHT end -
+    // it is the left-justified block.
     val mantissaPositions =
-        if (exponent.isEmpty()) fieldPositions else fieldPositions - exponent.length - 1
+        if (exponent.isEmpty()) fieldPositions
+        else fieldPositions - EXPONENT_DIGITS - 1
+
+    // Where the exponent's ink starts, as a position index: a negative
+    // exponent's minus takes the blank's seat, a positive one leaves it dark.
+    val exponentStartPosition =
+        if (exponent.startsWith("-")) mantissaPositions else mantissaPositions + 1
 
     if (useDotFont) {
 
@@ -1216,8 +1223,7 @@ private fun DrawScope.drawRegister(
 
             if (exponent.isNotEmpty()) {
 
-                // Placed by POSITION: the block's first cell, one blank past
-                // the mantissa's share - fixed pitch makes the cell index the
+                // Placed by POSITION - fixed pitch makes the cell index the
                 // whole story.
                 val advancePx = (DOT_COLUMNS + dotGapColumns) * COLUMN_PITCH *
                     cellHeightPx / CELL_HEIGHT
@@ -1225,7 +1231,7 @@ private fun DrawScope.drawRegister(
                 drawHdls1414Text(
                     text = exponent,
                     inkOrigin = Offset(
-                        fieldLeftPx + (mantissaPositions + 1) * advancePx,
+                        fieldLeftPx + exponentStartPosition * advancePx,
                         0f,
                     ),
                     cellHeight = cellHeightPx,
@@ -1272,11 +1278,11 @@ private fun DrawScope.drawRegister(
 
         if (exponent.isNotEmpty()) {
 
-            // Placed by POSITION: the block's ink starts at its first cell's
-            // boundary, one blank position past the mantissa's share. A
-            // position is a full cell plus its leading gap.
+            // Placed by POSITION: the block's ink starts at its start
+            // position's boundary. A position is a full cell plus its
+            // leading gap.
             val exponentLeftPx =
-                fieldLeftPx + (mantissaPositions + 1) *
+                fieldLeftPx + exponentStartPosition *
                     (TalkRpnFont.CELL_WIDTH + gapUnits) * scale
 
             drawTalkRpnText(
@@ -1369,11 +1375,11 @@ private fun dsp(value: Double, places: Int = DSP_PLACES): String {
     val exponentBlock =
         if (engExponent < 0) "-%02d".format(-engExponent) else "%02d".format(engExponent)
 
-    // The mantissa's share is what the exponent's characters and the one
-    // reserved blank position leave; spend what remains after the sign and
-    // the integer digits on decimal places.
+    // The mantissa's share is what the exponent block leaves - a constant
+    // EXPONENT_DIGITS + 1 positions, the minus riding in the blank's seat;
+    // spend what remains after the sign and the integer digits on places.
     val mantissaIntegerDigits = maxOf(floor(log10(abs(mantissa))).toInt() + 1, 1)
-    val mantissaShare = SEGMENT_FIELD_POSITIONS - exponentBlock.length - 1
+    val mantissaShare = SEGMENT_FIELD_POSITIONS - EXPONENT_DIGITS - 1
     val mantissaPlaces = (mantissaShare - sign - mantissaIntegerDigits).coerceAtLeast(0)
 
     return "%.${mantissaPlaces}fE%s".format(mantissa, exponentBlock)
