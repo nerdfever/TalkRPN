@@ -271,6 +271,19 @@ private val SAMPLE_SETS = listOf(
             "STO" to "type gyp quay",
         )
     ),
+    // Exponent stress: huge and tiny magnitudes, signs on mantissa and
+    // exponent both, so every arm of the Eng block shows at once.
+    SampleSet(
+        "exp", fillsRow = false,
+        mapOf(
+            "T" to 123.456789e-88,
+            "Z" to 123.456789e88,
+            "Y" to -123.456789e-88,
+            "X" to 123.456789e88,
+            "LASTX" to -123.456789e88,
+            "STO" to 9.876543e99,
+        ).mapValues { (_, v) -> dsp(v) }
+    ),
 )
 
 /**
@@ -281,10 +294,12 @@ private val SAMPLE_SETS = listOf(
  * and an exponent occupies just its own characters at the right end - see
  * [EXPONENT_DIGITS] for the zero-width blank.
  *
- * This is the fp knob's DEFAULT - the field width is being fitted by eye, and
- * the initial height derivation below also sizes against it.
+ * These are the fp knob's DEFAULTS, one per font - the knob binds to
+ * whichever font is live, like g. The dot font affords an extra position
+ * because its cells are narrower and its radix pays for a cell of its own.
  */
-private const val FIELD_POSITIONS = 9
+private const val SEGMENT_FIELD_POSITIONS = 9
+private const val DOT_FIELD_POSITIONS = 10
 
 /**
  * The exponent's digits, at the field's end with no marker, ONE reserved
@@ -529,7 +544,11 @@ private fun DisplayTestScreen() {
     var heightFraction by remember { mutableStateOf(INITIAL_HEIGHT_FRACTION) }
 
     var vgapUnits by remember { mutableStateOf(INITIAL_VGAP_UNITS) }
-    var fieldPositions by remember { mutableStateOf(FIELD_POSITIONS) }
+
+    // One fp per font, like the g knob: each font remembers its own tuning
+    // and the knob binds to whichever is live.
+    var segmentFieldPositions by remember { mutableStateOf(SEGMENT_FIELD_POSITIONS) }
+    var dotFieldPositions by remember { mutableStateOf(DOT_FIELD_POSITIONS) }
     var sampleIndex by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(false) }
 
@@ -540,6 +559,9 @@ private fun DisplayTestScreen() {
     // The dot font's own gap, in blank columns - the g knob binds to this
     // while the dot font is live, and to gapUnits otherwise.
     var dotGapColumns by remember { mutableStateOf(Hdls1414Font.CHARACTER_GAP_COLUMNS) }
+
+    // The live font's field size - what every consumer below means by fp.
+    val fieldPositions = if (useDotFont) dotFieldPositions else segmentFieldPositions
 
     // The cyan field boxes: measuring aid, on by default, off to judge the
     // display as a display.
@@ -861,15 +883,19 @@ private fun DisplayTestScreen() {
 
                     Spacer(Modifier.width(GAP_SMALL))
 
-                    // fp tunes fieldPositions - how many digit positions each
-                    // register's field holds. An integer: whole cells only.
+                    // fp tunes the LIVE font's field size - how many of its
+                    // cells each register's field holds. Whole cells only.
                     SplitButton("fp %d".format(fieldPositions), Modifier.weight(1f),
                         onIncrease = {
-                            fieldPositions = (fieldPositions + 1)
+                            if (useDotFont) dotFieldPositions = (dotFieldPositions + 1)
+                                .coerceAtMost(FIELD_POSITIONS_MAX)
+                            else segmentFieldPositions = (segmentFieldPositions + 1)
                                 .coerceAtMost(FIELD_POSITIONS_MAX)
                         },
                         onDecrease = {
-                            fieldPositions = (fieldPositions - 1)
+                            if (useDotFont) dotFieldPositions = (dotFieldPositions - 1)
+                                .coerceAtLeast(FIELD_POSITIONS_MIN)
+                            else segmentFieldPositions = (segmentFieldPositions - 1)
                                 .coerceAtLeast(FIELD_POSITIONS_MIN)
                         }
                     )
@@ -1314,7 +1340,9 @@ private fun ensureRadix(value: String): String {
  * A sketch of the real formatter, good enough to feed the samples. The real
  * one inherits its edge cases: rounding that carries into a new digit
  * (999.96 becoming 1000.0), exponents of three digits, and reformatting live
- * when the fp knob moves - this sketch bakes [FIELD_POSITIONS] in at start.
+ * when the fp knob moves, and knowing the live font's field and cost model -
+ * this sketch bakes [SEGMENT_FIELD_POSITIONS] in at start, and the dot font
+ * simply shows the same strings in its own (roomier) field.
  */
 private fun dsp(value: Double, places: Int = DSP_PLACES): String {
 
@@ -1327,7 +1355,7 @@ private fun dsp(value: Double, places: Int = DSP_PLACES): String {
     val sign = if (value < 0) 1 else 0
     val fixedPositions = sign + integerDigits + places
 
-    val tooBig = fixedPositions > FIELD_POSITIONS
+    val tooBig = fixedPositions > SEGMENT_FIELD_POSITIONS
     val tooSmall = magnitude < 10.0.pow(-places)
 
     if (!tooBig && !tooSmall) return "%.${places}f".format(value)
@@ -1345,7 +1373,7 @@ private fun dsp(value: Double, places: Int = DSP_PLACES): String {
     // reserved blank position leave; spend what remains after the sign and
     // the integer digits on decimal places.
     val mantissaIntegerDigits = maxOf(floor(log10(abs(mantissa))).toInt() + 1, 1)
-    val mantissaShare = FIELD_POSITIONS - exponentBlock.length - 1
+    val mantissaShare = SEGMENT_FIELD_POSITIONS - exponentBlock.length - 1
     val mantissaPlaces = (mantissaShare - sign - mantissaIntegerDigits).coerceAtLeast(0)
 
     return "%.${mantissaPlaces}fE%s".format(mantissa, exponentBlock)
