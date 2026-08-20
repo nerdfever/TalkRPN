@@ -284,6 +284,21 @@ private val SAMPLE_SETS = listOf(
             "STO" to 9.876543e99,
         ).mapValues { (_, v) -> dsp(v) }
     ),
+    // Exponents full of 1s - the zero-width digit - for judging how the
+    // block's alignment survives them. RAW strings, not dsp(): Eng only emits
+    // exponents in multiples of three, but the eventual SCI mode will show
+    // any of these.
+    SampleSet(
+        "exp1s", fillsRow = false,
+        mapOf(
+            "T" to "1.23456E10",
+            "Z" to "1.23456E11",
+            "Y" to "1.23456E01",
+            "X" to "1.23456E12",
+            "LASTX" to "5.00000E-12",
+            "STO" to "1.23456E18",
+        )
+    ),
 )
 
 /**
@@ -1278,22 +1293,34 @@ private fun DrawScope.drawRegister(
 
         if (exponent.isNotEmpty()) {
 
-            // Placed by POSITION: the block's ink starts at its start
-            // position's boundary. A position is a full cell plus its
-            // leading gap.
-            val exponentLeftPx =
-                fieldLeftPx + exponentStartPosition *
-                    (TalkRpnFont.CELL_WIDTH + gapUnits) * scale
+            // Drawn CELL BY CELL, each character in its own full-width
+            // position, exactly as fixed-cell hardware holds its exponent -
+            // so a 1 lights the right column OF ITS CELL rather than
+            // collapsing to a proportional zero-width stem, "11" keeps the
+            // digit rhythm, and every exponent's right edge lands on the
+            // field's. A position is a full cell plus its leading gap.
+            val positionPitchPx = (TalkRpnFont.CELL_WIDTH + gapUnits) * scale
+            val overhangPx = TalkRpnFont.STROKE / 2f * scale
 
-            drawTalkRpnText(
-                text = exponent,
-                inkOrigin = Offset(exponentLeftPx, 0f),
-                cellHeight = cellHeightPx,
-                color = color,
-                gap = gapUnits,
-                slantDegrees = slantDegrees,
-                descender = descenderUnits
-            )
+            with(TalkRpnFont) {
+                for ((index, character) in exponent.withIndex()) {
+
+                    val mask = TalkRpnGlyphs.maskFor(character) ?: continue
+
+                    drawTalkRpnCell(
+                        mask = mask,
+                        origin = Offset(
+                            fieldLeftPx + (exponentStartPosition + index) * positionPitchPx +
+                                overhangPx,
+                            overhangPx,
+                        ),
+                        cellHeight = cellHeightPx,
+                        color = color,
+                        slantDegrees = slantDegrees,
+                        descender = descenderUnits,
+                    )
+                }
+            }
         }
     }
 }
