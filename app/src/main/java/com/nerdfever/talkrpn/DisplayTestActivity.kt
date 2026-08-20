@@ -1303,9 +1303,9 @@ private fun ensureRadix(value: String): String {
  *
  * Fixed form owns the WHOLE field, since it shows no exponent. Eng form gives
  * the field's end to the exponent block - TWO digits, zero-padded, a minus
- * ahead when negative, the separating blank zero-width - the exponent is a
- * multiple of three, and the mantissa takes however many places still fit
- * its share.
+ * ahead when negative, one reserved blank position ahead of it all - the
+ * exponent is a multiple of three, and the mantissa takes however many
+ * places still fit its share.
  *
  * Only SIGNS AND DIGITS cost field positions: the radix and the group
  * separators live in the gaps between cells and cost nothing, which is
