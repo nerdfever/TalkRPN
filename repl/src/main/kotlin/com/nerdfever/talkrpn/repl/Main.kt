@@ -22,6 +22,7 @@ private const val FIELD_POSITIONS = 9
 
 private val WORD_TOKENS = mapOf(
     "enter" to Token.Enter,
+    "eex" to Token.Eex,
     "clx" to Token.ClearX,
     "clear" to Token.ClearStack,
     "chs" to Token.Chs,

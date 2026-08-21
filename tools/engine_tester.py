@@ -35,7 +35,8 @@ DISPLAY_FONT = ("Consolas", 32, "bold")
 BUTTON_FONT = ("Consolas", 14)
 
 # The button pad, laid out as rows of (label, token) pairs. A token of None
-# is a spacer. Tokens are the :repl line protocol's words.
+# is a spacer; a single-entry row becomes one full-width bar (ENTER, as on
+# the HPs). Tokens are the :repl line protocol's words.
 PAD = [
     [("STO", "sto"), ("RCL", "rcl"), ("R\u2193", "rdn"), ("R\u2191", "rup")],
     [("x\u2194y", "swap"), ("LASTX", "lastx"), ("\u03c0", "pi"), ("CHS", "chs")],
@@ -43,7 +44,8 @@ PAD = [
     [("7", "7"), ("8", "8"), ("9", "9"), ("\u00f7", "/")],
     [("4", "4"), ("5", "5"), ("6", "6"), ("\u00d7", "*")],
     [("1", "1"), ("2", "2"), ("3", "3"), ("\u2212", "-")],
-    [("0", "0"), (".", "."), ("ENTER", "enter"), ("+", "+")],
+    [("0", "0"), (".", "."), ("EEX", "eex"), ("+", "+")],
+    [("ENTER", "enter")],
 ]
 
 
@@ -114,13 +116,18 @@ class EngineTester:
         pad.pack(padx=12, pady=(10, 12))
 
         for row_number, row in enumerate(PAD):
+
+            # A single-entry row is a full-width bar, spanning all columns.
+            span = len(PAD[0]) if len(row) == 1 else 1
+
             for column, (label, word) in enumerate(row):
                 if word is None:
                     continue
                 tk.Button(
                     pad, text=label, font=BUTTON_FONT, width=6, height=1,
                     command=lambda w=word: self.press(w),
-                ).grid(row=row_number, column=column, padx=3, pady=3)
+                ).grid(row=row_number, column=column, columnspan=span,
+                       padx=3, pady=3, sticky="ew")
 
         # The opening state line, so the window starts populated.
         self.read_state()

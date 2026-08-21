@@ -113,6 +113,76 @@ class RpnEngineTest {
         assertStack(x = 3.0, y = -5.0, z = 5.0)
     }
 
+    // ---- EEX: exponent entry ---------------------------------------------------------
+
+    @Test fun eexAppendsAnExponent() {
+        digits("5")
+        press(Token.Eex)
+        digits("3")
+        assertEquals(5000.0, engine.x, 0.0)
+    }
+
+    @Test fun eexOnAnEmptyEntrySuppliesTheOne() {
+        // EEX 5 means 1e5, as on the HP-21.
+        press(Token.Eex)
+        digits("5")
+        assertEquals(100000.0, engine.x, 0.0)
+    }
+
+    @Test fun eexIsNumberEntryAndLifts() {
+        // 5 ENTER EEX 3 must lift... no - ENTER disabled the lift, so the
+        // implicit 1e3 overwrites ENTER's duplicate, exactly like a digit.
+        digits("5")
+        press(Token.Enter, Token.Eex)
+        digits("3")
+        assertStack(x = 1000.0, y = 5.0)
+
+        // Whereas after an operation the entry lifts as rule 1 says.
+        press(Token.Add)
+        press(Token.Eex)
+        digits("2")
+        assertStack(x = 100.0, y = 1005.0)
+    }
+
+    @Test fun chsAfterEexNegatesTheExponent() {
+        digits("5")
+        press(Token.Eex)
+        digits("3")
+        press(Token.Chs)
+        assertEquals(0.005, engine.x, 1e-12)
+
+        // And a second CHS puts it back.
+        press(Token.Chs)
+        assertEquals(5000.0, engine.x, 0.0)
+    }
+
+    @Test fun chsBeforeEexStillOwnsTheMantissa() {
+        digits("5")
+        press(Token.Chs, Token.Eex)
+        digits("2")
+        assertEquals(-500.0, engine.x, 0.0)
+    }
+
+    @Test fun aSecondEexIsRefused() {
+        digits("5")
+        press(Token.Eex, Token.Eex)
+        digits("2")
+        assertEquals(500.0, engine.x, 0.0)
+    }
+
+    @Test fun aRadixInTheExponentIsRefused() {
+        digits("5")
+        press(Token.Eex)
+        digits("1.5")
+        assertEquals(5e15, engine.x, 0.0)
+    }
+
+    @Test fun eexAloneIsExponentZeroSoFar() {
+        digits("5")
+        press(Token.Eex)
+        assertEquals(5.0, engine.x, 0.0)
+    }
+
     // ---- The stack's mechanics --------------------------------------------------------
 
     @Test fun tReplicatesDownward() {

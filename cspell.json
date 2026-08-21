@@ -97,6 +97,7 @@
         "nstream",
 
         // The engine tester's tkinter pad
+        "columnspan",
         "padx",
         "pady",
         "tkinter",

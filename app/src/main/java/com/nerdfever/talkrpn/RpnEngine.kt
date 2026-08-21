@@ -15,7 +15,9 @@ import kotlin.math.sqrt
  * path: don't lift, append to the buffer, and appending to an empty buffer
  * is starting fresh.
  *
- * The rules:
+ * The rules ("a digit" below means any number-entry token - a digit
+ * proper, or EEX, which appends the exponent marker instead of a
+ * character):
  *
  *   1  A digit when noLift is false: lift (T<-Z<-Y<-X), set noLift, start
  *      the buffer.
@@ -74,6 +76,14 @@ class RpnEngine {
 
         /** '0'-'9', or the radix. What the digit path consumes. */
         data class Digit(val character: Char) : Token
+
+        /**
+         * EEX - open the exponent field of the number being entered. A
+         * number-entry token like Digit, not an operation: on an empty
+         * entry it supplies the implicit mantissa 1 (EEX 5 means 1e5,
+         * as on the HP-21), and it lifts or not by the digit rules.
+         */
+        data object Eex : Token
 
         // Stack and entry control.
         data object Enter : Token
@@ -145,11 +155,19 @@ class RpnEngine {
             return
         }
 
+        // EEX is number entry too - it edits the buffer and never touches
+        // the rest of the machine.
+        if (token is Token.Eex) {
+            pressEex()
+            return
+        }
+
         // CHS mid-entry is the one non-digit that EDITS the buffer rather
-        // than clearing it: it flips the sign of the number being entered,
-        // and entry continues as though nothing happened.
+        // than clearing it: it flips the sign of the number being entered -
+        // of the exponent if EEX has opened one, else of the mantissa, as
+        // on the HPs - and entry continues as though nothing happened.
         if (token is Token.Chs && buffer.isNotEmpty()) {
-            buffer = if (buffer.startsWith("-")) buffer.drop(1) else "-$buffer"
+            buffer = withSignToggled(buffer)
             x = valueOf(buffer)
             return
         }
@@ -211,7 +229,7 @@ class RpnEngine {
 
             is Token.Dsp -> dspPlaces = token.places
 
-            is Token.Digit -> Unit // handled above; here for exhaustiveness
+            is Token.Digit, Token.Eex -> Unit // handled above; here for exhaustiveness
         }
 
         // Rule 4, from the table. (CHS mid-entry never reaches here - its
@@ -226,20 +244,48 @@ class RpnEngine {
 
     // ---- The moving parts -----------------------------------------------------------
 
-    /** Rules 1 and 2: the only tokens that can lift the stack themselves. */
-    private fun pressDigit(character: Char) {
+    /**
+     * Rules 1 and 2, shared by every number-entry token (digits and EEX) -
+     * the only tokens that can lift the stack themselves.
+     */
+    private fun startEntryIfNeeded() {
 
         if (!noLift) {
             t = z; z = y; y = x
             buffer = ""
             noLift = true
         }
+    }
+
+    private fun pressDigit(character: Char) {
+
+        startEntryIfNeeded()
 
         // A second radix is refused rather than corrupting the number - the
-        // speech layer may well hand one over.
-        if (character == NumberFormatter.RADIX && buffer.contains(NumberFormatter.RADIX)) return
+        // speech layer may well hand one over. So is a radix inside the
+        // exponent, which takes whole numbers only.
+        if (character == NumberFormatter.RADIX &&
+            (buffer.contains(NumberFormatter.RADIX) ||
+                buffer.contains(NumberFormatter.EXPONENT_MARKER))
+        ) return
 
         buffer += character
+        x = valueOf(buffer)
+    }
+
+    /**
+     * EEX: open the exponent field. An empty entry gets the implicit
+     * mantissa 1 first (EEX 5 is 1e5, as on the HP-21); a second EEX in
+     * the same number is refused like a second radix.
+     */
+    private fun pressEex() {
+
+        startEntryIfNeeded()
+
+        if (buffer.contains(NumberFormatter.EXPONENT_MARKER)) return
+
+        if (buffer.isEmpty()) buffer = "1"
+        buffer += NumberFormatter.EXPONENT_MARKER
         x = valueOf(buffer)
     }
 
@@ -294,7 +340,28 @@ class RpnEngine {
         error = true
     }
 
-    /** The buffer as a number: tolerant of "", "-", and a leading radix. */
+    /**
+     * CHS mid-entry: the sign that flips is the exponent's when EEX has
+     * opened one, the mantissa's otherwise.
+     */
+    private fun withSignToggled(text: String): String {
+
+        val marker = text.indexOf(NumberFormatter.EXPONENT_MARKER)
+
+        if (marker >= 0) {
+            val mantissa = text.take(marker + 1)
+            val exponent = text.drop(marker + 1)
+            return if (exponent.startsWith("-")) mantissa + exponent.drop(1)
+            else mantissa + "-" + exponent
+        }
+
+        return if (text.startsWith("-")) text.drop(1) else "-$text"
+    }
+
+    /**
+     * The buffer as a number: tolerant of "", "-", a leading radix, and an
+     * exponent still empty of digits ("5E", "5E-" - exponent zero so far).
+     */
     private fun valueOf(text: String): Double {
 
         val normalised = text
@@ -302,6 +369,11 @@ class RpnEngine {
             .let { if (it == "" || it == "-") it + "0" else it }
             .let { if (it.startsWith(".")) "0$it" else it }
             .let { if (it.startsWith("-.")) "-0" + it.drop(1) else it }
+            .let {
+                if (it.endsWith(NumberFormatter.EXPONENT_MARKER) ||
+                    it.endsWith(NumberFormatter.EXPONENT_MARKER + "-")
+                ) it + "0" else it
+            }
 
         return normalised.toDoubleOrNull() ?: 0.0
     }

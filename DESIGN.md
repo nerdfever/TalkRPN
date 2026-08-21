@@ -977,14 +977,17 @@ The classical four-level machine. The whole state: X Y Z T, LAST X, one
 storage register (HP-21 style — STO and RCL take no argument), the
 digit-entry buffer, and ONE bit — `noLift`, HP's
 stack-lift-enable with inverted polarity: true means the next digit must not
-lift. The rules:
+lift. The rules ("a digit" meaning any number-entry token — a digit proper,
+or EEX, which opens the exponent field and supplies the implicit mantissa 1
+on an empty entry, HP-21 style):
 
 1. A digit with the bit clear: lift (T←Z←Y←X), set the bit, start the buffer.
 2. A digit with the bit set: append to the buffer, copy its value into X.
 3. Every non-digit clears the buffer — which is what lets one bit cover both
    "mid-entry" and "post-ENTER": both mean append, and appending to an empty
    buffer is starting fresh. (One exception: CHS mid-entry edits the
-   buffer's sign and entry continues.)
+   buffer's sign — the exponent's once EEX has opened one, the mantissa's
+   otherwise — and entry continues.)
 4. Every non-digit then sets the bit per a three-way DISPOSITION table:
    - **disabling** (set): ENTER, CLx, CLEAR, STO — the HP-35 reading; the
      41/42S made STO enabling instead, and one table row flips it if the
