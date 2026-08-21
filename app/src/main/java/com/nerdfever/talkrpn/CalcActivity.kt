@@ -9,9 +9,15 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material3.AppScaffold
 
@@ -72,6 +78,15 @@ class CalcActivity : ComponentActivity() {
         // A calculator being read must not blank mid-thought.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        // And at full brightness, like the rig: this overrides the user's
+        // dimmer (and auto-brightness resting below maximum) for THIS
+        // window only, and reverts on leaving. It cannot reach the panel's
+        // sunlight-boost nits - that headroom is sensor-driven and
+        // system-owned - but it guarantees everything the slider can give.
+        window.attributes = window.attributes.apply {
+            screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+        }
+
         // Exported so the shell (adb) may send; nothing sensitive rides in,
         // and the receiver only ever presses calculator keys.
         registerReceiver(
@@ -80,12 +95,27 @@ class CalcActivity : ComponentActivity() {
 
         setContent {
             AppScaffold {
+
+                // The same tuning overlay as the rig, on the same gesture -
+                // tap anywhere to show or hide - so the display can be
+                // nudged while showing a LIVE calculation.
+                val knobs = remember { DisplayKnobs() }
+                var showControls by remember { mutableStateOf(false) }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(LedPalette.BACKGROUND)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { showControls = !showControls }
                 ) {
-                    CalculatorDisplay(values = values.value)
+                    CalculatorDisplay(values = values.value, knobs = knobs)
+
+                    if (showControls) {
+                        DisplayTuningPanel(knobs, Modifier.align(Alignment.Center))
+                    }
 
                     GlassEdgeIfEmulator()
                 }

@@ -309,6 +309,24 @@ private fun canvasHeightDp(px: Float, density: Float, descenderUnits: Float) =
  * their display text. Every other parameter defaults to the settled geometry;
  * only the rig passes anything else.
  */
+/** The display under a [DisplayKnobs]: every parameter from the knobs' readings. */
+@Composable
+fun CalculatorDisplay(
+    values: Map<String, String>,
+    knobs: DisplayKnobs,
+    modifier: Modifier = Modifier,
+) = CalculatorDisplay(
+    values = values,
+    modifier = modifier,
+    heightFraction = knobs.heightFraction,
+    gapUnits = knobs.gapUnits,
+    vgapUnits = knobs.vgapUnits,
+    fieldPositions = knobs.fieldPositions,
+    useDotFont = knobs.useDotFont,
+    dotGapColumns = knobs.dotGapColumns,
+    showFieldBoxes = knobs.showFieldBoxes,
+)
+
 @Composable
 fun CalculatorDisplay(
     values: Map<String, String>,
