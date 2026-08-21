@@ -12,7 +12,6 @@
 # that it starts in a second or two.
 
 import subprocess
-import sys
 import tkinter as tk
 from pathlib import Path
 
