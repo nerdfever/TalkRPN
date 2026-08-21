@@ -81,6 +81,15 @@ class RpnEngineTest {
         assertEquals(0.5, engine.x, 0.0)
     }
 
+    @Test fun entryIsExposedVerbatimWhileTypingAndGoneAfter() {
+        // The display shows [entry] while it is non-empty - the HP way.
+        digits("12.")
+        assertEquals("12.", engine.entry)
+
+        press(Token.Enter)
+        assertEquals("", engine.entry)
+    }
+
     @Test fun entryAfterClearXOverwritesTheZero() {
         digits("5")
         press(Token.ClearX)

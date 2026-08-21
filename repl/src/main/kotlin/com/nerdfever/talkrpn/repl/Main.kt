@@ -13,8 +13,9 @@ import com.nerdfever.talkrpn.RpnEngine.Token
  * In:  a digit character (0-9 or .), or a word from WORD_TOKENS below,
  *      or "dsp N", or "quit".
  * Out: tab-separated -  x y z t lastx storage error(0/1) display  - where
- *      display is X through the final formatter at the current DSP, plus
- *      "Error" when the flag is up.
+ *      display is the entry in progress verbatim while there is one (the
+ *      HP way), X through the final formatter at the current DSP
+ *      otherwise, and "Error" when the flag is up.
  */
 
 // The display the tester shows: the segment font's default field.
@@ -79,8 +80,11 @@ fun main() {
 /** One state line out, flushed - the pipe's reader is waiting on it. */
 private fun emit(engine: RpnEngine, field: NumberFormatter.FieldShape) {
 
+    // Mid-entry the display is the keystrokes so far, verbatim - the HP
+    // way; the formatter takes over once entry ends.
     val display =
         if (engine.error) "Error"
+        else if (engine.entry.isNotEmpty()) engine.entry
         else NumberFormatter.format(
             engine.x, NumberFormatter.Mode.FIX, engine.dspPlaces, field
         )

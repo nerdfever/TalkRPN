@@ -61,6 +61,14 @@ class RpnEngine {
     /** Digit entry in progress, exactly as spoken/typed so far. */
     private var buffer = ""
 
+    /**
+     * The entry in progress, for the display: while this is non-empty the
+     * display shows IT, verbatim - the HP way, where typing the first
+     * digit blanks the formatted value and the digits appear as typed -
+     * and goes back to formatting X when it empties.
+     */
+    val entry: String get() = buffer
+
     /** THE bit: true = the next digit must not lift. */
     private var noLift = false
 
