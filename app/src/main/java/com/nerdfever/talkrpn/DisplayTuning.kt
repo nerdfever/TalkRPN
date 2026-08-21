@@ -60,11 +60,11 @@ private const val GAP_UNITS_MAX = 3.0f
 
 /**
  * The g knob's step and range when the DOT font is live, in blank columns -
- * that font's own gap unit. A quarter of a column per press: fine enough to
- * tune with, and at register sizes roughly a pixel, so every press shows.
+ * that font's own gap unit. Half a column per press: coarse enough to tune
+ * on the wrist, where a fingertip press is the whole instrument.
  * Zero means adjacent cells - the lattices touch, ink one dot apart.
  */
-private const val DOT_GAP_STEP_COLUMNS = 0.25f
+private const val DOT_GAP_STEP_COLUMNS = 0.5f
 private const val DOT_GAP_COLUMNS_MIN = 0f
 private const val DOT_GAP_COLUMNS_MAX = 8f
 
@@ -80,14 +80,14 @@ private const val VGAP_UNITS_MAX = 2.0f
 
 /**
  * The gap and vgap knobs step by this, additively - they are lengths, not
- * proportions. Deliberately fine: the knobs are now used for FINAL tuning, so
- * resolution beats per-press visibility. Kept to a multiple of 0.001 so the
- * three-decimal button readouts stay exact.
+ * proportions. Sized for tuning ON THE WATCH, where pressing precisely is
+ * hard, so each press should visibly earn its effort. Kept to a multiple
+ * of 0.001 so the three-decimal button readouts stay exact.
  */
-private const val SPACING_STEP_UNITS = 0.006f
+private const val SPACING_STEP_UNITS = 0.012f
 
 /** Every proportional adjustment (hf) moves by this much per press. */
-private const val ADJUST_STEP_FRACTION = 0.0125f
+private const val ADJUST_STEP_FRACTION = 0.025f
 
 /**
  * The floor on how little a press may move the layout, in pixels. At these
@@ -114,22 +114,20 @@ private const val FIELD_POSITIONS_MIN = EXPONENT_DIGITS + 2
 private const val FIELD_POSITIONS_MAX = 20
 
 /**
- * The slant knob, in degrees. Half a degree per press - the lean is a
- * subtle thing and whole degrees jump past the sweet spots. Zero is
- * upright; the ceiling is far past anything that still reads as a digit
- * rather than italics falling over.
+ * The slant knob, in degrees, one per press. Zero is upright; the ceiling
+ * is far past anything that still reads as a digit rather than italics
+ * falling over.
  */
-private const val SLANT_STEP_DEGREES = 0.5f
+private const val SLANT_STEP_DEGREES = 1.0f
 private const val SLANT_DEGREES_MIN = 0f
 private const val SLANT_DEGREES_MAX = 15f
 
 /**
  * The stroke knob, in cell widths like every other length. The settled
- * 0.1475 was measured off an HP-55 photograph, so the step is fine enough
- * to bracket a measurement of that precision; the range runs from hairline
- * to almost touching neighbours within a glyph.
+ * 0.1475 was measured off an HP-55 photograph; the range runs from
+ * hairline to almost touching neighbours within a glyph.
  */
-private const val STROKE_STEP_UNITS = 0.0025f
+private const val STROKE_STEP_UNITS = 0.005f
 private const val STROKE_UNITS_MIN = 0.04f
 private const val STROKE_UNITS_MAX = 0.40f
 
