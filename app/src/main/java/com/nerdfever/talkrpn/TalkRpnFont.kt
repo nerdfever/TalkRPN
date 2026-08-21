@@ -865,19 +865,21 @@ object TalkRpnFont {
     private val DESCENDER_SEGS = Seg.M.bit or Seg.N.bit or Seg.O.bit
 
     /**
-     * The digit 1 - the bare centre column - whose width is a DECREE, not a
-     * measurement: a full cell, though its ink has no width at all.
+     * The digit 1 - the bare right column, as seven-segment hardware lights
+     * it - whose width is a DECREE, not a measurement: a full cell, though
+     * its ink is a single column at the cell's right edge.
      *
      * Digits are what this display is for, and packing the 1 by ink made
      * every number holding one lurch - 11,190 read three rhythms in one
      * number, and exponent digits fell out of their columns. So every digit
      * is full width and numbers set on a grid; proportional packing stays
-     * for TEXT, where narrowness is character rather than accident.
+     * for TEXT, where narrowness is character rather than accident. (A
+     * centred stem on P/Q was tried and read wrongly - HISTORY.md.)
      *
      * Matched with the gap-dwellers stripped, so "1." and "1," qualify too;
-     * '|' does not - it carries the descender.
+     * nothing else lights the bare right column.
      */
-    private val DIGIT_ONE_MASK = Seg.P.bit or Seg.Q.bit
+    private val DIGIT_ONE_MASK = Seg.B.bit or Seg.C.bit
 
     /** The text as cells, with '.' and ',' merged into their predecessors. */
     fun textCells(text: String): List<TextCell> {

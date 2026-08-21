@@ -181,7 +181,7 @@ $GLYPHS = @(
     @{ C = '.';  S = @("DP") }
     @{ C = '/';  S = @("I", "L") }
     @{ C = '0';  S = $TOP_HOOK + @("F1", "B", "E1", "C") + $BOT_HOOK }
-    @{ C = '1';  S = @("P", "Q") }
+    @{ C = '1';  S = @("B", "C") }
     @{ C = '2';  S = $TOP_HOOK + @("B") + $MID + @("E1") + $BOT_HOOK }
     @{ C = '3';  S = $TOP_HOOK + @("B") + $MID + @("C") + $BOT_HOOK }
     @{ C = '4';  S = @("F1") + $MID + @("B", "C") }

@@ -323,11 +323,14 @@ won policy C. It was also a running nuisance everywhere digits carry meaning
 by POSITION: exponent digits slid out of their columns, dots and separators
 sat differently beside a 1, and register rows of equal digit count set to
 different lengths. Dave called it: "allowing 1 to be narrower than the other
-digits was a mistake." The glyph moved to the centre column (P/Q) and the
-layout decrees it a full cell (DIGIT_ONE_MASK), so digits now set on a grid
-while text stays proportional. The exponent block had already gone
-cell-by-cell the same day for the same disease; the spacing-comparison sheets
-in font_design record the original argument.
+digits was a mistake." First try: the glyph moved to the centre column (P/Q)
+with the layout decreeing a full cell - which fixed the spacing but read
+wrongly as a glyph, and lasted minutes. Settled: the stems stay on B/C at
+the cell's right, exactly as seven-segment hardware lights a 1, and only the
+WIDTH is decreed (DIGIT_ONE_MASK). Digits now set on a grid while text stays
+proportional. The exponent block had already gone cell-by-cell the same day
+for the same disease; the spacing-comparison sheets in font_design record
+the original argument.
 
 ---
 

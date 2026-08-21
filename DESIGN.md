@@ -909,13 +909,12 @@ cell. On a fixed pitch that spreads a single number over a 3× range of gaps:
 | full digit — `1` | 0.980 | 0.920 |
 | `1` — `1` | 1.480 | 0.920 |
 
-`11,190.11` on a fixed pitch read as `1 1,190. 1 1` while the `1` was two
-verticals at the cell's right edge with no ink width. That digit is now the
-CENTRE column, decreed a full cell wide (`DIGIT_ONE_MASK` in `TalkRpnFont`),
-so the table above no longer has a case: **every digit is full width and
-numbers set on an even grid**, one rhythm, equal digit counts to equal
-lengths. Proportional-by-ink remains for text, where i, l and the lower case
-genuinely are narrow.
+`11,190.11` once packed its 1s by their ink - two verticals with no width.
+The `1` keeps those hardware stems (B/C, the right column) but is DECREED a
+full cell wide (`DIGIT_ONE_MASK` in `TalkRpnFont`), so the table above no
+longer has a case: **every digit is full width and numbers set on an even
+grid**, one rhythm, equal digit counts to equal lengths. Proportional-by-ink
+remains for text, where i, l and the lower case genuinely are narrow.
 
 Consequences, accepted:
 
