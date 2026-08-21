@@ -12,9 +12,10 @@ import com.nerdfever.talkrpn.RpnEngine.Token
  *
  * In:  a digit character (0-9 or .), or a word from WORD_TOKENS below,
  *      or "dsp N", or "quit".
- * Out: tab-separated -  x y z t lastx storage error(0/1) display  - where
- *      display is the entry in progress verbatim while there is one (the
- *      HP way), X through the final formatter at the current DSP
+ * Out: tab-separated -  x y z t lastx storage error(0/1) display  - the
+ *      registers all through the final formatter at the current DSP (the
+ *      DSP rule governs every readout, not just X); display is the entry
+ *      in progress verbatim while there is one (the HP way), formatted X
  *      otherwise, and "Error" when the flag is up.
  */
 
@@ -80,19 +81,24 @@ fun main() {
 /** One state line out, flushed - the pipe's reader is waiting on it. */
 private fun emit(engine: RpnEngine, field: NumberFormatter.FieldShape) {
 
+    // Every register readout obeys the DSP rule - the formatter at the
+    // current places, never raw digits.
+    fun formatted(value: Double) = NumberFormatter.format(
+        value, NumberFormatter.Mode.FIX, engine.dspPlaces, field
+    )
+
     // Mid-entry the display is the keystrokes so far, verbatim - the HP
     // way; the formatter takes over once entry ends.
     val display =
         if (engine.error) "Error"
         else if (engine.entry.isNotEmpty()) engine.entry
-        else NumberFormatter.format(
-            engine.x, NumberFormatter.Mode.FIX, engine.dspPlaces, field
-        )
+        else formatted(engine.x)
 
     println(
         listOf(
-            engine.x, engine.y, engine.z, engine.t,
-            engine.lastX, engine.storage,
+            formatted(engine.x), formatted(engine.y),
+            formatted(engine.z), formatted(engine.t),
+            formatted(engine.lastX), formatted(engine.storage),
             if (engine.error) 1 else 0,
             display,
         ).joinToString("\t")
