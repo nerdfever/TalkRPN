@@ -113,15 +113,39 @@ private const val MIN_STEP_PX = 0.25f
 private const val FIELD_POSITIONS_MIN = EXPONENT_DIGITS + 2
 private const val FIELD_POSITIONS_MAX = 20
 
-private val TEXT_BUTTON = 9.sp
+/**
+ * The slant knob, in degrees. Half a degree per press - the lean is a
+ * subtle thing and whole degrees jump past the sweet spots. Zero is
+ * upright; the ceiling is far past anything that still reads as a digit
+ * rather than italics falling over.
+ */
+private const val SLANT_STEP_DEGREES = 0.5f
+private const val SLANT_DEGREES_MIN = 0f
+private const val SLANT_DEGREES_MAX = 15f
+
+/**
+ * The stroke knob, in cell widths like every other length. The settled
+ * 0.1475 was measured off an HP-55 photograph, so the step is fine enough
+ * to bracket a measurement of that precision; the range runs from hairline
+ * to almost touching neighbours within a glyph.
+ */
+private const val STROKE_STEP_UNITS = 0.0025f
+private const val STROKE_UNITS_MIN = 0.04f
+private const val STROKE_UNITS_MAX = 0.40f
+
+private val TEXT_BUTTON = 11.sp
 private val PANEL_GAP_SMALL = 4.dp
 private val PANEL_GAP_MEDIUM = 8.dp
 
 private val CONTROL_BORDER = Color(0xFF5A5A5A)
 private val CONTROL_CORNER = 4.dp
 
-/** Panel width, as a fraction of the screen. Narrow enough to see past. */
-private const val CONTROL_PANEL_WIDTH_FRACTION = 0.5f
+/**
+ * Panel width, as a fraction of the screen. Wide enough that the readouts
+ * are comfortable to read and the halves comfortable to hit; the backing
+ * is translucent, so the display still shows through.
+ */
+private const val CONTROL_PANEL_WIDTH_FRACTION = 0.7f
 
 /**
  * Panel backing. Translucent so the whole display stays readable underneath -
@@ -162,6 +186,12 @@ class DisplayKnobs {
     // The cyan field boxes: measuring aid. The rig turns this on at start;
     // the calculator leaves it off until asked.
     var showFieldBoxes by mutableStateOf(false)
+
+    // The glyphs' lean, in degrees, and the stroke, in cell widths - both
+    // settled in the font (SLANT_DEGREES, STROKE) and adjustable here so a
+    // later eye can disagree without a rebuild.
+    var slantDegrees by mutableStateOf(TalkRpnFont.SLANT_DEGREES)
+    var strokeUnits by mutableStateOf(TalkRpnFont.STROKE)
 
     /** The live font's field size - what every consumer means by fp. */
     val fieldPositions: Int
@@ -293,6 +323,40 @@ fun DisplayTuningPanel(
 
         Row(modifier = Modifier.fillMaxWidth()) {
 
+            // sl tunes the glyphs' lean, in degrees - the font's
+            // SLANT_DEGREES.
+            SplitButton("sl %.1f".format(knobs.slantDegrees), Modifier.weight(1f),
+                onIncrease = {
+                    knobs.slantDegrees = (knobs.slantDegrees + SLANT_STEP_DEGREES)
+                        .coerceAtMost(SLANT_DEGREES_MAX)
+                },
+                onDecrease = {
+                    knobs.slantDegrees = (knobs.slantDegrees - SLANT_STEP_DEGREES)
+                        .coerceAtLeast(SLANT_DEGREES_MIN)
+                }
+            )
+
+            Spacer(Modifier.width(PANEL_GAP_SMALL))
+
+            // st tunes the stroke, in cell widths - the font's STROKE.
+            // Four decimals: the settled value is 0.1475, and the readout
+            // must show exactly what would be copied back.
+            SplitButton("st %.4f".format(knobs.strokeUnits), Modifier.weight(1f),
+                onIncrease = {
+                    knobs.strokeUnits = (knobs.strokeUnits + STROKE_STEP_UNITS)
+                        .coerceAtMost(STROKE_UNITS_MAX)
+                },
+                onDecrease = {
+                    knobs.strokeUnits = (knobs.strokeUnits - STROKE_STEP_UNITS)
+                        .coerceAtLeast(STROKE_UNITS_MIN)
+                }
+            )
+        }
+
+        Spacer(Modifier.height(PANEL_GAP_SMALL))
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+
             // Named for the font on screen now, not the one a tap brings.
             CompactButton(
                 if (knobs.useDotFont) "font: dot" else "font: seg", Modifier.weight(1f)
@@ -340,7 +404,8 @@ fun CompactButton(label: String, modifier: Modifier = Modifier, onClick: () -> U
 }
 
 /**
- * One control, two halves: press the left to increase, the right to decrease.
+ * One control, two halves: press the LEFT to decrease, the RIGHT to
+ * increase - minus on the left and plus on the right, like a number line.
  *
  * The centred label carries no click handler of its own, so taps on it fall through
  * to whichever half is underneath.
@@ -362,21 +427,21 @@ private fun SplitButton(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable(onClick = onIncrease)
+                    .clickable(onClick = onDecrease)
                     .padding(horizontal = CONTROL_PAD_H, vertical = CONTROL_PAD_V),
                 contentAlignment = Alignment.CenterStart
             ) {
-                Text("+", color = LedPalette.LABEL, fontSize = TEXT_BUTTON)
+                Text("-", color = LedPalette.LABEL, fontSize = TEXT_BUTTON)
             }
 
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable(onClick = onDecrease)
+                    .clickable(onClick = onIncrease)
                     .padding(horizontal = CONTROL_PAD_H, vertical = CONTROL_PAD_V),
                 contentAlignment = Alignment.CenterEnd
             ) {
-                Text("-", color = LedPalette.LABEL, fontSize = TEXT_BUTTON)
+                Text("+", color = LedPalette.LABEL, fontSize = TEXT_BUTTON)
             }
         }
 

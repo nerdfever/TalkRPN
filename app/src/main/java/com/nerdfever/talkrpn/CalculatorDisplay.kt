@@ -175,18 +175,20 @@ private const val EXPONENT_MARKERS = "eE"
  * Ink width of [n] full-width digit positions, in cell units: the cells, the
  * gaps between them, the slant's lean, and the stroke overhanging both ends.
  */
-private fun fieldUnits(n: Int, gap: Float, slantDegrees: Float, descender: Float): Float =
+private fun fieldUnits(
+    n: Int, gap: Float, slantDegrees: Float, descender: Float, stroke: Float,
+): Float =
     n * TalkRpnFont.CELL_WIDTH + (n - 1) * gap +
         (TalkRpnFont.shearedWidth(slantDegrees, descender) - TalkRpnFont.CELL_WIDTH) +
-        TalkRpnFont.STROKE
+        stroke
 
 /**
  * Segment G's y inside a row's canvas: half a stroke of headroom, then half the
  * cap height, at the row's scale. The optical middle of the digits - what the
  * screen centres X on, and what each label centres itself against.
  */
-private fun midBarYPx(cellHeightPx: Float): Float =
-    (TalkRpnFont.STROKE / 2f + TalkRpnFont.CELL_HEIGHT / 2f) *
+private fun midBarYPx(cellHeightPx: Float, stroke: Float): Float =
+    (stroke / 2f + TalkRpnFont.CELL_HEIGHT / 2f) *
         (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
 
 /**
@@ -201,6 +203,7 @@ private fun fieldLeftPx(
     dotGapColumns: Float,
     slantDegrees: Float,
     descenderUnits: Float,
+    strokeUnits: Float,
     screenPx: Float,
     leftInRootPx: Float,
 ): Float {
@@ -210,7 +213,7 @@ private fun fieldLeftPx(
     // rattling around inside them.
     val fieldWidthPx =
         if (useDotFont) Hdls1414Font.fieldWidth(fieldPositions, cellHeightPx, dotGapColumns)
-        else fieldUnits(fieldPositions, gapUnits, slantDegrees, descenderUnits) *
+        else fieldUnits(fieldPositions, gapUnits, slantDegrees, descenderUnits, strokeUnits) *
             (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
 
     return screenPx / 2f - fieldWidthPx / 2f - leftInRootPx
@@ -251,24 +254,24 @@ internal fun exponentMarkerAt(value: String): Int {
 private fun pxToDp(px: Float, density: Float) = (px / density).dp
 
 /** The full ink height of a row's canvas, for chord limits and canvas sizing. */
-private fun inkHeightPx(cellHeightPx: Float, descenderUnits: Float) =
-    cellHeightPx * (TalkRpnFont.totalHeight(descenderUnits) + TalkRpnFont.STROKE) / TalkRpnFont.CELL_HEIGHT
+private fun inkHeightPx(cellHeightPx: Float, descenderUnits: Float, strokeUnits: Float) =
+    cellHeightPx * (TalkRpnFont.totalHeight(descenderUnits) + strokeUnits) / TalkRpnFont.CELL_HEIGHT
 
 /**
  * A row canvas's exact laid-out height in pixels: its ink rounded up, plus the
  * safety pixel - the same arithmetic [canvasHeightDp] hands to Compose, kept in
  * one place so spacing and sizing can never disagree about it.
  */
-private fun canvasPx(cellHeightPx: Float, descenderUnits: Float) =
-    ceil(inkHeightPx(cellHeightPx, descenderUnits)) + 1f
+private fun canvasPx(cellHeightPx: Float, descenderUnits: Float, strokeUnits: Float) =
+    ceil(inkHeightPx(cellHeightPx, descenderUnits, strokeUnits)) + 1f
 
 /**
  * How far a row's baseline sits below the TOP of its own canvas: half a stroke
  * of headroom above the cap line, then the cap height. Rows draw their ink box
  * from the canvas top, so this needs no descender term.
  */
-private fun baselineFromTopPx(cellHeightPx: Float) =
-    cellHeightPx * (TalkRpnFont.STROKE / 2f + TalkRpnFont.CELL_HEIGHT) /
+private fun baselineFromTopPx(cellHeightPx: Float, strokeUnits: Float) =
+    cellHeightPx * (strokeUnits / 2f + TalkRpnFont.CELL_HEIGHT) /
         TalkRpnFont.CELL_HEIGHT
 
 /**
@@ -279,9 +282,11 @@ private fun baselineFromTopPx(cellHeightPx: Float) =
  * row from its canvas top down to its baseline. Depends on both rows, because
  * they may be different sizes.
  */
-private fun rowGapPx(vpitchPx: Float, abovePx: Float, belowPx: Float, descenderUnits: Float) =
-    vpitchPx - (canvasPx(abovePx, descenderUnits) - baselineFromTopPx(abovePx)) -
-        baselineFromTopPx(belowPx)
+private fun rowGapPx(
+    vpitchPx: Float, abovePx: Float, belowPx: Float, descenderUnits: Float, strokeUnits: Float,
+) =
+    vpitchPx - (canvasPx(abovePx, descenderUnits, strokeUnits) - baselineFromTopPx(abovePx, strokeUnits)) -
+        baselineFromTopPx(belowPx, strokeUnits)
 
 /**
  * Dp for a Canvas that must be at least [px] tall.
@@ -295,8 +300,8 @@ private fun rowGapPx(vpitchPx: Float, abovePx: Float, belowPx: Float, descenderU
  *
  * Rounding up costs a pixel of layout and removes the failure mode entirely.
  */
-private fun canvasHeightDp(px: Float, density: Float, descenderUnits: Float) =
-    (canvasPx(px, descenderUnits) / density).dp
+private fun canvasHeightDp(px: Float, density: Float, descenderUnits: Float, strokeUnits: Float) =
+    (canvasPx(px, descenderUnits, strokeUnits) / density).dp
 
 // ---------------------------------------------------------------------------
 // The display.
@@ -325,6 +330,8 @@ fun CalculatorDisplay(
     useDotFont = knobs.useDotFont,
     dotGapColumns = knobs.dotGapColumns,
     showFieldBoxes = knobs.showFieldBoxes,
+    slantDegrees = knobs.slantDegrees,
+    strokeUnits = knobs.strokeUnits,
 )
 
 @Composable
@@ -338,6 +345,8 @@ fun CalculatorDisplay(
     useDotFont: Boolean = false,
     dotGapColumns: Float = Hdls1414Font.CHARACTER_GAP_COLUMNS,
     showFieldBoxes: Boolean = false,
+    slantDegrees: Float = TalkRpnFont.SLANT_DEGREES,
+    strokeUnits: Float = TalkRpnFont.STROKE,
 ) {
     val context = LocalContext.current
     val metrics = context.resources.displayMetrics
@@ -346,10 +355,8 @@ fun CalculatorDisplay(
     // diameter is the narrower side.
     val screenPx = minOf(metrics.widthPixels, metrics.heightPixels).toFloat()
 
-    // Slant (6.0 degrees) and descender depth (0.625) are settled in the font;
-    // both still travel as plain values so a future knob could return without
-    // re-threading anything.
-    val slantDegrees = TalkRpnFont.SLANT_DEGREES
+    // Descender depth (0.625) is settled in the font with no knob; it still
+    // travels as a plain value so a knob could return without re-threading.
     val descenderUnits = TalkRpnFont.DESCENDER_DEPTH
 
     val xCellHeightPx = heightFraction * screenPx
@@ -390,11 +397,11 @@ fun CalculatorDisplay(
     // Three junctions, because X is a different size from its neighbours.
 
     val gapSmallToSmallPx =
-        rowGapPx(seamPitchPx(smallUnitPx, smallUnitPx), smallCellHeightPx, smallCellHeightPx, descenderUnits)
+        rowGapPx(seamPitchPx(smallUnitPx, smallUnitPx), smallCellHeightPx, smallCellHeightPx, descenderUnits, strokeUnits)
     val gapSmallToXPx =
-        rowGapPx(seamPitchPx(smallUnitPx, unitPx), smallCellHeightPx, xCellHeightPx, descenderUnits)
+        rowGapPx(seamPitchPx(smallUnitPx, unitPx), smallCellHeightPx, xCellHeightPx, descenderUnits, strokeUnits)
     val gapXToSmallPx =
-        rowGapPx(seamPitchPx(unitPx, smallUnitPx), xCellHeightPx, smallCellHeightPx, descenderUnits)
+        rowGapPx(seamPitchPx(unitPx, smallUnitPx), xCellHeightPx, smallCellHeightPx, descenderUnits, strokeUnits)
 
     // ---- Put X's MIDDLE BAR on the screen's diameter --------------------------
     //
@@ -406,12 +413,12 @@ fun CalculatorDisplay(
     // The stack therefore hangs from a computed top spacer: the distance from
     // the screen centre up to X's canvas top, less everything stacked above X.
 
-    val xMidBarInCanvasPx = midBarYPx(xCellHeightPx)
+    val xMidBarInCanvasPx = midBarYPx(xCellHeightPx, strokeUnits)
 
     // What sits above X's canvas: the upper rows' canvases and the gaps between.
     // RAW gaps, negative included - a clamped spacer's shortfall comes back as
     // an upward offset on the rows below it, so the sum is what counts.
-    val smallCanvasPx = canvasPx(smallCellHeightPx, descenderUnits)
+    val smallCanvasPx = canvasPx(smallCellHeightPx, descenderUnits, strokeUnits)
     val aboveXPx = UPPER_REGISTERS.size * smallCanvasPx +
         (UPPER_REGISTERS.size - 1) * gapSmallToSmallPx +
         gapSmallToXPx
@@ -456,7 +463,7 @@ fun CalculatorDisplay(
                 name, values[name].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
                 smallCellHeightPx, gapUnits, dotGapColumns,
                 LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
-                descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
+                descenderUnits, strokeUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
             )
 
             // The last of these sits above X, which is taller, so it needs a
@@ -478,7 +485,7 @@ fun CalculatorDisplay(
             modifier = Modifier
                 .offset(y = pxToDp(overlapPx, metrics.density))
                 .fillMaxWidth()
-                .height(canvasHeightDp(xCellHeightPx, metrics.density, descenderUnits))
+                .height(canvasHeightDp(xCellHeightPx, metrics.density, descenderUnits, strokeUnits))
                 .onGloballyPositioned { xLeftInRootPx = it.positionInRoot().x }
         ) {
             drawRegister(
@@ -486,9 +493,9 @@ fun CalculatorDisplay(
                 xCellHeightPx, gapUnits, dotGapColumns, LedPalette.LIT,
                 fieldLeftPx(
                     fieldPositions, useDotFont, xCellHeightPx, gapUnits, dotGapColumns,
-                    slantDegrees, descenderUnits, screenPx, xLeftInRootPx
+                    slantDegrees, descenderUnits, strokeUnits, screenPx, xLeftInRootPx
                 ),
-                slantDegrees, descenderUnits
+                slantDegrees, descenderUnits, strokeUnits
             )
         }
 
@@ -503,7 +510,7 @@ fun CalculatorDisplay(
                 name, values[name].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
                 smallCellHeightPx, gapUnits, dotGapColumns,
                 LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
-                descenderUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
+                descenderUnits, strokeUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
             )
 
             // The trailing one has no row beneath it - it is just the padding
@@ -546,6 +553,7 @@ private fun RegisterRow(
     fieldShiftPx: Float,
     slantDegrees: Float,
     descenderUnits: Float,
+    strokeUnits: Float,
     modifier: Modifier = Modifier,
 ) {
     // Where this row sits horizontally, so the screen's axis can be found in
@@ -558,7 +566,7 @@ private fun RegisterRow(
     val rowFieldLeftPx =
         fieldLeftPx(
             fieldPositions, useDotFont, cellHeightPx, gapUnits, dotGapColumns,
-            slantDegrees, descenderUnits, screenPx, leftInRootPx
+            slantDegrees, descenderUnits, strokeUnits, screenPx, leftInRootPx
         ) + fieldShiftPx
 
     Box(
@@ -570,11 +578,11 @@ private fun RegisterRow(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(canvasHeightDp(cellHeightPx, density, descenderUnits))
+                .height(canvasHeightDp(cellHeightPx, density, descenderUnits, strokeUnits))
         ) {
             drawRegister(
                 value, fieldPositions, useDotFont, showFieldBox, cellHeightPx, gapUnits, dotGapColumns,
-                color, rowFieldLeftPx, slantDegrees, descenderUnits
+                color, rowFieldLeftPx, slantDegrees, descenderUnits, strokeUnits
             )
         }
 
@@ -591,7 +599,7 @@ private fun RegisterRow(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .width(pxToDp(rowFieldLeftPx, density) - LABEL_FIELD_CLEARANCE)
-                .height(pxToDp(2f * midBarYPx(cellHeightPx), density)),
+                .height(pxToDp(2f * midBarYPx(cellHeightPx, strokeUnits), density)),
             contentAlignment = Alignment.CenterEnd
         ) {
             Text(
@@ -650,13 +658,14 @@ private fun DrawScope.drawRegister(
     fieldLeftPx: Float,
     slantDegrees: Float,
     descenderUnits: Float,
+    strokeUnits: Float,
 ) {
     if (value.isEmpty() || cellHeightPx <= 0f) return
 
     val scale = cellHeightPx / TalkRpnFont.CELL_HEIGHT
 
     // The ink width of a run of n full-width digit positions, at this row's size.
-    fun positionsPx(n: Int): Float = fieldUnits(n, gapUnits, slantDegrees, descenderUnits) * scale
+    fun positionsPx(n: Int): Float = fieldUnits(n, gapUnits, slantDegrees, descenderUnits, strokeUnits) * scale
 
     // THE FIELD: position 1 at [fieldLeftPx], the caller having centred it -
     // and its width in the LIVE font's positions, matching fieldLeftPx.
@@ -682,7 +691,7 @@ private fun DrawScope.drawRegister(
         // segment font's runs on down through the descender band.
         val boxInkHeightPx =
             if (useDotFont) cellHeightPx * Hdls1414Font.INK_HEIGHT / Hdls1414Font.CELL_HEIGHT
-            else inkHeightPx(cellHeightPx, descenderUnits)
+            else inkHeightPx(cellHeightPx, descenderUnits, strokeUnits)
 
         drawRect(
             color = LedPalette.FIELD_BOUNDS,
@@ -767,7 +776,7 @@ private fun DrawScope.drawRegister(
     // different rounding could disagree with X's at the same gap. A TRAILING
     // radix or separator is not counted: it lives in the gap after its digit,
     // costs no position, and may poke past the field into the darkness.
-    val mantissaMaxUnits = fieldUnits(mantissaPositions, gapUnits, slantDegrees, descenderUnits)
+    val mantissaMaxUnits = fieldUnits(mantissaPositions, gapUnits, slantDegrees, descenderUnits, strokeUnits)
 
     fun fits(text: String): Boolean {
         val counted = text.trimEnd(NumberFormatter.RADIX, NumberFormatter.GROUP_SEPARATOR)
@@ -791,6 +800,7 @@ private fun DrawScope.drawRegister(
                 color = color,
                 gap = gapUnits,
                 slantDegrees = slantDegrees,
+                strokeWidth = strokeUnits,
                 descender = descenderUnits
             )
         }
@@ -802,7 +812,7 @@ private fun DrawScope.drawRegister(
             // the block's geometry must never depend on which characters it
             // holds. A position is a full cell plus its leading gap.
             val positionPitchPx = (TalkRpnFont.CELL_WIDTH + gapUnits) * scale
-            val overhangPx = TalkRpnFont.STROKE / 2f * scale
+            val overhangPx = strokeUnits / 2f * scale
 
             with(TalkRpnFont) {
                 for ((index, character) in exponent.withIndex()) {
@@ -818,6 +828,7 @@ private fun DrawScope.drawRegister(
                         ),
                         cellHeight = cellHeightPx,
                         color = color,
+                        strokeWidth = strokeUnits,
                         slantDegrees = slantDegrees,
                         descender = descenderUnits,
                     )
