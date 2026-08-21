@@ -22,9 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.wear.compose.material3.AppScaffold
 
 /*
- * The calculator itself: [RpnEngine] behind [CalculatorDisplay], both at
- * their settled defaults. What the desktop tester simulates, this shows
- * for real.
+ * The calculator itself: [RpnEngine] behind [CalculatorDisplay], starting
+ * from the settled display defaults - with the rig's tuning panel a tap
+ * away for nudging them against live values. What the desktop tester
+ * simulates, this shows for real.
  *
  * INPUT, FOR NOW, arrives by adb broadcast from the desktop button pad
  * (tools/engine_tester.py in watch mode) - one token word per broadcast,
