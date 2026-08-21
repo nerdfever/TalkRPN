@@ -1,0 +1,299 @@
+package com.nerdfever.talkrpn
+
+import com.nerdfever.talkrpn.RpnEngine.Token
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/*
+ * The engine, held against the design notes' rules and traces - and against
+ * the rpn83p bug catalogue, which is the list of mistakes every fresh RPN
+ * implementation makes.
+ */
+
+class RpnEngineTest {
+
+    private val engine = RpnEngine()
+
+    // Feeding helpers: digits one at a time, exactly as the speech layer will.
+    private fun digits(text: String) =
+        text.forEach { engine.press(Token.Digit(it)) }
+
+    private fun press(vararg tokens: Token) = tokens.forEach { engine.press(it) }
+
+    private fun assertStack(x: Double, y: Double, z: Double = 0.0, t: Double = 0.0) {
+        assertEquals("X", x, engine.x, 0.0)
+        assertEquals("Y", y, engine.y, 0.0)
+        assertEquals("Z", z, engine.z, 0.0)
+        assertEquals("T", t, engine.t, 0.0)
+    }
+
+    // ---- The notes' own traces -----------------------------------------------
+
+    @Test fun theCanonicalTrace() {
+        // 2 ENTER 3 + 4 x = 20, with the intermediate states as noted.
+        digits("2")
+        press(Token.Enter)
+        digits("3")
+        assertStack(x = 3.0, y = 2.0)
+
+        press(Token.Add)
+        assertEquals(5.0, engine.x, 0.0)
+
+        digits("4")
+        assertStack(x = 4.0, y = 5.0)
+
+        press(Token.Multiply)
+        assertEquals(20.0, engine.x, 0.0)
+    }
+
+    @Test fun tripleEnterFillsTheStack() {
+        digits("2")
+        press(Token.Enter, Token.Enter, Token.Enter)
+        assertStack(x = 2.0, y = 2.0, z = 2.0, t = 2.0)
+    }
+
+    @Test fun dspIsNeutral() {
+        // 2 ENTER DSP 4 3 x must still multiply by 2.
+        digits("2")
+        press(Token.Enter, Token.Dsp(4))
+        digits("3")
+        press(Token.Multiply)
+        assertEquals(6.0, engine.x, 0.0)
+        assertEquals(4, engine.dspPlaces)
+    }
+
+    // ---- Digit entry ------------------------------------------------------------
+
+    @Test fun multiDigitEntryWithRadix() {
+        digits("12.34")
+        assertEquals(12.34, engine.x, 0.0)
+    }
+
+    @Test fun aSecondRadixIsRefused() {
+        digits("1.2.3")
+        assertEquals(1.23, engine.x, 0.0)
+    }
+
+    @Test fun aLeadingRadixMeansZeroPoint() {
+        digits(".5")
+        assertEquals(0.5, engine.x, 0.0)
+    }
+
+    @Test fun entryAfterClearXOverwritesTheZero() {
+        digits("5")
+        press(Token.ClearX)
+        digits("3")
+        assertStack(x = 3.0, y = 0.0)
+    }
+
+    // ---- CHS: the buffer's one editor ----------------------------------------------
+
+    @Test fun chsMidEntryFlipsTheSignAndEntryContinues() {
+        digits("12")
+        press(Token.Chs)
+        digits("3")
+        assertEquals(-123.0, engine.x, 0.0)
+    }
+
+    @Test fun chsTwiceMidEntryCancels() {
+        digits("7")
+        press(Token.Chs, Token.Chs)
+        assertEquals(7.0, engine.x, 0.0)
+    }
+
+    @Test fun chsOnACompletedNumberNegatesX() {
+        digits("5")
+        press(Token.Enter, Token.Chs)
+        assertEquals(-5.0, engine.x, 0.0)
+
+        // And it is ENABLING: the next digit lifts. (Z holds ENTER's copy.)
+        digits("3")
+        assertStack(x = 3.0, y = -5.0, z = 5.0)
+    }
+
+    // ---- The stack's mechanics --------------------------------------------------------
+
+    @Test fun tReplicatesDownward() {
+        digits("8"); press(Token.Enter)
+        digits("4"); press(Token.Enter)
+        digits("2"); press(Token.Enter)
+        digits("1")
+        press(Token.Add)
+        // T=8 replicated into Z as the stack dropped.
+        assertStack(x = 3.0, y = 4.0, z = 8.0, t = 8.0)
+    }
+
+    @Test fun rollDown() {
+        digits("1"); press(Token.Enter)
+        digits("2"); press(Token.Enter)
+        digits("3"); press(Token.Enter)
+        digits("4")
+        press(Token.RollDown)
+        assertStack(x = 3.0, y = 2.0, z = 1.0, t = 4.0)
+    }
+
+    @Test fun rollUpUndoesRollDown() {
+        digits("1"); press(Token.Enter)
+        digits("2"); press(Token.Enter)
+        digits("3"); press(Token.Enter)
+        digits("4")
+        press(Token.RollDown, Token.RollUp)
+        assertStack(x = 4.0, y = 3.0, z = 2.0, t = 1.0)
+    }
+
+    @Test fun swapXY() {
+        digits("2"); press(Token.Enter)
+        digits("7")
+        press(Token.SwapXY)
+        assertStack(x = 2.0, y = 7.0)
+    }
+
+    @Test fun stackOpsAreEnabling() {
+        // The rpn83p bug: a digit after a swap must lift, not overwrite.
+        digits("2"); press(Token.Enter)
+        digits("7")
+        press(Token.SwapXY)
+        digits("5")
+        assertStack(x = 5.0, y = 2.0, z = 7.0)
+    }
+
+    // ---- LAST X ------------------------------------------------------------------------
+
+    @Test fun lastXHoldsTheConsumedValue() {
+        digits("2"); press(Token.Enter)
+        digits("3"); press(Token.Add)
+        assertEquals(3.0, engine.lastX, 0.0)
+    }
+
+    @Test fun lastXRecallsWithALift() {
+        digits("2"); press(Token.Enter)
+        digits("3"); press(Token.Add)
+        press(Token.LastX)
+        assertStack(x = 3.0, y = 5.0)
+        press(Token.Add)
+        assertEquals(8.0, engine.x, 0.0)
+    }
+
+    @Test fun clearStackPreservesLastX() {
+        // Straight from the rpn83p catalogue.
+        digits("2"); press(Token.Enter)
+        digits("3"); press(Token.Add)
+        press(Token.ClearStack)
+        assertStack(x = 0.0, y = 0.0)
+        assertEquals(3.0, engine.lastX, 0.0)
+    }
+
+    // ---- Producers consult the bit ---------------------------------------------------------
+
+    @Test fun rclLiftsWhenLiftIsEnabled() {
+        digits("3"); press(Token.Sto(1))
+        digits("5")
+        press(Token.Rcl(1), Token.Add)
+        assertEquals(8.0, engine.x, 0.0)
+    }
+
+    @Test fun rclOverwritesAfterEnter() {
+        // The zero-argument-producer bug: after ENTER the recalled value
+        // must land ON X, not push it.
+        digits("3"); press(Token.Sto(1))
+        digits("2"); press(Token.Enter)
+        press(Token.Rcl(1), Token.Multiply)
+        assertEquals(6.0, engine.x, 0.0)
+    }
+
+    @Test fun rclThenRclLiftsBoth() {
+        digits("3"); press(Token.Sto(1))
+        digits("4"); press(Token.Sto(2))
+        press(Token.ClearStack)
+        press(Token.Rcl(1), Token.Rcl(2))
+        assertStack(x = 4.0, y = 3.0)
+        press(Token.Add)
+        assertEquals(7.0, engine.x, 0.0)
+    }
+
+    @Test fun piLiftsAndThenEnablesEntry() {
+        digits("2"); press(Token.Enter)
+        press(Token.Pi)
+        assertEquals(Math.PI, engine.x, 0.0)
+        assertEquals(2.0, engine.y, 0.0)
+    }
+
+    // ---- STO: the open question, pinned to the table as written ------------------------------
+
+    @Test fun stoStoresWithoutMovingTheStack() {
+        digits("2.55")
+        press(Token.Sto(7))
+        assertEquals(2.55, engine.register(7), 0.0)
+        assertEquals(2.55, engine.x, 0.0)
+        assertEquals(0.0, engine.y, 0.0)
+    }
+
+    @Test fun stoIsDisablingPerTheTable() {
+        // The HP-35 reading the notes settled on: digits after STO start a
+        // fresh number IN PLACE of X. (The 41/42S disagree; if the Free42
+        // oracle rules for them, flip STO's row in dispositionOf and this
+        // test's expectation together.)
+        digits("3"); press(Token.Sto(1))
+        digits("4")
+        assertStack(x = 4.0, y = 0.0)
+    }
+
+    // ---- One-number operations ----------------------------------------------------------------
+
+    @Test fun sqrtReplacesXInPlace() {
+        digits("2"); press(Token.Enter)
+        digits("9"); press(Token.Sqrt)
+        assertStack(x = 3.0, y = 2.0)
+        assertEquals(9.0, engine.lastX, 0.0)
+    }
+
+    @Test fun reciprocal() {
+        digits("4"); press(Token.Reciprocal)
+        assertEquals(0.25, engine.x, 0.0)
+    }
+
+    // ---- Errors leave the machine exactly as it stood --------------------------------------------
+
+    @Test fun divideByZeroRaisesAndDisturbsNothing() {
+        digits("1"); press(Token.Enter)
+        digits("3"); press(Token.Add) // lastX becomes 3
+        press(Token.Enter)
+        digits("0")
+        press(Token.Divide)
+        assertTrue(engine.error)
+        assertStack(x = 0.0, y = 4.0)
+        assertEquals(3.0, engine.lastX, 0.0)
+    }
+
+    @Test fun sqrtOfNegativeRaises() {
+        digits("4"); press(Token.Chs, Token.Sqrt)
+        assertTrue(engine.error)
+        assertEquals(-4.0, engine.x, 0.0)
+    }
+
+    @Test fun theNextTokenClearsTheError() {
+        digits("1"); press(Token.Enter)
+        digits("0"); press(Token.Divide)
+        assertTrue(engine.error)
+        press(Token.ClearX)
+        assertFalse(engine.error)
+    }
+
+    // ---- ENTER's exactness --------------------------------------------------------------------------
+
+    @Test fun enterThenDigitOverwrites() {
+        digits("2"); press(Token.Enter)
+        digits("3")
+        assertStack(x = 3.0, y = 2.0)
+    }
+
+    @Test fun twoIndependentNumbersNeedNoEnterAfterAnOperation() {
+        digits("2"); press(Token.Enter)
+        digits("3"); press(Token.Add)
+        digits("4")
+        // The 4 lifted the 5; no ENTER in between.
+        assertStack(x = 4.0, y = 5.0)
+    }
+}

@@ -971,6 +971,42 @@ shape) in `NumberFormatter.kt`, held to this spec by the JUnit suite in
 places, the places clip down rather than the value overflowing - identical
 to HP-strict whenever the field is comfortable.
 
+### The RPN engine (`RpnEngine.kt`, JVM-tested)
+
+The classical four-level machine. The whole state: X Y Z T, LAST X, ten
+registers, the digit-entry buffer, and ONE bit — `noLift`, HP's
+stack-lift-enable with inverted polarity: true means the next digit must not
+lift. The rules:
+
+1. A digit with the bit clear: lift (T←Z←Y←X), set the bit, start the buffer.
+2. A digit with the bit set: append to the buffer, copy its value into X.
+3. Every non-digit clears the buffer — which is what lets one bit cover both
+   "mid-entry" and "post-ENTER": both mean append, and appending to an empty
+   buffer is starting fresh. (One exception: CHS mid-entry edits the
+   buffer's sign and entry continues.)
+4. Every non-digit then sets the bit per a three-way DISPOSITION table:
+   - **disabling** (set): ENTER, CLx, CLEAR, STO — the HP-35 reading; the
+     41/42S made STO enabling instead, and one table row flips it if the
+     Free42 oracle rules that way;
+   - **neutral** (leave): DSP and future display/mode commands — so
+     `2 ENTER DSP 4 3 ×` still multiplies by 2;
+   - **enabling** (clear): everything else.
+
+Value producers (RCL, LAST X, π) lift when lift is enabled **or when entry
+was in progress**, and overwrite X only in the post-ENTER/CLx state — so
+`5 RCL 1 +` adds to the 5 while `2 ENTER RCL 1 ×` multiplies the 2. That is
+the one place the bit alone does not suffice; the buffer, which already
+exists, disambiguates, so persistent state stays one bit.
+
+Two-number operations drop the stack with T replicating downward and set
+LAST X; one-number operations replace X in place and set LAST X. Errors
+(÷0, √ of a negative) leave the stack and LAST X exactly as they stood and
+raise a flag the display renders as a word; the next token clears it. The
+error UX is provisional.
+
+STO/RCL take their register by the parser's one-token lookahead (prefix,
+HP convention) — an argument in the token, never a machine mode.
+
 ### Open font work
 
 | | |
