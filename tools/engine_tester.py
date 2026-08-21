@@ -81,10 +81,14 @@ class EngineTester:
             bufsize=1,
         )
 
-        # ---- The state readout: T Z Y above the big X display ----
+        # ---- The state readout: T Z Y and raw X above the big display ----
+        # X appears twice on purpose: its raw value with the other stack
+        # rows, and the big display underneath showing the watch's view -
+        # which reads "Overflow" when the value outruns the field, so the
+        # raw row is how you still see what X actually holds.
 
         self.registers = {}
-        for name in ("T", "Z", "Y"):
+        for name in ("T", "Z", "Y", "X"):
             row = tk.Frame(root, bg=BACKGROUND)
             row.pack(fill="x", padx=12)
             tk.Label(row, text=name, width=6, anchor="e", font=STACK_FONT,
@@ -149,11 +153,13 @@ class EngineTester:
 
         x, y, z, t, lastx, storage, error, display = line.rstrip("\n").split("\t")
 
-        # The stack rows show the raw values; X shows the formatter's view,
-        # exactly what the watch would render.
+        # The register rows show the raw values; the big display shows the
+        # watch's view - entry keystrokes mid-entry, the formatter's
+        # rendering otherwise.
         self.registers["T"].config(text=t)
         self.registers["Z"].config(text=z)
         self.registers["Y"].config(text=y)
+        self.registers["X"].config(text=x)
         self.registers["LASTX"].config(text=lastx)
         self.registers["STO"].config(text=storage)
         self.display.config(text=display)

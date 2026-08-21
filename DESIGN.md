@@ -979,7 +979,9 @@ digit-entry buffer, and ONE bit — `noLift`, HP's
 stack-lift-enable with inverted polarity: true means the next digit must not
 lift. The rules ("a digit" meaning any number-entry token — a digit proper,
 or EEX, which opens the exponent field and supplies the implicit mantissa 1
-on an empty entry, HP-21 style):
+on an empty entry, HP-21 style; the exponent field holds as many digits as
+the display's ±99 limit, one more rolling the field left so entry can never
+build a value the display must call Overflow):
 
 1. A digit with the bit clear: lift (T←Z←Y←X), set the bit, start the buffer.
 2. A digit with the bit set: append to the buffer, copy its value into X.

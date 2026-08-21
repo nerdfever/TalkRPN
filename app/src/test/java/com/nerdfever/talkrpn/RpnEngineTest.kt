@@ -179,6 +179,25 @@ class RpnEngineTest {
         assertEquals(500.0, engine.x, 0.0)
     }
 
+    @Test fun aThirdExponentDigitRollsTheField() {
+        // 5 EEX 200: the exponent field holds two digits, so 2,0,0 rolls
+        // to 00 - the last two typed - exactly as on the HP-21. Entry can
+        // never build a value the display must call Overflow.
+        digits("5")
+        press(Token.Eex)
+        digits("200")
+        assertEquals("5E00", engine.entry)
+        assertEquals(5.0, engine.x, 0.0)
+    }
+
+    @Test fun theRollKeepsTheExponentSign() {
+        digits("5")
+        press(Token.Eex, Token.Chs)
+        digits("123")
+        assertEquals("5E-23", engine.entry)
+        assertEquals(5e-23, engine.x, 0.0)
+    }
+
     @Test fun aRadixInTheExponentIsRefused() {
         digits("5")
         press(Token.Eex)

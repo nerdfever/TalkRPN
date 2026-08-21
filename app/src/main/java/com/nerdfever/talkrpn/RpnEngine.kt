@@ -277,6 +277,20 @@ class RpnEngine {
                 buffer.contains(NumberFormatter.EXPONENT_MARKER))
         ) return
 
+        // The exponent field holds as many digits as the display can show:
+        // one more ROLLS the field left and the oldest digit falls off, as
+        // on the HP-21 - so the exponent is always the last digits typed,
+        // and entry can never build a value the display must call Overflow.
+        val marker = buffer.indexOf(NumberFormatter.EXPONENT_MARKER)
+        if (marker >= 0) {
+            val digitsStart =
+                marker + 1 + if (buffer.getOrNull(marker + 1) == '-') 1 else 0
+            val exponentDigits = buffer.substring(digitsStart)
+            if (exponentDigits.length >= EXPONENT_ENTRY_DIGITS) {
+                buffer = buffer.take(digitsStart) + exponentDigits.drop(1)
+            }
+        }
+
         buffer += character
         x = valueOf(buffer)
     }
@@ -388,5 +402,13 @@ class RpnEngine {
 
     companion object {
         const val DEFAULT_DSP_PLACES = 3
+
+        /**
+         * Exponent digits the entry field holds before rolling - derived
+         * from the display's own limit (99 -> 2 digits), so the two can
+         * never disagree.
+         */
+        private val EXPONENT_ENTRY_DIGITS =
+            NumberFormatter.EXPONENT_LIMIT.toString().length
     }
 }

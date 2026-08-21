@@ -69,9 +69,11 @@ object NumberFormatter {
     /**
      * Exponents stay TWO digits, classic HP: any result whose exponent would
      * need three overflows (or underflows to zero) instead. Doubles reach
-     * 10^+-308, so this is a real ceiling, not a formality.
+     * 10^+-308, so this is a real ceiling, not a formality. Public because
+     * the engine sizes its exponent ENTRY field from it, so the two can
+     * never disagree.
      */
-    private const val EXPONENT_LIMIT = 99
+    const val EXPONENT_LIMIT = 99
 
     /** The exponent block's positions: the blank-or-minus seat, two digits. */
     private const val EXPONENT_BLOCK_POSITIONS = 3
