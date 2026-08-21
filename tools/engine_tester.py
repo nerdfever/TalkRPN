@@ -33,7 +33,13 @@ REPL_SCRIPT = Path(
 # activity on the watch, so its engine starts fresh alongside a fresh
 # restart of this pad.
 ADB = r"C:\Users\davel\AppData\Local\Android\Sdk\platform-tools\adb.exe"
-ADB_ARGS = []                  # e.g. ["-s", "192.168.6.201:36463"]
+
+# The watch is found, not configured: toggling watch mode ON asks adb for
+# its device list and picks the one that is not an emulator - with both an
+# emulator and the watch attached, a bare adb call refuses to choose and
+# every press would die on "more than one device". Set WATCH_SERIAL to pin
+# one explicitly (e.g. "192.168.6.169:39265") and skip the search.
+WATCH_SERIAL = ""
 TOKEN_ACTION = "com.nerdfever.talkrpn.TOKEN"   # matches CalcActivity's receiver
 CALC_ACTIVITY = "com.nerdfever.talkrpn/.CalcActivity"
 
@@ -129,6 +135,7 @@ class EngineTester:
         # ---- The watch mirror toggle ----
 
         self.to_watch = False
+        self.watch_serial = ""
         self.watch_button = tk.Button(
             root, text="watch: off", font=BUTTON_FONT,
             command=self.toggle_watch,
@@ -157,24 +164,56 @@ class EngineTester:
         # The opening state line, so the window starts populated.
         self.read_state()
 
+    def find_watch(self) -> str:
+
+        # The pinned serial wins; otherwise ask adb and take the device
+        # that is not an emulator. Empty string means no watch found.
+        if WATCH_SERIAL:
+            return WATCH_SERIAL
+
+        listing = subprocess.run(
+            [ADB, "devices"], capture_output=True, text=True
+        ).stdout
+
+        for line in listing.splitlines()[1:]:
+            parts = line.split()
+            if len(parts) == 2 and parts[1] == "device" and not parts[0].startswith("emulator-"):
+                return parts[0]
+
+        return ""
+
     def toggle_watch(self) -> None:
 
-        # Turning the mirror ON (re)starts CalcActivity, so the watch's
-        # engine begins fresh - restart this pad at the same time and the
-        # two run the same state from the same origin.
-        self.to_watch = not self.to_watch
-        self.watch_button.config(text="watch: on" if self.to_watch else "watch: off")
+        # Turning the mirror ON locates the watch and (re)starts
+        # CalcActivity, so the watch's engine begins fresh - restart this
+        # pad at the same time and the two run the same state from the
+        # same origin.
+        if not self.to_watch:
 
-        if self.to_watch:
+            self.watch_serial = self.find_watch()
+
+            # No watch attached: say so on the button and stay off.
+            if not self.watch_serial:
+                self.watch_button.config(text="watch: none")
+                return
+
+            self.to_watch = True
+            self.watch_button.config(text="watch: on")
             self.adb("shell", "am", "start", "-n", CALC_ACTIVITY)
+
+        else:
+            self.to_watch = False
+            self.watch_button.config(text="watch: off")
 
     def adb(self, *args: str) -> None:
 
         # Fire and forget: a press must not wait on the radio. Failures are
         # silent by design - the watch view simply not updating IS the error
-        # report, and the wrist is right there to see it.
+        # report, and the wrist is right there to see it. Always pinned to
+        # the watch's serial: with an emulator also attached, an unpinned
+        # adb refuses to pick one.
         subprocess.Popen(
-            [ADB, *ADB_ARGS, *args],
+            [ADB, "-s", self.watch_serial, *args],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
