@@ -6,7 +6,8 @@ import kotlin.math.sqrt
  * RpnEngine - the classical four-level RPN machine, exactly as settled in
  * the design notes (DESIGN.md, "The RPN engine").
  *
- * The whole state is: the stack X Y Z T, LAST X, the ten registers, the
+ * The whole state is: the stack X Y Z T, LAST X, the single storage
+ * register (as on the HP-21, so STO and RCL take no argument), the
  * digit-entry buffer, and ONE boolean - noLift, HP's stack-lift-enable flag
  * with inverted polarity: true means THE NEXT DIGIT MUST NOT LIFT. That one
  * bit suffices because every non-digit token clears the buffer, which
@@ -52,8 +53,8 @@ class RpnEngine {
 
     var lastX = 0.0; private set
 
-    /** The ten storage registers, STO/RCL 0-9. */
-    private val registers = DoubleArray(REGISTER_COUNT)
+    /** THE storage register - one, as on the HP-21, so STO takes no argument. */
+    var storage = 0.0; private set
 
     /** Digit entry in progress, exactly as spoken/typed so far. */
     private var buffer = ""
@@ -66,8 +67,6 @@ class RpnEngine {
 
     /** DSP - shown decimal places. Engine state so DSP is a real (neutral) token. */
     var dspPlaces = DEFAULT_DSP_PLACES; private set
-
-    fun register(index: Int): Double = registers[index]
 
     // ---- The tokens ---------------------------------------------------------------
 
@@ -98,12 +97,13 @@ class RpnEngine {
         // Value producers.
         data object LastX : Token
         data object Pi : Token
-        data class Rcl(val register: Int) : Token
+        data object Rcl : Token
 
-        // Storage and modes. The register/argument is resolved by the token
-        // parser's one-token lookahead - prefix STO, HP convention - so it
-        // arrives here complete; the machine never holds a half-token mode.
-        data class Sto(val register: Int) : Token
+        // Storage and modes. STO takes no argument - one register, as on
+        // the HP-21. DSP's argument is resolved by the token parser's
+        // one-token lookahead, so it arrives here complete; the machine
+        // never holds a half-token mode.
+        data object Sto : Token
         data class Dsp(val places: Int) : Token
     }
 
@@ -127,7 +127,7 @@ class RpnEngine {
     private enum class Disposition { ENABLING, DISABLING, NEUTRAL }
 
     private fun dispositionOf(token: Token): Disposition = when (token) {
-        Token.Enter, Token.ClearX, Token.ClearStack, is Token.Sto -> Disposition.DISABLING
+        Token.Enter, Token.ClearX, Token.ClearStack, Token.Sto -> Disposition.DISABLING
         is Token.Dsp -> Disposition.NEUTRAL
         else -> Disposition.ENABLING
     }
@@ -205,9 +205,9 @@ class RpnEngine {
 
             Token.LastX -> produce(lastX, wasMidEntry)
             Token.Pi -> produce(Math.PI, wasMidEntry)
-            is Token.Rcl -> produce(registers[token.register], wasMidEntry)
+            Token.Rcl -> produce(storage, wasMidEntry)
 
-            is Token.Sto -> registers[token.register] = x
+            Token.Sto -> storage = x
 
             is Token.Dsp -> dspPlaces = token.places
 
@@ -307,7 +307,6 @@ class RpnEngine {
     }
 
     companion object {
-        const val REGISTER_COUNT = 10
         const val DEFAULT_DSP_PLACES = 3
     }
 }

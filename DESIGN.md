@@ -973,8 +973,9 @@ to HP-strict whenever the field is comfortable.
 
 ### The RPN engine (`RpnEngine.kt`, JVM-tested)
 
-The classical four-level machine. The whole state: X Y Z T, LAST X, ten
-registers, the digit-entry buffer, and ONE bit — `noLift`, HP's
+The classical four-level machine. The whole state: X Y Z T, LAST X, one
+storage register (HP-21 style — STO and RCL take no argument), the
+digit-entry buffer, and ONE bit — `noLift`, HP's
 stack-lift-enable with inverted polarity: true means the next digit must not
 lift. The rules:
 
@@ -1004,8 +1005,12 @@ LAST X; one-number operations replace X in place and set LAST X. Errors
 raise a flag the display renders as a word; the next token clears it. The
 error UX is provisional.
 
-STO/RCL take their register by the parser's one-token lookahead (prefix,
-HP convention) — an argument in the token, never a machine mode.
+DSP takes its argument by the parser's one-token lookahead (prefix, HP
+convention) — an argument in the token, never a machine mode. STO/RCL take
+none: one register.
+
+A button-pad tester (`tools/engine_tester.py`) drives THE engine — the
+Kotlin one, over a pipe to the `:repl` module — never a reimplementation.
 
 ### Open font work
 

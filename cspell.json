@@ -20,6 +20,7 @@
         // Android, Compose and the toolchain
         "adbd",
         "androidx",
+        "readln",
         "Argb",
         "drawscope",
         "gradlew",
@@ -95,7 +96,13 @@
         "nstartxref",
         "nstream",
 
+        // The engine tester's tkinter pad
+        "padx",
+        "pady",
+        "tkinter",
+
         // Windows / display plumbing
+        "davel",
         "xdpi"
     ]
 }

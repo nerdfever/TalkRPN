@@ -45,6 +45,11 @@ rootProject.name = "TalkRPN"
 include(":app")
 include(":wdbtile")
 
+// A plain-JVM wrapper around the engine and formatter, for the button-pad
+// tester in tools/ - so testing exercises THE engine over a pipe, never a
+// reimplementation of it.
+include(":repl")
+
 // ---------------------------------------------------------------------------
 // Keep generated output off Google Drive.
 //

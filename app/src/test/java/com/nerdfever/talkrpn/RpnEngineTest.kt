@@ -188,29 +188,39 @@ class RpnEngineTest {
     // ---- Producers consult the bit ---------------------------------------------------------
 
     @Test fun rclLiftsWhenLiftIsEnabled() {
-        digits("3"); press(Token.Sto(1))
+        // The user's own acceptance trace: 5 ENTER RCL + ... well, without
+        // the ENTER - mid-entry RCL must lift the 5 too. Both forms here.
+        digits("3"); press(Token.Sto)
         digits("5")
-        press(Token.Rcl(1), Token.Add)
+        press(Token.Rcl, Token.Add)
+        assertEquals(8.0, engine.x, 0.0)
+    }
+
+    @Test fun fiveEnterRclAdd() {
+        digits("3"); press(Token.Sto)
+        press(Token.ClearStack)
+        digits("5")
+        press(Token.Enter, Token.Rcl, Token.Add)
         assertEquals(8.0, engine.x, 0.0)
     }
 
     @Test fun rclOverwritesAfterEnter() {
         // The zero-argument-producer bug: after ENTER the recalled value
-        // must land ON X, not push it.
-        digits("3"); press(Token.Sto(1))
+        // must land ON X, not push it - which is also what makes the
+        // fiveEnterRclAdd trace give 8 rather than 10.
+        digits("3"); press(Token.Sto)
         digits("2"); press(Token.Enter)
-        press(Token.Rcl(1), Token.Multiply)
+        press(Token.Rcl, Token.Multiply)
         assertEquals(6.0, engine.x, 0.0)
     }
 
-    @Test fun rclThenRclLiftsBoth() {
-        digits("3"); press(Token.Sto(1))
-        digits("4"); press(Token.Sto(2))
+    @Test fun chainedProducersLiftEachOther() {
+        digits("3"); press(Token.Sto)
         press(Token.ClearStack)
-        press(Token.Rcl(1), Token.Rcl(2))
-        assertStack(x = 4.0, y = 3.0)
+        press(Token.Rcl, Token.Pi)
+        assertStack(x = Math.PI, y = 3.0)
         press(Token.Add)
-        assertEquals(7.0, engine.x, 0.0)
+        assertEquals(3.0 + Math.PI, engine.x, 1e-12)
     }
 
     @Test fun piLiftsAndThenEnablesEntry() {
@@ -224,8 +234,8 @@ class RpnEngineTest {
 
     @Test fun stoStoresWithoutMovingTheStack() {
         digits("2.55")
-        press(Token.Sto(7))
-        assertEquals(2.55, engine.register(7), 0.0)
+        press(Token.Sto)
+        assertEquals(2.55, engine.storage, 0.0)
         assertEquals(2.55, engine.x, 0.0)
         assertEquals(0.0, engine.y, 0.0)
     }
@@ -235,7 +245,7 @@ class RpnEngineTest {
         // fresh number IN PLACE of X. (The 41/42S disagree; if the Free42
         // oracle rules for them, flip STO's row in dispositionOf and this
         // test's expectation together.)
-        digits("3"); press(Token.Sto(1))
+        digits("3"); press(Token.Sto)
         digits("4")
         assertStack(x = 4.0, y = 0.0)
     }

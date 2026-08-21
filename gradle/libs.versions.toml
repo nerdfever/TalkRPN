@@ -59,3 +59,6 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 # The Compose compiler is still a separate plugin, and its version must match the
 # Kotlin compiler it plugs into — hence the shared "kotlin" version above.
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+
+# Plain-JVM Kotlin, for the :repl module — the engine tester's process.
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
