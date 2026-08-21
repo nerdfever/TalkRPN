@@ -931,7 +931,7 @@ Consequences, accepted:
 proportional line is simply shorter. A test string must contain both a `11` run
 and an adjacent pair of full-width digits, or the two policies look identical.
 
-### The number formatter (the FINAL one; `dsp()` in the test screen is its sketch)
+### The number formatter (the FINAL one - `NumberFormatter.kt`, JVM-tested; the test screen's `dsp()` delegates to it)
 
 Three modes and one user setting, `dsp` — digits right of the radix, default 3:
 
@@ -965,8 +965,11 @@ Shared rules:
 - Beyond numbers it passes STRINGS through verbatim — `Error`, `NaN`, `Inf`,
   and whatever the UI later needs — both fonts covering the printable set.
 
-Built with the engine, as a pure, unit-testable function of
-(value, mode, dsp, live field description).
+Built, ahead of the engine: a pure function of (value, mode, dsp, field
+shape) in `NumberFormatter.kt`, held to this spec by the JUnit suite in
+`app/src/test`. `dsp` is a CEILING: when the field cannot afford that many
+places, the places clip down rather than the value overflowing - identical
+to HP-strict whenever the field is comfortable.
 
 ### Open font work
 

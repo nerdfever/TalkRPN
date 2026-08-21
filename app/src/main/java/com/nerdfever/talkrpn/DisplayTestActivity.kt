@@ -44,11 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.Text
-import kotlin.math.abs
 import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.log10
-import kotlin.math.pow
 
 /*
  * The whole calculator display, laid out for fit.
