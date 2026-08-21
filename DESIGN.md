@@ -931,6 +931,43 @@ Consequences, accepted:
 proportional line is simply shorter. A test string must contain both a `11` run
 and an adjacent pair of full-width digits, or the two policies look identical.
 
+### The number formatter (the FINAL one; `dsp()` in the test screen is its sketch)
+
+Three modes and one user setting, `dsp` — digits right of the radix, default 3:
+
+- **FIX** — no exponent. Falls back to the overflow mode (configurable,
+  default ENG) when the rounded value cannot be honestly shown: the integer
+  digits overflow the field, or |value| < 10^-dsp so every shown place would
+  be zero.
+- **SCI** — always an exponent; mantissa in [1, 10), exactly `dsp` places.
+- **ENG** — SCI with the exponent a multiple of three (SI prefixes: 00, ±03,
+  ±06 …); mantissa in [1, 1000).
+
+Shared rules:
+
+- The exponent block is the settled three positions — the blank-or-minus
+  seat, then two zero-padded digits — each character in its own full-width
+  cell, placed by position.
+- Exponents stay TWO digits, classic HP: beyond 10^±99 the formatter signals
+  over/underflow with a proper message rather than the HP's flashing nines
+  (message text to be chosen).
+- Zero shows as `0.000` in FIX and `0.000 00` in SCI/ENG, the HP way.
+- Sub-unity values keep their single leading zero — `0.500` — and nothing is
+  ever zero-padded on the left.
+- Round FIRST, then judge fit: rounding to `dsp` can grow a digit
+  (9.9995 → 10.000), and in SCI/ENG can push the mantissa out of range,
+  renormalising the exponent (999.97 at one place → 1000.0 → 1.0 × 10³
+  higher). printf-family formatting does the digit rounding correctly; the
+  formatter owns the renormalising pass after it.
+- BOTH fonts, always: fit tests ask the live font's cost model — the segment
+  font carries radix and separators in its gaps for free, the dot font pays
+  a full cell for each.
+- Beyond numbers it passes STRINGS through verbatim — `Error`, `NaN`, `Inf`,
+  and whatever the UI later needs — both fonts covering the printable set.
+
+Built with the engine, as a pure, unit-testable function of
+(value, mode, dsp, live field description).
+
 ### Open font work
 
 | | |
