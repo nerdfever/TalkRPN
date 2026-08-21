@@ -1016,6 +1016,17 @@ none: one register.
 
 A button-pad tester (`tools/engine_tester.py`) drives THE engine — the
 Kotlin one, over a pipe to the `:repl` module — never a reimplementation.
+Its watch mode mirrors every press to the wrist as an adb broadcast, where
+`CalcActivity` — the calculator proper: the engine behind the shared
+`CalculatorDisplay`, both at their settled defaults — presses its own copy
+of the engine; two identical engines fed one token stream stay in
+lockstep. The vocabulary (`TokenWords`) and the readout formatting
+(`RegisterReadout`) are single-sourced for the same reason.
+
+Known display open: the T row sits high enough on the circle that its
+label falls left of the glass — laid out, painted, and physically
+invisible on both the emulator's mask and the wrist. Z downward all
+labels show. Undecided what, if anything, to do about it.
 
 ### Open font work
 

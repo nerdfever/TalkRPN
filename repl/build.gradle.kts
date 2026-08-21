@@ -28,6 +28,8 @@ sourceSets {
             include(
                 "**/RpnEngine.kt",
                 "**/NumberFormatter.kt",
+                "**/TokenWords.kt",
+                "**/RegisterReadout.kt",
                 "**/repl/**",
             )
         }

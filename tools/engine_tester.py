@@ -26,6 +26,17 @@ REPL_SCRIPT = Path(
     r"C:\Users\davel\ssd_cache\AndroidBuilds\TalkRPN\repl\install\repl\bin\repl.bat"
 )
 
+# Watch mirroring: with the watch button ON, every press is also sent to
+# the watch's CalcActivity as an adb broadcast, so the wrist and this
+# window run the same token stream through two copies of the same engine -
+# which therefore stay in lockstep. Toggling it ON also starts the
+# activity on the watch, so its engine starts fresh alongside a fresh
+# restart of this pad.
+ADB = r"C:\Users\davel\AppData\Local\Android\Sdk\platform-tools\adb.exe"
+ADB_ARGS = []                  # e.g. ["-s", "192.168.6.201:36463"]
+TOKEN_ACTION = "com.nerdfever.talkrpn.TOKEN"   # matches CalcActivity's receiver
+CALC_ACTIVITY = "com.nerdfever.talkrpn/.CalcActivity"
+
 # The look: the project's LED red on black, monospace throughout.
 BACKGROUND = "#000000"
 LED_RED = "#FF0000"
@@ -115,6 +126,15 @@ class EngineTester:
             value.pack(side="right")
             self.registers[name] = value
 
+        # ---- The watch mirror toggle ----
+
+        self.to_watch = False
+        self.watch_button = tk.Button(
+            root, text="watch: off", font=BUTTON_FONT,
+            command=self.toggle_watch,
+        )
+        self.watch_button.pack(pady=(8, 0))
+
         # ---- The pad ----
 
         pad = tk.Frame(root, bg=BACKGROUND)
@@ -137,11 +157,40 @@ class EngineTester:
         # The opening state line, so the window starts populated.
         self.read_state()
 
+    def toggle_watch(self) -> None:
+
+        # Turning the mirror ON (re)starts CalcActivity, so the watch's
+        # engine begins fresh - restart this pad at the same time and the
+        # two run the same state from the same origin.
+        self.to_watch = not self.to_watch
+        self.watch_button.config(text="watch: on" if self.to_watch else "watch: off")
+
+        if self.to_watch:
+            self.adb("shell", "am", "start", "-n", CALC_ACTIVITY)
+
+    def adb(self, *args: str) -> None:
+
+        # Fire and forget: a press must not wait on the radio. Failures are
+        # silent by design - the watch view simply not updating IS the error
+        # report, and the wrist is right there to see it.
+        subprocess.Popen(
+            [ADB, *ADB_ARGS, *args],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
     def press(self, word: str) -> None:
 
         # One word down the pipe, one state line back.
         self.engine.stdin.write(word + "\n")
         self.engine.stdin.flush()
+
+        # The same word to the wrist, when mirroring. Single-quoted because
+        # adb shell re-parses its arguments through the device's shell,
+        # which would otherwise glob the "*" of multiply.
+        if self.to_watch:
+            self.adb("shell", "am", "broadcast", "-a", TOKEN_ACTION,
+                     "--es", "token", f"'{word}'")
 
         self.read_state()
 

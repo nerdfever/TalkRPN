@@ -136,6 +136,25 @@
         </activity>
 
         <!--
+            The calculator itself: the engine behind the settled display. In the
+            app list under its own name, and exported so the desktop button pad
+            can start it and feed it token broadcasts over adb while the input
+            is not yet voice.
+        -->
+        <activity
+            android:name=".CalcActivity"
+            android:label="TalkRPN"
+            android:taskAffinity=""
+            android:theme="@style/Theme.TalkRPN"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
             Four rows of digits at two bar positions and two stroke widths, for
             judging both against each other on the real screen. Same reasoning as
             DisplayTestActivity for exported="true": it exists to be launched from
