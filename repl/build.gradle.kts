@@ -18,10 +18,11 @@ application {
 sourceSets {
     main {
         kotlin {
-            // The engine and the formatter are compiled STRAIGHT FROM the
-            // app module's sources - one copy in the repository, so this
-            // process can never drift from what the watch runs. Both files
-            // are pure Kotlin with no Android in them, which is what makes
+            // The engine, the formatter, the token vocabulary and the
+            // readout rules are compiled STRAIGHT FROM the app module's
+            // sources - one copy in the repository, so this process can
+            // never drift from what the watch runs. All four files are
+            // pure Kotlin with no Android in them, which is what makes
             // this legal. The include filter applies to every source root,
             // so this module's own files must be named here too.
             srcDir("../app/src/main/java")
