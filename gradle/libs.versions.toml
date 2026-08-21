@@ -21,6 +21,9 @@ wearTiles = "1.4.1"              # TileService - lets an app supply a tile.
 protolayout = "1.2.1"            # The layout/DSL a tile's UI is described in.
 guava = "33.3.1-android"         # Futures.immediateFuture, for TileService's return type.
 
+# JVM unit tests - the formatter is pure Kotlin and tests off-device.
+junit = "4.13.2"
+
 [libraries]
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -43,6 +46,8 @@ androidx-wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-
 androidx-wear-tiles = { group = "androidx.wear.tiles", name = "tiles", version.ref = "wearTiles" }
 androidx-wear-protolayout = { group = "androidx.wear.protolayout", name = "protolayout", version.ref = "protolayout" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
 

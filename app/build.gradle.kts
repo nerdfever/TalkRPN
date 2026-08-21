@@ -103,4 +103,7 @@ dependencies {
 
     // The preview *renderer* is a debug-only dependency, so it never ships in a release APK.
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // JVM unit tests, for the pure-Kotlin pieces - the formatter first.
+    testImplementation(libs.junit)
 }

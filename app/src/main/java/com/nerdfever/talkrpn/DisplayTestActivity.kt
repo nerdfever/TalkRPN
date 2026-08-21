@@ -409,27 +409,16 @@ private fun fieldLeftPx(
 }
 
 /**
- * Whether to separate groups of three digits left of the radix.
- *
- * Grouping is a display concern, not a font one - the font just draws a ',' if it
- * is handed one. Which character separates and which is the radix swaps with the
- * radix-comma / radix-dot setting, so both live here rather than in the renderer.
+ * The display grammar - radix, separators, the trailing-radix policy - lives
+ * with [NumberFormatter], its single owner, where its whys are documented.
+ * Aliased here so this screen's parsing and sample-dressing helpers read
+ * cleanly; an alias cannot drift.
  */
-private const val GROUP_DIGITS = true
-private const val GROUP_SIZE = 3
-private const val GROUP_SEPARATOR = ','
-private const val RADIX = '.'
-
-/**
- * Show the radix even when no digits follow it, so an integer reads "5." not "5".
- *
- * This is what HP calculators do, and it is not decoration. A trailing point is the
- * signal that you are looking at the whole value rather than at the leading digits
- * of something that has been truncated to fit - which matters on a display this
- * narrow, where truncation is routine. It also distinguishes a displayed number
- * from a register label or an error word at a glance.
- */
-private const val ALWAYS_SHOW_RADIX = true
+private const val GROUP_DIGITS = NumberFormatter.GROUP_DIGITS
+private const val GROUP_SIZE = NumberFormatter.GROUP_SIZE
+private const val GROUP_SEPARATOR = NumberFormatter.GROUP_SEPARATOR
+private const val RADIX = NumberFormatter.RADIX
+private const val ALWAYS_SHOW_RADIX = NumberFormatter.ALWAYS_SHOW_RADIX
 
 /** Marks the start of an exponent, which never takes a radix of its own. */
 private const val EXPONENT_MARKERS = "eE"
@@ -1354,61 +1343,21 @@ private fun ensureRadix(value: String): String {
 }
 
 /**
- * DSP - fixed-point to [places] after the radix, falling back to ENG notation
- * when fixed form cannot say anything useful: when the digits outgrow the
- * field, or when the value is so small that every shown place would be zero.
+ * The FINAL formatter, at this screen's default field: FIX at [places],
+ * falling back to ENG, sized for the segment font's default field. The
+ * output already carries its grouping and radix, so the sample pipeline's
+ * dressing passes leave it untouched.
  *
- * Fixed form owns the WHOLE field, since it shows no exponent. Eng form gives
- * the field's end to the exponent block - TWO digits, zero-padded, a minus
- * ahead when negative, one reserved blank position ahead of it all - the
- * exponent is a multiple of three, and the mantissa takes however many
- * places still fit its share.
- *
- * Only SIGNS AND DIGITS cost field positions: the radix and the group
- * separators live in the gaps between cells and cost nothing, which is
- * exactly why "1.414" fits a four-position share.
- *
- * A sketch of the real formatter, good enough to feed the samples. The real
- * one inherits its edge cases: rounding that carries into a new digit
- * (999.96 becoming 1000.0), exponents of three digits, and reformatting live
- * when the fp knob moves, and knowing the live font's field and cost model -
- * this sketch bakes [SEGMENT_FIELD_POSITIONS] in at start, and the dot font
- * simply shows the same strings in its own (roomier) field.
+ * The samples are baked once at start, which is why this call cannot follow
+ * the fp knob or the live font; the engine's own calls will.
  */
-private fun dsp(value: Double, places: Int = DSP_PLACES): String {
-
-    if (value == 0.0) return "%.${places}f".format(0.0)
-
-    val magnitude = abs(value)
-
-    // The positions fixed form needs: the sign and the digits, nothing else.
-    val integerDigits = maxOf(floor(log10(magnitude)).toInt() + 1, 1)
-    val sign = if (value < 0) 1 else 0
-    val fixedPositions = sign + integerDigits + places
-
-    val tooBig = fixedPositions > SEGMENT_FIELD_POSITIONS
-    val tooSmall = magnitude < 10.0.pow(-places)
-
-    if (!tooBig && !tooSmall) return "%.${places}f".format(value)
-
-    // Eng: pull the exponent down to a multiple of three, leaving the
-    // mantissa in [1, 1000). Two digits always, zero-padded, the minus ahead
-    // of them when negative.
-    val engExponent = Math.floorDiv(floor(log10(magnitude)).toInt(), 3) * 3
-    val mantissa = value / 10.0.pow(engExponent)
-
-    val exponentBlock =
-        if (engExponent < 0) "-%02d".format(-engExponent) else "%02d".format(engExponent)
-
-    // The mantissa's share is what the exponent block leaves - a constant
-    // EXPONENT_DIGITS + 1 positions, the minus riding in the blank's seat;
-    // spend what remains after the sign and the integer digits on places.
-    val mantissaIntegerDigits = maxOf(floor(log10(abs(mantissa))).toInt() + 1, 1)
-    val mantissaShare = SEGMENT_FIELD_POSITIONS - EXPONENT_DIGITS - 1
-    val mantissaPlaces = (mantissaShare - sign - mantissaIntegerDigits).coerceAtLeast(0)
-
-    return "%.${mantissaPlaces}fE%s".format(mantissa, exponentBlock)
-}
+private fun dsp(value: Double, places: Int = DSP_PLACES): String =
+    NumberFormatter.format(
+        value,
+        NumberFormatter.Mode.FIX,
+        places,
+        NumberFormatter.FieldShape(SEGMENT_FIELD_POSITIONS, punctuationCostsCell = false),
+    )
 
 private fun groupDigits(value: String): String {
 
