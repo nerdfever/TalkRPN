@@ -86,6 +86,17 @@
             }
         },
         {
+            // The engine tester: the tkinter button pad driving the real Kotlin
+            // engine over a pipe. No device needed. The task runs until the
+            // window is closed.
+            "label": "Engine tester",
+            "type": "shell",
+            "command": "python",
+            "args": ["${workspaceFolder}/tools/engine_tester.py"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent", "panel": "dedicated" }
+        },
+        {
             // Tail the device log for this app only. Runs until you stop it.
             "label": "Show app log",
             "type": "shell",
