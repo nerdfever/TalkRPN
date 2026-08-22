@@ -1,5 +1,6 @@
 package com.nerdfever.talkrpn
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,10 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -196,6 +199,57 @@ class DisplayKnobs {
 }
 
 /**
+ * The logcat tag every knob change is written under - one [stateLine] per
+ * change. The PC-side bridge (tools/knob_bridge.py) tails one device's
+ * log for this tag and forwards each line to the other device as a
+ * [CalcActivity] KNOBS broadcast, which is how knobs turned on the
+ * emulator move the watch too.
+ */
+const val KNOB_LOG_TAG = "TalkRpnKnobs"
+
+/**
+ * Every knob as one parseable line - the wire format the bridge carries,
+ * with [applyStateLine] as its one reader, so the two cannot drift.
+ */
+fun DisplayKnobs.stateLine(): String = String.format(
+    java.util.Locale.ROOT,
+    "g=%.4f hf=%.4f vg=%.4f segfp=%d dotfp=%d dotg=%.2f font=%s boxes=%s sl=%.2f st=%.4f",
+    gapUnits, heightFraction, vgapUnits,
+    segmentFieldPositions, dotFieldPositions, dotGapColumns,
+    if (useDotFont) "dot" else "seg", if (showFieldBoxes) "on" else "off",
+    slantDegrees, strokeUnits,
+)
+
+/**
+ * Applies a [stateLine] - tolerant of unknown keys and bad values, which
+ * are simply skipped, so an older build's line still moves what it can.
+ */
+fun DisplayKnobs.applyStateLine(line: String) {
+
+    for (entry in line.trim().split(' ')) {
+
+        val at = entry.indexOf('=')
+        if (at <= 0) continue
+
+        val key = entry.take(at)
+        val value = entry.drop(at + 1)
+
+        when (key) {
+            "g" -> value.toFloatOrNull()?.let { gapUnits = it }
+            "hf" -> value.toFloatOrNull()?.let { heightFraction = it }
+            "vg" -> value.toFloatOrNull()?.let { vgapUnits = it }
+            "segfp" -> value.toIntOrNull()?.let { segmentFieldPositions = it }
+            "dotfp" -> value.toIntOrNull()?.let { dotFieldPositions = it }
+            "dotg" -> value.toFloatOrNull()?.let { dotGapColumns = it }
+            "font" -> useDotFont = value == "dot"
+            "boxes" -> showFieldBoxes = value == "on"
+            "sl" -> value.toFloatOrNull()?.let { slantDegrees = it }
+            "st" -> value.toFloatOrNull()?.let { strokeUnits = it }
+        }
+    }
+}
+
+/**
  * The tuning panel: g/hf, vg/fp, font/boxes, plus whatever [extraControls]
  * a caller appends (the rig adds its sample cycler). The caller decides
  * when it shows and where it sits - typically centred, toggled by a tap on
@@ -209,6 +263,14 @@ fun DisplayTuningPanel(
 ) {
     val metrics = LocalContext.current.resources.displayMetrics
     val screenPx = minOf(metrics.widthPixels, metrics.heightPixels).toFloat()
+
+    // Every knob change goes to logcat as one state line, for the bridge
+    // to forward to the other device. Scoped to the panel deliberately:
+    // knobs only move while a panel is up, and a state applied by a
+    // BROADCAST (panel closed) must not echo back out - that would loop.
+    LaunchedEffect(knobs) {
+        snapshotFlow { knobs.stateLine() }.collect { Log.i(KNOB_LOG_TAG, it) }
+    }
 
     // One press must move the layout at least the pixel floor; the unit is
     // X's cell width in pixels, same as the display's own conversion.

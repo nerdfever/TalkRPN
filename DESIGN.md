@@ -1034,6 +1034,12 @@ of the engine; two identical engines fed one token stream stay in
 lockstep. The vocabulary (`TokenWords`) and the readout formatting
 (`RegisterReadout`) are single-sourced for the same reason.
 
+The tuning knobs bridge the same way (`tools/knob_bridge.py`): the panel
+logs every knob change as one state line, the bridge tails the emulator's
+log and forwards each line to the watch as a KNOBS broadcast, and
+`CalcActivity` applies it — so knobs tapped on the emulator move the
+wrist, live. One direction only, so no state can circle back and loop.
+
 The round-glass RESCUE SHIFT (`DisplayFit.kt`): every inked element
 reports its rectangle, and the display applies the one smallest (dx, dy)
 translation that brings as much as possible inside the circle — a layout

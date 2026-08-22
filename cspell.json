@@ -72,7 +72,10 @@
         "vpitch",
 
         // This project's own vocabulary
+        "dotfp",
+        "dotg",
         "LASTX",
+        "segfp",
         "nerdfever",
         "protolayout",
         "talkrpn",

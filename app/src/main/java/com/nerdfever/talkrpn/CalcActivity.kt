@@ -42,6 +42,14 @@ import androidx.wear.compose.material3.AppScaffold
 private const val TOKEN_ACTION = "com.nerdfever.talkrpn.TOKEN"
 private const val TOKEN_EXTRA = "token"
 
+/**
+ * The knob-state broadcast, and the extra the [stateLine] rides in - what
+ * the bridge (tools/knob_bridge.py) sends when knobs move on the OTHER
+ * device, so the emulator's panel can drive this display live.
+ */
+private const val KNOBS_ACTION = "com.nerdfever.talkrpn.KNOBS"
+private const val KNOBS_EXTRA = "state"
+
 class CalcActivity : ComponentActivity() {
 
     // The engine's entry field is the display's field, so entry stops
@@ -55,6 +63,10 @@ class CalcActivity : ComponentActivity() {
     /** What the display shows; rebuilt after every press. */
     private val values = mutableStateOf(currentValues())
 
+    // An activity field rather than a remember, so the KNOBS receiver can
+    // reach it; DisplayKnobs is snapshot state, so the display follows.
+    private val knobs = DisplayKnobs()
+
     /** One press per broadcast: parse the word, press the engine, redraw. */
     private val tokenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -64,6 +76,13 @@ class CalcActivity : ComponentActivity() {
 
             engine.press(token)
             values.value = currentValues()
+        }
+    }
+
+    /** A whole knob state per broadcast, applied as one. */
+    private val knobsReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            knobs.applyStateLine(intent?.getStringExtra(KNOBS_EXTRA) ?: return)
         }
     }
 
@@ -90,10 +109,14 @@ class CalcActivity : ComponentActivity() {
             screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
         }
 
-        // Exported so the shell (adb) may send; nothing sensitive rides in,
-        // and the receiver only ever presses calculator keys.
+        // Exported so the shell (adb) may send; nothing sensitive rides
+        // in, and the receivers only press calculator keys or turn the
+        // same knobs the on-screen panel turns.
         registerReceiver(
             tokenReceiver, IntentFilter(TOKEN_ACTION), RECEIVER_EXPORTED
+        )
+        registerReceiver(
+            knobsReceiver, IntentFilter(KNOBS_ACTION), RECEIVER_EXPORTED
         )
 
         setContent {
@@ -101,8 +124,8 @@ class CalcActivity : ComponentActivity() {
 
                 // The same tuning overlay as the rig, on the same gesture -
                 // tap anywhere to show or hide - so the display can be
-                // nudged while showing a LIVE calculation.
-                val knobs = remember { DisplayKnobs() }
+                // nudged while showing a LIVE calculation. The knobs are
+                // the activity's, shared with the KNOBS receiver.
                 var showControls by remember { mutableStateOf(false) }
 
                 Box(
@@ -128,6 +151,7 @@ class CalcActivity : ComponentActivity() {
 
     override fun onDestroy() {
         unregisterReceiver(tokenReceiver)
+        unregisterReceiver(knobsReceiver)
         super.onDestroy()
     }
 }
