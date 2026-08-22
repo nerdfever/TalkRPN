@@ -181,6 +181,16 @@ private const val UNCLIP_MAX_SHIFT_FRACTION = 0.15f
 private const val UNCLIP_STEP_PX = 2f
 
 /**
+ * How far inside the nominal pixel circle the ink must stay, as a
+ * fraction of the diameter. The physical bezel and curved cover glass
+ * hide the outermost ring of pixels that the framebuffer (and the
+ * emulator's mask) still shows - the T label's corner proved it on the
+ * wrist. 1.5% is about 6 px on the watch; raise it if glass edges still
+ * nibble the ink.
+ */
+private const val UNCLIP_GLASS_MARGIN_FRACTION = 0.015f
+
+/**
  * Reported rectangles are rounded to this before comparing, so relayout
  * float noise cannot re-trigger the search forever.
  */
@@ -491,6 +501,7 @@ fun CalculatorDisplay(
         derivedStateOf {
             unclipShift(
                 intrinsicRects.values.toList(), screenPx,
+                screenPx * UNCLIP_GLASS_MARGIN_FRACTION,
                 screenPx * UNCLIP_MAX_SHIFT_FRACTION, UNCLIP_STEP_PX,
             )
         }
@@ -567,14 +578,16 @@ fun CalculatorDisplay(
                 .onGloballyPositioned {
                     xLeftInRootPx = it.positionInRoot().x
 
+                    // Cap-band bottom, like the rows: X's alphabet has
+                    // no descenders either.
                     val inkLeft = screenPx / 2f - xFieldWidthPx / 2f + shift.dx
                     reportRect(
                         "X",
                         FitRect(
                             inkLeft, it.positionInRoot().y,
                             inkLeft + xFieldWidthPx,
-                            it.positionInRoot().y +
-                                canvasPx(xCellHeightPx, descenderUnits, strokeUnits),
+                            it.positionInRoot().y + xCellHeightPx +
+                                strokeUnits * (xCellHeightPx / TalkRpnFont.CELL_HEIGHT),
                         )
                     )
                 }
@@ -696,6 +709,12 @@ private fun RegisterRow(
             .onGloballyPositioned {
                 leftInRootPx = it.positionInRoot().x
 
+                // The reported ink stops at the BASELINE bar, not the
+                // descender band: a register only ever shows the
+                // formatter's alphabet - digits, sign, radix, E and the
+                // error words - and the labels are capitals; none of it
+                // descends. (The rig's lowercase samples can dip below;
+                // a measuring screen wears that.)
                 val fieldLeftRootPx =
                     screenPx / 2f - rowFieldWidthPx / 2f + fieldShiftPx + rescueShiftXPx
                 reportRect(
@@ -703,7 +722,8 @@ private fun RegisterRow(
                         fieldLeftRootPx - LABEL_FIELD_CLEARANCE.value * density - labelWidthPx,
                         it.positionInRoot().y,
                         fieldLeftRootPx + rowFieldWidthPx,
-                        it.positionInRoot().y + canvasPx(cellHeightPx, descenderUnits, strokeUnits),
+                        it.positionInRoot().y + cellHeightPx +
+                            strokeUnits * (cellHeightPx / TalkRpnFont.CELL_HEIGHT),
                     )
                 )
             }

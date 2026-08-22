@@ -40,25 +40,35 @@ private const val SCORE_TIE_PX = 0.01f
  * least-overhang shift when none can. Searched on a [stepPx] grid out to
  * +-[maxShiftPx] on both axes - the circle is convex, so a rectangle is
  * inside exactly when its four corners are.
+ *
+ * [glassMarginPx] shrinks the circle the fit is judged against: the
+ * physical watch's bezel and curved cover glass hide the outermost ring
+ * of pixels that a framebuffer (and the emulator's mask) still shows, so
+ * ink brought tangent to the nominal circle is still clipped on the
+ * wrist. The margin keeps everything that far inside instead.
  */
 internal fun unclipShift(
     rects: List<FitRect>,
     diameterPx: Float,
+    glassMarginPx: Float,
     maxShiftPx: Float,
     stepPx: Float,
 ): FitShift {
 
     if (rects.isEmpty()) return FitShift(0f, 0f)
 
-    val radius = diameterPx / 2f
+    // The centre stays the screen's; only the radius the fit is judged
+    // against shrinks by the margin.
+    val centre = diameterPx / 2f
+    val radius = diameterPx / 2f - glassMarginPx
 
     // How far a rect's worst corner pokes past the glass, zero when inside.
     fun overhang(rect: FitRect, dx: Float, dy: Float): Float {
 
         var worst = 0f
 
-        for (x in floatArrayOf(rect.left + dx - radius, rect.right + dx - radius)) {
-            for (y in floatArrayOf(rect.top + dy - radius, rect.bottom + dy - radius)) {
+        for (x in floatArrayOf(rect.left + dx - centre, rect.right + dx - centre)) {
+            for (y in floatArrayOf(rect.top + dy - centre, rect.bottom + dy - centre)) {
                 val out = sqrt(x * x + y * y) - radius
                 if (out > worst) worst = out
             }

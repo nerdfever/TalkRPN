@@ -18,8 +18,8 @@ class DisplayFitTest {
     private val maxShift = diameter * 0.15f
     private val step = 2f
 
-    private fun shiftFor(rects: List<FitRect>) =
-        unclipShift(rects, diameter, maxShift, step)
+    private fun shiftFor(rects: List<FitRect>, marginPx: Float = 0f) =
+        unclipShift(rects, diameter, marginPx, maxShift, step)
 
     /** True when every corner of [rect], shifted, lies inside the circle. */
     private fun fits(rect: FitRect, shift: FitShift): Boolean {
@@ -64,6 +64,18 @@ class DisplayFitTest {
         val shift = shiftFor(listOf(hopeless, label))
 
         assertTrue("label rescued regardless", fits(label, shift))
+    }
+
+    @Test fun theGlassMarginTightensTheFit() {
+        // Almost tangent to the nominal circle (worst corner within a
+        // pixel of the radius): fine bare, clipped by real glass. With a
+        // margin the routine must pull it further in.
+        val nearEdge = FitRect(4f, 190f, 120f, 264f)
+
+        assertEquals(FitShift(0f, 0f), shiftFor(listOf(nearEdge)))
+
+        val shift = shiftFor(listOf(nearEdge), marginPx = 8f)
+        assertTrue("margin forces a shift", shift != FitShift(0f, 0f))
     }
 
     @Test fun nothingToFitMeansNoShift() {
