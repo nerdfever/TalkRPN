@@ -43,9 +43,9 @@ WATCH_SERIAL = ""
 TOKEN_ACTION = "com.nerdfever.talkrpn.TOKEN"   # matches CalcActivity's receiver
 CALC_ACTIVITY = "com.nerdfever.talkrpn/.CalcActivity"
 
-# The look: the project's LED red on black, monospace throughout.
+# The look: the display's neon orange on black, monospace throughout.
 BACKGROUND = "#000000"
-LED_RED = "#FF0000"
+NEON_ORANGE = "#FF5F1F"
 LABEL_GREY = "#8A8A8A"
 STACK_FONT = ("Consolas", 20)
 DISPLAY_FONT = ("Consolas", 32, "bold")
@@ -112,13 +112,13 @@ class EngineTester:
             tk.Label(row, text=name, width=6, anchor="e", font=STACK_FONT,
                      fg=LABEL_GREY, bg=BACKGROUND).pack(side="left")
             value = tk.Label(row, text="", anchor="e", font=STACK_FONT,
-                             fg=LED_RED, bg=BACKGROUND)
+                             fg=NEON_ORANGE, bg=BACKGROUND)
             value.pack(side="right")
             self.registers[name] = value
 
         # X gets the formatter's own rendering, big.
         self.display = tk.Label(root, text="", anchor="e", font=DISPLAY_FONT,
-                                fg=LED_RED, bg=BACKGROUND)
+                                fg=NEON_ORANGE, bg=BACKGROUND)
         self.display.pack(fill="x", padx=12, pady=(6, 6))
 
         # LASTX and the one storage register, below.
@@ -128,7 +128,7 @@ class EngineTester:
             tk.Label(row, text=name, width=6, anchor="e", font=STACK_FONT,
                      fg=LABEL_GREY, bg=BACKGROUND).pack(side="left")
             value = tk.Label(row, text="", anchor="e", font=STACK_FONT,
-                             fg=LED_RED, bg=BACKGROUND)
+                             fg=NEON_ORANGE, bg=BACKGROUND)
             value.pack(side="right")
             self.registers[name] = value
 

@@ -29,8 +29,8 @@ import kotlinx.coroutines.delay
 
 // ---- Tweakables ------------------------------------------------------------
 
-/** The lit-LED red, matched by eye to the calculator's display red. */
-private val COLOUR_ON = Color(0xFFFF0000)
+/** The calculator display's neon orange, so ON matches its look. */
+private val COLOUR_ON = Color(0xFFFF5F1F)
 
 /** The unlit state: the grey of the calculator's labels. */
 private val COLOUR_OFF = Color(0xFF8A8A8A)

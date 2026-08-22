@@ -1131,7 +1131,10 @@ gamut through the **magenta** edge, so it lands on pink — and against a black
 background, saturation carries the impression far more than dominant wavelength
 does. CIEDE2000 agrees, at less than half the error.
 
-**So: pure `#FF0000`**, which is what `LedPalette.LIT` is set to. Worth noting the
+**So: pure `#FF0000`** — the faithful red, if red is wanted. The display no
+longer uses it: `LedPalette.LIT` is the dot font's neon orange, chosen by eye
+on the watch for brightness over fidelity. This section stays as the answer
+to "what colour were they" should the red ever return. Worth noting the
 watch's OLED covers P3 — rendering in a wide-gamut space would get the red
 primary from x = 0.64 to x = 0.68, which is a real step closer and free.
 

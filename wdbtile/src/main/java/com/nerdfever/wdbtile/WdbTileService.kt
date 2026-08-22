@@ -26,8 +26,8 @@ import com.google.common.util.concurrent.ListenableFuture
 
 // ---- Tweakables ------------------------------------------------------------
 
-/** The lit-LED red, matched by eye to the calculator's display red. */
-private const val COLOUR_ON = 0xFFFF0000.toInt()
+/** The calculator display's neon orange, so ON matches its look. */
+private const val COLOUR_ON = 0xFFFF5F1F.toInt()
 
 /** The unlit state: the grey of the calculator's labels. */
 private const val COLOUR_OFF = 0xFF8A8A8A.toInt()
