@@ -90,6 +90,28 @@ class RpnEngineTest {
         assertEquals("", engine.entry)
     }
 
+    @Test fun entryStopsWhenTheFieldIsFull() {
+        // The HP-55 rule: the display is the limit. The default field is
+        // nine positions, so the tenth and eleventh digits are ignored.
+        digits("12345678987")
+        assertEquals(123456789.0, engine.x, 0.0)
+    }
+
+    @Test fun theRadixDoesNotCountAgainstTheLimit() {
+        // Nine digits AND a radix: the radix rides in a gap, so all fit.
+        digits("1.23456789")
+        assertEquals(1.23456789, engine.x, 0.0)
+    }
+
+    @Test fun exponentEntryStillWorksWithAFullMantissa() {
+        // Exponent digits have their own field; a full mantissa does not
+        // block them.
+        digits("123456789")
+        press(Token.Eex)
+        digits("5")
+        assertEquals(1.23456789e13, engine.x, 0.0)
+    }
+
     @Test fun entryAfterClearXOverwritesTheZero() {
         digits("5")
         press(Token.ClearX)

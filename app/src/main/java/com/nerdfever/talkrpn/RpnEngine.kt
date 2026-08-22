@@ -44,7 +44,18 @@ import kotlin.math.sqrt
  * like the formatter.
  */
 
-class RpnEngine {
+class RpnEngine(
+    /**
+     * The display field's positions, which SIZE NUMBER ENTRY - the HP-55
+     * rule: once the mantissa holds this many digits, further digits are
+     * ignored, exactly as if the key did nothing. Callers pass their own
+     * display's field size; the default only serves tests. (The HP-42S
+     * rule instead - an ellipsis in the leftmost position, entry running
+     * on with only the rightmost digits visible - is noted in DESIGN.md
+     * as a maybe-later.)
+     */
+    private val entryPositions: Int = DEFAULT_ENTRY_POSITIONS,
+) {
 
     // ---- The machine's whole state --------------------------------------------
 
@@ -277,6 +288,15 @@ class RpnEngine {
                 buffer.contains(NumberFormatter.EXPONENT_MARKER))
         ) return
 
+        // The HP-55 rule: entry is sized to the display, and once the
+        // mantissa's digits fill the field further digits are IGNORED.
+        // Only digits count - the radix rides in a gap - and exponent
+        // digits have their own field with its own roll below.
+        if (character != NumberFormatter.RADIX &&
+            !buffer.contains(NumberFormatter.EXPONENT_MARKER) &&
+            buffer.count { it.isDigit() } >= entryPositions
+        ) return
+
         // The exponent field holds as many digits as the display can show:
         // one more ROLLS the field left and the oldest digit falls off, as
         // on the HP-21 - so the exponent is always the last digits typed,
@@ -402,6 +422,13 @@ class RpnEngine {
 
     companion object {
         const val DEFAULT_DSP_PLACES = 3
+
+        /**
+         * Fallback for [entryPositions], matching the segment display's
+         * settled field. Real callers wire their own display's constant;
+         * only the tests rely on this.
+         */
+        const val DEFAULT_ENTRY_POSITIONS = 9
 
         /**
          * Exponent digits the entry field holds before rolling - derived

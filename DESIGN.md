@@ -1001,6 +1001,14 @@ build a value the display must call Overflow):
      `2 ENTER DSP 4 3 ×` still multiplies by 2;
    - **enabling** (clear): everything else.
 
+Entry is sized to the display, the HP-55 way: once the mantissa holds as
+many digits as the field has positions, further digits are ignored — the
+key simply does nothing. Only digits count (the radix rides in a gap), and
+exponent digits have their own two-digit field with its rolling entry.
+MAYBE LATER, the HP-42S rule instead: an ellipsis (…) in the leftmost
+position, entry running on past the field with only the rightmost digits
+visible after the ellipsis.
+
 Value producers (RCL, LAST X, π) lift when lift is enabled **or when entry
 was in progress**, and overwrite X only in the post-ENTER/CLx state — so
 `5 RCL 1 +` adds to the 5 while `2 ENTER RCL 1 ×` multiplies the 2. That is

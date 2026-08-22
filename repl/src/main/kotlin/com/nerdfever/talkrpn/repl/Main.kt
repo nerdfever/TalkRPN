@@ -27,7 +27,9 @@ private const val FIELD_POSITIONS = 9
 
 fun main() {
 
-    val engine = RpnEngine()
+    // The one field size feeds both the formatter and the engine's entry
+    // limit, exactly as CalcActivity wires the watch.
+    val engine = RpnEngine(FIELD_POSITIONS)
     val field = NumberFormatter.FieldShape(FIELD_POSITIONS, punctuationCostsCell = false)
 
     // The opening state, so the client can draw before the first press.

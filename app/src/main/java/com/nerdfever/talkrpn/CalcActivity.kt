@@ -44,7 +44,9 @@ private const val TOKEN_EXTRA = "token"
 
 class CalcActivity : ComponentActivity() {
 
-    private val engine = RpnEngine()
+    // The engine's entry field is the display's field, so entry stops
+    // exactly where the glass would run out.
+    private val engine = RpnEngine(SEGMENT_FIELD_POSITIONS)
 
     /** The display's field: the segment font's settled size. */
     private val field =
