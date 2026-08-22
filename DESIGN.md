@@ -63,7 +63,7 @@ automatic mode switch converts stored values or only changes the default.
   system-owned and not reachable from an app. Each colour is already at its
   hue's OLED ceiling - a brighter red exists only by paling toward white.
 - **The display's geometry is settled, on the real watch**: gap 1.1, vgap
-  0.6, slant 1.0, stroke 0.19, descender 0.625, dot size and spacing, the
+  0.564, slant 1.0, stroke 0.19, descender 0.625, dot size and spacing, the
   field conventions. Slant and stroke moved off their measured HP figures
   (6.0, 0.1475) by eye on the wrist - nearly upright, and heavier for
   brightness; the tuning overlay still brackets everything, and
@@ -832,8 +832,8 @@ a thousandth of a pixel on the watch.
 | full height, cap plus descender | 2.335 |
 | ink height, top of `A` to bottom of the descender bar | 2.525 |
 | `DEFAULT_GAP` — last centreline of one glyph to the first of the next | 1.1 |
-| `VGAP` — descender bar of one row to the cap line of the next | 0.6 |
-| `VPITCH` — baseline to baseline, = full height + `VGAP` | 2.935 |
+| `VGAP` — descender bar of one row to the cap line of the next | 0.564 |
+| `VPITCH` — baseline to baseline, = full height + `VGAP` | 2.899 |
 | `SPACE_WIDTH` — a space, ink-free | 0.6 |
 
 The payoff in reading it: since the cell is exactly 1 wide, the gap **is** the
@@ -871,7 +871,7 @@ Two floors fall out of this, both from ink rather than taste:
   descenders overlap the caps beneath. (Equivalently vpitch ≥ 2.525, the ink
   height.) A digits-only display can go far below it, since a seven-segment
   font has no descenders at all, but this font has them and letters will use
-  them; the current tuning sits at 0.6, comfortably clear.
+  them; the current tuning sits at 0.564, comfortably clear.
 
 Divergences from the DL-3422, all deliberate:
 
@@ -1056,7 +1056,7 @@ move the layout.
 |---|---|
 | **Segment `M` depth: settled** | Not the letter M — the descender stem. The measured 0.7525 plunged `g q y j` tails nearly as deep as their bowls are tall; settled by eye at `DESCENDER_DEPTH` = 0.625, and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all followed. |
 | **`'`, `f` and `t` are guessed** | The source is ambiguous at those three. Flagged orange on the reference sheet. |
-| **Gap, vgap, slant, stroke and colour: settled on the watch** | Gap 1.1, vgap 0.6, slant 1.0, stroke 0.19; neon orange for both fonts. The later eye disagreed with the measured stroke and slant - the HP-55 figures (0.1475, 6.0) remain in the measurement notes below and in HISTORY.md. |
+| **Gap, vgap, slant, stroke and colour: settled on the watch** | Gap 1.1, vgap 0.564, slant 1.0, stroke 0.19; neon orange for both fonts. The later eye disagreed with the measured stroke and slant - the HP-55 figures (0.1475, 6.0) remain in the measurement notes below and in HISTORY.md. |
 | **Bubble-LED glow** | Thin core plus a diffuse scatter, to imitate the epoxy lens. Parked. Interacts with the stroke: with a glow the core probably wants to be under 0.147. |
 | **`Hp01Font` can be retired** | It survives only in `FontCompareActivity` as the comparison reference. |
 

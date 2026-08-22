@@ -114,7 +114,7 @@ object TalkRpnFont {
     const val DEFAULT_GAP = 1.1f        // from the last lit centreline of one glyph to the first of the next
     const val SPACE_WIDTH = 0.6f        // width of blank space (0x20)
     const val DOT_SIDE_STROKES = 1.5f   // a dot square's side, in strokes
-    const val VGAP = 0.6f               // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
+    const val VGAP = 0.564f             // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
 
     /*
      * CELL_WIDTH - segment E/F to segment B/C: the left column to the right
@@ -189,11 +189,11 @@ object TalkRpnFont {
      * BETWEEN the rows' ink, changing the descender depth moves the rows
      * apart or together by itself, keeping this clearance as tuned.
      *
-     *   Tuned by eye ON THE WATCH: 0.6 is what fits the whole register
+     *   Tuned by eye ON THE WATCH: 0.564 is what fits the whole register
      *   stack on the glass with the stack centred on X. The dark band a
      *   reader sees between one row's tails and the next row's caps is
-     *   VGAP - STROKE = 0.41. (An earlier negative tuning was made against a
-     *   row-spacing bug - HISTORY.md.)
+     *   VGAP - STROKE = 0.374. (An earlier negative tuning was made against
+     *   a row-spacing bug - HISTORY.md.)
      */
 
     // ---- Derived from the tweakables -----------------------------------------
