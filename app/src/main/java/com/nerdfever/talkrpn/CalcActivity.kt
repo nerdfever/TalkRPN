@@ -27,9 +27,10 @@ import androidx.wear.compose.material3.AppScaffold
  * away for nudging them against live values. What the desktop tester
  * simulates, this shows for real.
  *
- * INPUT, FOR NOW, arrives by adb broadcast from the desktop button pad
- * (tools/engine_tester.py in watch mode) - one token word per broadcast,
- * the same vocabulary as everywhere else:
+ * INPUT, FOR NOW, arrives by adb broadcast - one token word per TOKEN
+ * broadcast from the desktop button pad (tools/engine_tester.py in watch
+ * mode), or one whole utterance per UTTER broadcast through the spoken
+ * parser - the same vocabularies as everywhere else:
  *
  *   adb shell am broadcast -a com.nerdfever.talkrpn.TOKEN --es token 5
  *

@@ -10,9 +10,10 @@ import com.nerdfever.talkrpn.TokenWords
  * The engine behind a pipe: one token word per input line, one state line
  * back after each. The Python button pad in tools/ is the client; this
  * process is deliberately nothing but plumbing, so every behaviour a tester
- * sees is the engine's own. The vocabulary lives in [TokenWords] and the
- * formatting rules in [RegisterReadout] - both shared with the watch, so
- * this pipe and the wrist can never disagree.
+ * sees is the engine's own. The vocabularies live in [TokenWords] (typed)
+ * and [SpokenTokens] (spoken utterances) and the formatting rules in
+ * [RegisterReadout] - all shared with the watch, so this pipe and the
+ * wrist can never disagree.
  *
  * In:  a word [TokenWords] knows - a digit character, "enter", "+",
  *      "dsp N", ... - or "say <utterance>", a whole spoken line through
