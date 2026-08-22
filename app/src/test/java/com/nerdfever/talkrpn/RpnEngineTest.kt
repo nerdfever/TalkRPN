@@ -103,6 +103,17 @@ class RpnEngineTest {
         assertEquals(1.23456789, engine.x, 0.0)
     }
 
+    @Test fun chsStillWorksWithAFullMantissa() {
+        // The limit ignores DIGITS only: sign editing continues to work
+        // on a full mantissa, and further digits stay ignored after it.
+        digits("123456789")
+        press(Token.Chs)
+        assertEquals(-123456789.0, engine.x, 0.0)
+
+        digits("5")
+        assertEquals(-123456789.0, engine.x, 0.0)
+    }
+
     @Test fun exponentEntryStillWorksWithAFullMantissa() {
         // Exponent digits have their own field; a full mantissa does not
         // block them.
