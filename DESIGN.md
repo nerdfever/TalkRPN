@@ -1034,10 +1034,15 @@ of the engine; two identical engines fed one token stream stay in
 lockstep. The vocabulary (`TokenWords`) and the readout formatting
 (`RegisterReadout`) are single-sourced for the same reason.
 
-Known display open: the T row sits high enough on the circle that its
-label falls left of the glass — laid out, painted, and physically
-invisible on both the emulator's mask and the wrist. Z downward all
-labels show. Undecided what, if anything, to do about it.
+The round-glass RESCUE SHIFT (`DisplayFit.kt`): every inked element
+reports its rectangle, and the display applies the one smallest (dx, dy)
+translation that brings as much as possible inside the circle — a layout
+that already fits is left exactly alone, and a hopeless element does not
+stop the others being saved. This retired the open T-label problem: the T
+row's label used to land left of the glass and had never been visible;
+now the whole stack eases right and down a few pixels and the label sits
+on the glass. The shift recomputes automatically when the tuning knobs
+move the layout.
 
 ### Open font work
 

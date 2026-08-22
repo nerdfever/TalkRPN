@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -168,6 +170,22 @@ private val ANNUNCIATOR_BORDER = Color(0xFF4A4A4A)
 /** Marks the start of an exponent, which never takes a radix of its own. */
 private const val EXPONENT_MARKERS = "eE"
 
+/**
+ * The round-glass rescue shift's search bounds: how far the whole layout
+ * may be dragged to bring clipped elements onto the glass, as a fraction
+ * of the diameter, and the search grid's pitch in pixels. The bound keeps
+ * a pathological layout from being dragged into absurdity; the pitch is
+ * finer than anything the eye tracks at these sizes.
+ */
+private const val UNCLIP_MAX_SHIFT_FRACTION = 0.15f
+private const val UNCLIP_STEP_PX = 2f
+
+/**
+ * Reported rectangles are rounded to this before comparing, so relayout
+ * float noise cannot re-trigger the search forever.
+ */
+private const val RECT_QUANTUM_PX = 0.5f
+
 // ---------------------------------------------------------------------------
 // Shared geometry helpers.
 // ---------------------------------------------------------------------------
@@ -196,6 +214,25 @@ private fun midBarYPx(cellHeightPx: Float, stroke: Float): Float =
  * Where a row's field begins, in its own canvas coordinates: the field centred
  * on the SCREEN's vertical axis, labels not counted.
  */
+/**
+ * The field's ink width in pixels. A field position is the LIVE font's
+ * cell: fp means seven of WHATEVER is showing, not seven segment positions
+ * with nine narrower dot cells rattling around inside them.
+ */
+private fun fieldWidthPx(
+    fieldPositions: Int,
+    useDotFont: Boolean,
+    cellHeightPx: Float,
+    gapUnits: Float,
+    dotGapColumns: Float,
+    slantDegrees: Float,
+    descenderUnits: Float,
+    strokeUnits: Float,
+): Float =
+    if (useDotFont) Hdls1414Font.fieldWidth(fieldPositions, cellHeightPx, dotGapColumns)
+    else fieldUnits(fieldPositions, gapUnits, slantDegrees, descenderUnits, strokeUnits) *
+        (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
+
 private fun fieldLeftPx(
     fieldPositions: Int,
     useDotFont: Boolean,
@@ -207,18 +244,12 @@ private fun fieldLeftPx(
     strokeUnits: Float,
     screenPx: Float,
     leftInRootPx: Float,
-): Float {
-
-    // A field position is the LIVE font's cell: fp means seven of WHATEVER is
-    // showing, not seven segment positions with nine narrower dot cells
-    // rattling around inside them.
-    val fieldWidthPx =
-        if (useDotFont) Hdls1414Font.fieldWidth(fieldPositions, cellHeightPx, dotGapColumns)
-        else fieldUnits(fieldPositions, gapUnits, slantDegrees, descenderUnits, strokeUnits) *
-            (cellHeightPx / TalkRpnFont.CELL_HEIGHT)
-
-    return screenPx / 2f - fieldWidthPx / 2f - leftInRootPx
-}
+): Float =
+    screenPx / 2f -
+        fieldWidthPx(
+            fieldPositions, useDotFont, cellHeightPx, gapUnits, dotGapColumns,
+            slantDegrees, descenderUnits, strokeUnits
+        ) / 2f - leftInRootPx
 
 /**
  * Whether a value is a NUMBER - which the radix, grouping and exponent rules
@@ -440,9 +471,47 @@ fun CalculatorDisplay(
         (referenceLabelPx + LABEL_FIELD_CLEARANCE.value * metrics.density) / 2f
     }
 
+    // ---- The round-glass rescue shift ---------------------------------------
+    //
+    // A rectangular layout on a round screen clips its corners - the T
+    // label was the live case. Every inked element reports the rectangle
+    // it landed on, the applied shift is backed out so the map holds
+    // SHIFT-FREE geometry (which is what makes the loop converge), and
+    // [unclipShift] finds the one translation that brings as much as
+    // possible inside the circle - a layout that already fits gets (0,0)
+    // and is left exactly alone.
+    //
+    // Applied as a plain y-offset on the whole column, but as a +dx on
+    // every FIELD ANCHOR horizontally: the rows re-centre their fields on
+    // the screen axis through positionInRoot, so a plain x-offset would
+    // self-cancel.
+    val intrinsicRects = remember { mutableStateMapOf<String, FitRect>() }
+
+    val shift by remember {
+        derivedStateOf {
+            unclipShift(
+                intrinsicRects.values.toList(), screenPx,
+                screenPx * UNCLIP_MAX_SHIFT_FRACTION, UNCLIP_STEP_PX,
+            )
+        }
+    }
+
+    fun reportRect(key: String, asLaid: FitRect) {
+
+        fun quantized(v: Float) = kotlin.math.round(v / RECT_QUANTUM_PX) * RECT_QUANTUM_PX
+
+        val intrinsic = FitRect(
+            quantized(asLaid.left - shift.dx), quantized(asLaid.top - shift.dy),
+            quantized(asLaid.right - shift.dx), quantized(asLaid.bottom - shift.dy),
+        )
+
+        if (intrinsicRects[key] != intrinsic) intrinsicRects[key] = intrinsic
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
+            .offset(y = pxToDp(shift.dy, metrics.density))
             .padding(horizontal = SIDE_MARGIN),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -464,7 +533,8 @@ fun CalculatorDisplay(
                 name, values[name].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
                 smallCellHeightPx, gapUnits, dotGapColumns,
                 LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
-                descenderUnits, strokeUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
+                descenderUnits, strokeUnits, shift.dx, { reportRect(name, it) },
+                Modifier.offset(y = pxToDp(overlapPx, metrics.density))
             )
 
             // The last of these sits above X, which is taller, so it needs a
@@ -482,12 +552,32 @@ fun CalculatorDisplay(
         // screen's vertical axis.
         var xLeftInRootPx by remember { mutableStateOf(0f) }
 
+        // The field is screen-centred, so its root-coordinate edges fall
+        // out of its width alone - which is what X reports to the rescue.
+        val xFieldWidthPx = fieldWidthPx(
+            fieldPositions, useDotFont, xCellHeightPx, gapUnits, dotGapColumns,
+            slantDegrees, descenderUnits, strokeUnits
+        )
+
         Canvas(
             modifier = Modifier
                 .offset(y = pxToDp(overlapPx, metrics.density))
                 .fillMaxWidth()
                 .height(canvasHeightDp(xCellHeightPx, metrics.density, descenderUnits, strokeUnits))
-                .onGloballyPositioned { xLeftInRootPx = it.positionInRoot().x }
+                .onGloballyPositioned {
+                    xLeftInRootPx = it.positionInRoot().x
+
+                    val inkLeft = screenPx / 2f - xFieldWidthPx / 2f + shift.dx
+                    reportRect(
+                        "X",
+                        FitRect(
+                            inkLeft, it.positionInRoot().y,
+                            inkLeft + xFieldWidthPx,
+                            it.positionInRoot().y +
+                                canvasPx(xCellHeightPx, descenderUnits, strokeUnits),
+                        )
+                    )
+                }
         ) {
             drawRegister(
                 values["X"].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
@@ -495,7 +585,7 @@ fun CalculatorDisplay(
                 fieldLeftPx(
                     fieldPositions, useDotFont, xCellHeightPx, gapUnits, dotGapColumns,
                     slantDegrees, descenderUnits, strokeUnits, screenPx, xLeftInRootPx
-                ),
+                ) + shift.dx,
                 slantDegrees, descenderUnits, strokeUnits
             )
         }
@@ -511,7 +601,8 @@ fun CalculatorDisplay(
                 name, values[name].orEmpty(), fieldPositions, useDotFont, showFieldBoxes,
                 smallCellHeightPx, gapUnits, dotGapColumns,
                 LedPalette.LIT, metrics.density, screenPx, smallFieldShiftPx, slantDegrees,
-                descenderUnits, strokeUnits, Modifier.offset(y = pxToDp(overlapPx, metrics.density))
+                descenderUnits, strokeUnits, shift.dx, { reportRect(name, it) },
+                Modifier.offset(y = pxToDp(overlapPx, metrics.density))
             )
 
             // The trailing one has no row beneath it - it is just the padding
@@ -528,7 +619,21 @@ fun CalculatorDisplay(
         // that draws one word or the other. Cheating, deliberately.
         Row(
             horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.offset(y = pxToDp(overlapPx, metrics.density)),
+            modifier = Modifier
+                .offset(
+                    x = pxToDp(shift.dx, metrics.density),
+                    y = pxToDp(overlapPx, metrics.density),
+                )
+                .onGloballyPositioned {
+                    reportRect(
+                        "annunciators",
+                        FitRect(
+                            it.positionInRoot().x, it.positionInRoot().y,
+                            it.positionInRoot().x + it.size.width,
+                            it.positionInRoot().y + it.size.height,
+                        )
+                    )
+                },
         ) {
             Annunciator("DEG")
             Spacer(Modifier.width(GAP_SMALL))
@@ -555,6 +660,8 @@ private fun RegisterRow(
     slantDegrees: Float,
     descenderUnits: Float,
     strokeUnits: Float,
+    rescueShiftXPx: Float,
+    reportRect: (FitRect) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Where this row sits horizontally, so the screen's axis can be found in
@@ -564,16 +671,42 @@ private fun RegisterRow(
     // The field centred on the screen's axis, then shifted right by half the
     // widest label block, so LABEL PLUS FIELD is the centred unit. The same
     // shift for every small row keeps their fields aligned with each other.
+    // The rescue shift rides the same anchor.
     val rowFieldLeftPx =
         fieldLeftPx(
             fieldPositions, useDotFont, cellHeightPx, gapUnits, dotGapColumns,
             slantDegrees, descenderUnits, strokeUnits, screenPx, leftInRootPx
-        ) + fieldShiftPx
+        ) + fieldShiftPx + rescueShiftXPx
+
+    // What this row reports to the rescue: label through field, one rect.
+    // The field is screen-centred, so its root-coordinate left falls out of
+    // its width and the shifts alone.
+    val textMeasurer = rememberTextMeasurer()
+    val labelWidthPx = remember(name) {
+        textMeasurer.measure(name, TextStyle(fontSize = TEXT_REGISTER_LABEL)).size.width.toFloat()
+    }
+    val rowFieldWidthPx = fieldWidthPx(
+        fieldPositions, useDotFont, cellHeightPx, gapUnits, dotGapColumns,
+        slantDegrees, descenderUnits, strokeUnits
+    )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .onGloballyPositioned { leftInRootPx = it.positionInRoot().x }
+            .onGloballyPositioned {
+                leftInRootPx = it.positionInRoot().x
+
+                val fieldLeftRootPx =
+                    screenPx / 2f - rowFieldWidthPx / 2f + fieldShiftPx + rescueShiftXPx
+                reportRect(
+                    FitRect(
+                        fieldLeftRootPx - LABEL_FIELD_CLEARANCE.value * density - labelWidthPx,
+                        it.positionInRoot().y,
+                        fieldLeftRootPx + rowFieldWidthPx,
+                        it.positionInRoot().y + canvasPx(cellHeightPx, descenderUnits, strokeUnits),
+                    )
+                )
+            }
     ) {
 
         Canvas(
