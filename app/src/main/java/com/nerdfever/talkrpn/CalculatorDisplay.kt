@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -78,7 +79,7 @@ private const val SMALL_ROW_SCALE = 0.70f
  *
  * Settled by eye on the watch.
  */
-internal const val DEFAULT_HEIGHT_FRACTION = 0.092f
+internal const val DEFAULT_HEIGHT_FRACTION = 0.090f
 
 /**
  * THE FIELD: every register shows its value in this many digit positions.
@@ -145,7 +146,7 @@ private val ANNUNCIATOR_GAP = 8.dp
 /** Space between the two annunciators. */
 private val GAP_SMALL = 4.dp
 
-private val TEXT_REGISTER_LABEL = 9.sp
+private val TEXT_REGISTER_LABEL = 10.8.sp
 
 /** Air between a label's right end and the field it names. */
 private val LABEL_FIELD_CLEARANCE = 4.dp
@@ -608,6 +609,10 @@ private fun RegisterRow(
                 fontSize = TEXT_REGISTER_LABEL,
                 maxLines = 1,
                 softWrap = false,
+                // Measured UNBOUNDED and end-aligned, so a label longer
+                // than the box (LASTX) overhangs into the left margin
+                // rather than losing its right end to the box's clip.
+                modifier = Modifier.wrapContentWidth(Alignment.End, unbounded = true),
             )
         }
     }
