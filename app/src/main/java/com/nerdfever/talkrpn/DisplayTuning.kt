@@ -123,9 +123,8 @@ private const val SLANT_DEGREES_MIN = 0f
 private const val SLANT_DEGREES_MAX = 15f
 
 /**
- * The stroke knob, in cell widths like every other length. The settled
- * 0.1475 was measured off an HP-55 photograph; the range runs from
- * hairline to almost touching neighbours within a glyph.
+ * The stroke knob, in cell widths like every other length. The range runs
+ * from hairline to almost touching neighbours within a glyph.
  */
 private const val STROKE_STEP_UNITS = 0.005f
 private const val STROKE_UNITS_MIN = 0.04f
@@ -337,9 +336,9 @@ fun DisplayTuningPanel(
             Spacer(Modifier.width(PANEL_GAP_SMALL))
 
             // st tunes the stroke, in cell widths - the font's STROKE.
-            // Four decimals: the settled value is 0.1475, and the readout
-            // must show exactly what would be copied back.
-            SplitButton("st %.4f".format(knobs.strokeUnits), Modifier.weight(1f),
+            // Three decimals shows the step exactly, and the readout is
+            // exactly what would be copied back.
+            SplitButton("st %.3f".format(knobs.strokeUnits), Modifier.weight(1f),
                 onIncrease = {
                     knobs.strokeUnits = (knobs.strokeUnits + STROKE_STEP_UNITS)
                         .coerceAtMost(STROKE_UNITS_MAX)

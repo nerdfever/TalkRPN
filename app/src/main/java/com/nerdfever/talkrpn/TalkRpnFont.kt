@@ -109,12 +109,12 @@ object TalkRpnFont {
     const val CELL_WIDTH = 1f           // by definition; all other measures are relative to this
     const val CELL_HEIGHT = 1.710f      // of the top 7 segments, baseline to top
     const val DESCENDER_DEPTH = 0.625f  // how far the descender hangs below the baseline
-    const val STROKE = 0.1475f          // pen stroke width
-    const val SLANT_DEGREES = 6.0f      // rightward lean, in degrees
+    const val STROKE = 0.19f            // pen stroke width
+    const val SLANT_DEGREES = 1.0f      // rightward lean, in degrees
     const val DEFAULT_GAP = 1.1f        // from the last lit centreline of one glyph to the first of the next
     const val SPACE_WIDTH = 0.6f        // width of blank space (0x20)
     const val DOT_SIDE_STROKES = 1.5f   // a dot square's side, in strokes
-    const val VGAP = 0.78f              // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
+    const val VGAP = 0.6f               // vertical space between rows: one row's descender-bar centreline down to the next row's cap centreline
 
     /*
      * CELL_WIDTH - segment E/F to segment B/C: the left column to the right
@@ -136,14 +136,17 @@ object TalkRpnFont {
      * to this, which is how the display test screen previews other depths
      * without changing anything outside itself.
      *
-     * STROKE - rendered stroke width. If this is ever re-measured off a
-     * photograph, measure the denominator CENTRE TO CENTRE, never as the outer
-     * ink width: outer width already contains one stroke, so using it
-     * understates the ratio. Centre-to-centre also makes the measurement
-     * robust, since bloom pushes outer edges out and inner edges in by the
-     * same amount and cancels exactly.
+     * STROKE - rendered stroke width. Settled by eye on the watch, a shade
+     * heavier than the HP-55's measured 0.1475, for brightness at watch
+     * sizes. If it is ever re-measured off a photograph, measure the
+     * denominator CENTRE TO CENTRE, never as the outer ink width: outer
+     * width already contains one stroke, so using it understates the
+     * ratio. Centre-to-centre also makes the measurement robust, since
+     * bloom pushes outer edges out and inner edges in by the same amount
+     * and cancels exactly.
      *
-     * SLANT_DEGREES - rightward lean, in degrees.
+     * SLANT_DEGREES - rightward lean, in degrees. Settled by eye on the
+     * watch, nearly upright.
      *
      * DEFAULT_GAP - from the LAST lit centreline of one glyph to the FIRST lit
      * centreline of the next. The layout's one horizontal knob, and a
@@ -155,7 +158,7 @@ object TalkRpnFont {
      *   Both ends are centrelines, like every other length in this font. That
      *   is NOT the dark space a reader sees: each glyph's ink overhangs its
      *   own centreline by half a stroke, so the visible dark band is
-     *   gap - STROKE. At the default, 1.1 - 0.1475 = 0.95.
+     *   gap - STROKE. At the default, 1.1 - 0.19 = 0.91.
      *
      *   Measuring centre to centre is what makes the floor fall out directly:
      *   the two inks touch when the gap equals one stroke, so anything above
@@ -186,10 +189,10 @@ object TalkRpnFont {
      * BETWEEN the rows' ink, changing the descender depth moves the rows
      * apart or together by itself, keeping this clearance as tuned.
      *
-     *   Tuned by eye ON THE WATCH: 0.78 is what just brings all of register T
-     *   onto the glass with the stack centred on X. The dark band a reader
-     *   sees between one row's tails and the next row's caps is
-     *   VGAP - STROKE = 0.63. (An earlier negative tuning was made against a
+     *   Tuned by eye ON THE WATCH: 0.6 is what fits the whole register
+     *   stack on the glass with the stack centred on X. The dark band a
+     *   reader sees between one row's tails and the next row's caps is
+     *   VGAP - STROKE = 0.41. (An earlier negative tuning was made against a
      *   row-spacing bug - HISTORY.md.)
      */
 

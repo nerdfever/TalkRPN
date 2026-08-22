@@ -54,17 +54,20 @@ automatic mode switch converts stored values or only changes the default.
 **Display**
 
 - **The font is a user setting** (UI to be decided - probably spoken): the
-  segment font in its LED red, or the HDLS-1414 dot font in its neon orange.
-  One colour per font, fixed.
+  segment font or the HDLS-1414 dot font, both in the same neon orange -
+  chosen by eye on the watch over the segment font's original LED red, which
+  read dimmer. One colour, one owner (`Hdls1414Font.NEON_ORANGE`); the red
+  era's colour science is in HISTORY.md.
 - **The display runs at full brightness while the calculator is up**, via the
   window brightness override; the panel's sunlight-boost headroom is
   system-owned and not reachable from an app. Each colour is already at its
   hue's OLED ceiling - a brighter red exists only by paling toward white.
 - **The display's geometry is settled, on the real watch**: gap 1.1, vgap
-  0.78, descender 0.625, dot size and spacing, the field conventions. Two
-  values may yet be revisited by eye, or may not - the stroke (0.1475, the
-  measured figure) and `SMALL_ROW_SCALE` (0.70); the test screens still
-  bracket both.
+  0.6, slant 1.0, stroke 0.19, descender 0.625, dot size and spacing, the
+  field conventions. Slant and stroke moved off their measured HP figures
+  (6.0, 0.1475) by eye on the wrist - nearly upright, and heavier for
+  brightness; the tuning overlay still brackets everything, and
+  `SMALL_ROW_SCALE` (0.70) remains eye-revisitable.
 - **`Hp01Font`'s 130 advance and 62 cell width are reconstruction figures** with
   no corroboration. `TalkRpnFont` no longer depends on either.
 - **Segment `M`'s depth is settled** — the measured 0.7525 plunged tails nearly
@@ -824,13 +827,13 @@ a thousandth of a pixel on the watch.
 | cap height, segment D to segment A | 1.710 |
 | x-height, segment G to segment D | 0.855 |
 | hook radius | 0.1355 |
-| stroke | 0.1475 |
+| stroke | 0.19 |
 | descender depth, below the baseline | 0.625 |
 | full height, cap plus descender | 2.335 |
-| ink height, top of `A` to bottom of the descender bar | 2.483 |
+| ink height, top of `A` to bottom of the descender bar | 2.525 |
 | `DEFAULT_GAP` — last centreline of one glyph to the first of the next | 1.1 |
-| `VGAP` — descender bar of one row to the cap line of the next | 0.78 |
-| `VPITCH` — baseline to baseline, = full height + `VGAP` | 3.12 |
+| `VGAP` — descender bar of one row to the cap line of the next | 0.6 |
+| `VPITCH` — baseline to baseline, = full height + `VGAP` | 2.935 |
 | `SPACE_WIDTH` — a space, ink-free | 0.6 |
 
 The payoff in reading it: since the cell is exactly 1 wide, the gap **is** the
@@ -858,17 +861,17 @@ so no code converts between them.
 
 Two floors fall out of this, both from ink rather than taste:
 
-- **gap ≥ 0.1475** — one stroke, below which neighbours overlap outright.
-  (Equivalently pitch ≥ 1.1475, when both glyphs are full width.) The slant
+- **gap ≥ one stroke (0.19)** — below it neighbours overlap outright.
+  (Equivalently pitch ≥ 1.19, when both glyphs are full width.) The slant
   makes it *look* tight well before that, because one cell's top-right passes
   close to the next cell's bottom-left, but those sit at different heights and
   never actually touch. All caps read well from a gap of about 0.45 to 0.80;
   mixed case wants 0.76 to 0.92.
-- **vgap ≥ 0.1475** — the same floor, one stroke, below which one row's
-  descenders overlap the caps beneath. (Equivalently vpitch ≥ 2.483, the ink
+- **vgap ≥ one stroke (0.19)** — the same floor, below which one row's
+  descenders overlap the caps beneath. (Equivalently vpitch ≥ 2.525, the ink
   height.) A digits-only display can go far below it, since a seven-segment
   font has no descenders at all, but this font has them and letters will use
-  them; the current tuning sits at 0.78, comfortably clear.
+  them; the current tuning sits at 0.6, comfortably clear.
 
 Divergences from the DL-3422, all deliberate:
 
@@ -1034,17 +1037,19 @@ labels show. Undecided what, if anything, to do about it.
 |---|---|
 | **Segment `M` depth: settled** | Not the letter M — the descender stem. The measured 0.7525 plunged `g q y j` tails nearly as deep as their bowls are tall; settled by eye at `DESCENDER_DEPTH` = 0.625, and `TOTAL_HEIGHT`, the N/O bar and segment M's endpoint all followed. |
 | **`'`, `f` and `t` are guessed** | The source is ambiguous at those three. Flagged orange on the reference sheet. |
-| **Gap, vgap and colour: settled on the watch** | Gap 1.1, vgap 0.78; LED red for the segment font, neon orange for the dot font. The stroke stays at its measured 0.1475 unless a later eye disagrees. |
+| **Gap, vgap, slant, stroke and colour: settled on the watch** | Gap 1.1, vgap 0.6, slant 1.0, stroke 0.19; neon orange for both fonts. The later eye disagreed with the measured stroke and slant - the HP-55 figures (0.1475, 6.0) remain in the measurement notes below and in HISTORY.md. |
 | **Bubble-LED glow** | Thin core plus a diffuse scatter, to imitate the epoxy lens. Parked. Interacts with the stroke: with a glow the core probably wants to be under 0.147. |
 | **`Hp01Font` can be retired** | It survives only in `FontCompareActivity` as the comparison reference. |
 
 What is already settled is in the sections above; what it replaced is in
 [HISTORY.md](HISTORY.md).
 
-### Stroke width: 0.147
+### Stroke width: measured 0.147, shipped 0.19
 
 A 16 px stroke against 108.5 px centre-to-centre, measured off a microscope
-photograph of a real HP-55.
+photograph of a real HP-55. The calculator now ships heavier - 0.19, set by
+eye on the watch for brightness - but the measurement below stands as the
+hardware reference, and its method note matters to any future re-measure.
 
 **Measure the denominator centre-to-centre, never outer-to-outer.** Outer width
 already contains one stroke, so using it double-counts — the same two
@@ -1208,9 +1213,9 @@ legible — so the spending rule stands even with room to spare.
 ### The cell outline might be a feature, not just a tool
 
 The bounds box drawn for diagnosing layout — a muted cyan hairline (`#3D8B96`,
-1.2 cell units) against the LED red — reads better than it has any right to. It
+1.2 cell units) against the lit ink — reads better than it has any right to. It
 was built to answer "where does the ink sit inside its fixed pitch", but the
-contrast against the red is worth trying on the calculator display itself. Judge
+contrast against the ink is worth trying on the calculator display itself. Judge
 it on the watch before committing: a hairline that looks crisp on a 1700 px page
 may not survive at 2 px on the wrist.
 

@@ -538,3 +538,34 @@ change it.
 Separately: an EDID decode of the panel produced a red primary at x = 0.181,
 which is nonsense for a P3 display. The decode was wrong; it is recorded here
 only so nobody trusts that number if it resurfaces.
+
+---
+
+## The red era ends: neon orange, upright-ish, heavier (2026-08-21)
+
+Retuned by eye on the watch, against live values through the calculator's
+tuning overlay, superseding three settled figures at once:
+
+| | was | now |
+|---|---|---|
+| `VGAP` | 0.78 | 0.6 — fits the whole register stack on the glass |
+| `SLANT_DEGREES` | 6.0 | 1.0 — nearly upright |
+| `STROKE` | 0.1475 (measured, HP-55) | 0.19 — reads brighter at watch sizes |
+| `LedPalette.LIT` | LED red `0xFFFF0000` | `Hdls1414Font.NEON_ORANGE`, both fonts |
+
+The measured stroke and its centre-to-centre method note stay in DESIGN.md as
+the hardware reference.
+
+**The LED-red colour science, preserved from the old `LIT` comment.** The
+GaAsP parts peak at 655-660 nm - x = 0.728, y = 0.272 in CIE 1931, outside
+EVERY display gamut (sRGB's red primary falls short by 0.088 in x, Display P3
+by 0.048, Rec.2020 by 0.020). With no exact match, the closest reachable
+colour was full-saturation `0xFFFF0000` at dE2000 7.8; desaturating along the
+constant-dominant-wavelength line gave `0xFFFF0052` at 17.0 - genuinely
+655 nm at 63% purity, but that line exits the gamut through the magenta edge
+and lands on pink. And never sample the colour from a photograph: camera
+filters overlap, the red channel clips almost at once on a lit segment, and
+the highlight rolls into green and blue - the white-pink core in photographs
+of these displays is the camera's failure, not the display's colour. (A P3
+rendering path would have moved the red primary from x = 0.64 to 0.68; moot
+now, though the same applies to orange.)
