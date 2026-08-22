@@ -3,6 +3,7 @@ package com.nerdfever.talkrpn.repl
 import com.nerdfever.talkrpn.NumberFormatter
 import com.nerdfever.talkrpn.RegisterReadout
 import com.nerdfever.talkrpn.RpnEngine
+import com.nerdfever.talkrpn.SpokenTokens
 import com.nerdfever.talkrpn.TokenWords
 
 /*
@@ -14,7 +15,8 @@ import com.nerdfever.talkrpn.TokenWords
  * this pipe and the wrist can never disagree.
  *
  * In:  a word [TokenWords] knows - a digit character, "enter", "+",
- *      "dsp N", ... - or "quit".
+ *      "dsp N", ... - or "say <utterance>", a whole spoken line through
+ *      [SpokenTokens], or "quit".
  * Out: tab-separated -  x y z t lastx storage error(0/1) display  - the
  *      registers all through the final formatter at the current DSP (the
  *      DSP rule governs every readout, not just X); display is the entry
@@ -40,6 +42,17 @@ fun main() {
         val line = readlnOrNull()?.trim() ?: break
         if (line.isEmpty()) continue
         if (line.lowercase() == "quit") break
+
+        // A whole spoken utterance, through the parser - atomically, so
+        // a rejected utterance leaves the engine exactly as it stood.
+        if (line.lowercase().startsWith("say ")) {
+            when (val result = SpokenTokens.parse(line.drop(4))) {
+                is SpokenTokens.Result.Parsed -> result.tokens.forEach(engine::press)
+                is SpokenTokens.Result.Rejected -> System.err.println("rejected: ${result.word}")
+            }
+            emit(engine, field)
+            continue
+        }
 
         val token = TokenWords.parse(line)
 

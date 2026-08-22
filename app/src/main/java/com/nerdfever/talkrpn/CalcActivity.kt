@@ -50,6 +50,14 @@ private const val TOKEN_EXTRA = "token"
 private const val KNOBS_ACTION = "com.nerdfever.talkrpn.KNOBS"
 private const val KNOBS_EXTRA = "state"
 
+/**
+ * A whole spoken utterance, parsed by [SpokenTokens] - atomically, so a
+ * rejected utterance leaves the engine untouched and shows its first
+ * unknown word instead. The speech layer will feed this same path.
+ */
+private const val UTTER_ACTION = "com.nerdfever.talkrpn.UTTER"
+private const val UTTER_EXTRA = "utterance"
+
 class CalcActivity : ComponentActivity() {
 
     // The engine's entry field is the display's field, so entry stops
@@ -67,6 +75,12 @@ class CalcActivity : ComponentActivity() {
     // reach it; DisplayKnobs is snapshot state, so the display follows.
     private val knobs = DisplayKnobs()
 
+    /**
+     * The unknown word an utterance was rejected on, shown as "word?" in
+     * the display until the next input - DESIGN's fail-visibly rule.
+     */
+    private var rejectedWord: String? = null
+
     /** One press per broadcast: parse the word, press the engine, redraw. */
     private val tokenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -74,7 +88,26 @@ class CalcActivity : ComponentActivity() {
             val word = intent?.getStringExtra(TOKEN_EXTRA) ?: return
             val token = TokenWords.parse(word) ?: return
 
+            rejectedWord = null
             engine.press(token)
+            values.value = currentValues()
+        }
+    }
+
+    /** One utterance per broadcast: all of it presses, or none of it. */
+    private val utteranceReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+
+            val utterance = intent?.getStringExtra(UTTER_EXTRA) ?: return
+
+            when (val result = SpokenTokens.parse(utterance)) {
+                is SpokenTokens.Result.Parsed -> {
+                    rejectedWord = null
+                    result.tokens.forEach { engine.press(it) }
+                }
+                is SpokenTokens.Result.Rejected -> rejectedWord = result.word
+            }
+
             values.value = currentValues()
         }
     }
@@ -92,7 +125,8 @@ class CalcActivity : ComponentActivity() {
      */
     private fun currentValues(): Map<String, String> =
         RegisterReadout.registerTexts(engine, field) +
-            ("X" to RegisterReadout.displayText(engine, field))
+            ("X" to (rejectedWord?.let { "$it?" }
+                ?: RegisterReadout.displayText(engine, field)))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -117,6 +151,9 @@ class CalcActivity : ComponentActivity() {
         )
         registerReceiver(
             knobsReceiver, IntentFilter(KNOBS_ACTION), RECEIVER_EXPORTED
+        )
+        registerReceiver(
+            utteranceReceiver, IntentFilter(UTTER_ACTION), RECEIVER_EXPORTED
         )
 
         setContent {
@@ -152,6 +189,7 @@ class CalcActivity : ComponentActivity() {
     override fun onDestroy() {
         unregisterReceiver(tokenReceiver)
         unregisterReceiver(knobsReceiver)
+        unregisterReceiver(utteranceReceiver)
         super.onDestroy()
     }
 }

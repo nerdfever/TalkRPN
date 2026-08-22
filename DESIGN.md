@@ -16,7 +16,9 @@ without it.
 along with what it used to be and what was rejected. This file says what was
 decided; the code says what a value is.
 
-Nothing here is built yet except the speech layer and the display font.
+Built so far: the speech layer, the display and its fonts, the formatter,
+the engine, and the spoken-token parser (`SpokenTokens.kt`). The rest is
+still design.
 
 ---
 
@@ -257,10 +259,11 @@ Open parts:
 - **Partial results must not trigger it.** The engine revises as it goes; `8086`
   arrives as `80` first. An error fired on a partial would flash constantly, so
   errors wait for a stable result and are therefore a beat behind the digits.
-- **Does processing stop at the bad word, or roll the whole utterance back?**
-  Stopping leaves the earlier tokens standing, which were correct. Rolling back
-  treats a garbled tail as evidence the whole utterance is suspect. Undo snapshots
-  make either possible.
+- **Stop at the bad word, or roll the whole utterance back?** DECIDED: roll
+  back. The parser (`SpokenTokens.kt`) parses the whole utterance before
+  anything reaches the engine, so a rejected word rejects atomically - a
+  garbled tail is treated as evidence the whole utterance is suspect, and
+  the atomicity falls out of parse-then-apply for free.
 - **What counts as "obviously a homophone"** is the phonetic matcher's threshold:
   per-word phonetic code plus edit distance. `antilock` for `antilog` must pass,
   `foobar` must not. Tunable against the logs rather than guessable.
@@ -358,8 +361,11 @@ exponent marker, optional sign, exponent digits — terminating the moment a tok
 arrives that is not valid in the current field. That termination rule is what makes
 "five minus three" unambiguous while "five e minus three" also works.
 
-**Sign rule:** a sign word at the *start of a number field* sets that field's sign;
-anywhere else it acts on X.
+**Sign rule, sharpened at build time:** a sign word signs the EXPONENT field
+only — immediately after the exponent marker, where no operator reading
+exists. Before a mantissa it is SUBTRACT: if a leading minus could open a
+negative mantissa, "five minus three" would be ambiguous between 5−3 and
+5, −3. Mantissa negation is `change sign`, exactly the HP keyboard's CHS.
 
     one point five  e  minus  six
     └── mantissa ──┘  └sign┘└digit┘
@@ -403,9 +409,9 @@ Two consequences:
 
 - **Do not judge `e` by speaking it in isolation.** That tests the endpointer, not
   the vocabulary.
-- **Keep a long spoken form for EEX.** `times ten to the` already exists as an alias
-  and carries enough acoustic weight to stand alone. It is the fallback when `e`
-  does fail.
+- **Keep a long spoken form for EEX.** The fallback is `exponent` — one word,
+  acoustically strong, and prefix-clean. (`times ten to the` would have served,
+  but the no-proper-prefix rule forbids it: `times` is a token.)
 
 Biasing has **not** been tried yet, and this is the token most likely to benefit
 from it.

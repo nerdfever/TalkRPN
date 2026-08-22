@@ -18,10 +18,11 @@ application {
 sourceSets {
     main {
         kotlin {
-            // The engine, the formatter, the token vocabulary and the
-            // readout rules are compiled STRAIGHT FROM the app module's
+            // The engine, the formatter, the token vocabularies (typed
+            // and spoken) and the readout rules are compiled STRAIGHT
+            // FROM the app module's
             // sources - one copy in the repository, so this process can
-            // never drift from what the watch runs. All four files are
+            // never drift from what the watch runs. All five files are
             // pure Kotlin with no Android in them, which is what makes
             // this legal. The include filter applies to every source root,
             // so this module's own files must be named here too.
@@ -29,6 +30,7 @@ sourceSets {
             include(
                 "**/RpnEngine.kt",
                 "**/NumberFormatter.kt",
+                "**/SpokenTokens.kt",
                 "**/TokenWords.kt",
                 "**/RegisterReadout.kt",
                 "**/repl/**",
