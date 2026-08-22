@@ -185,10 +185,11 @@ private const val UNCLIP_STEP_PX = 2f
  * fraction of the diameter. The physical bezel and curved cover glass
  * hide the outermost ring of pixels that the framebuffer (and the
  * emulator's mask) still shows - the T label's corner proved it on the
- * wrist. 1.5% is about 6 px on the watch; raise it if glass edges still
- * nibble the ink.
+ * wrist, still nibbled at 1.5%. 2% is about 9 px on the watch, and close
+ * to the ceiling: much past it the X row's full field no longer fits the
+ * judged circle at all, and the honest lever becomes hf, not margin.
  */
-private const val UNCLIP_GLASS_MARGIN_FRACTION = 0.015f
+private const val UNCLIP_GLASS_MARGIN_FRACTION = 0.02f
 
 /**
  * Reported rectangles are rounded to this before comparing, so relayout
