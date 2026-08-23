@@ -18,6 +18,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -107,6 +108,15 @@ private const val TRAIL_LINES = 7
 private val TRAIL_TEXT = 10.sp
 private val TRAIL_END_MARGIN = 8.dp
 
+/**
+ * The rejection message: SYSTEM font, never the segment font - a rejected
+ * word is a meta-message, not a register value, and segment glyphs invite
+ * misreading ("3:55?" read as 3:557, the question mark passing for a 7).
+ * Sits just below the X row; X keeps showing the true register.
+ */
+private val REJECT_TEXT = 12.sp
+private val REJECT_OFFSET_BELOW_CENTRE = 42.dp
+
 class CalcActivity : ComponentActivity() {
 
     // The engine's entry field is the display's field, so entry stops
@@ -128,10 +138,14 @@ class CalcActivity : ComponentActivity() {
     private var log: CalcLog? = null
 
     /**
-     * The unknown word an utterance was rejected on, shown as "word?" in
-     * the display until the next input - DESIGN's fail-visibly rule.
+     * The unknown word an utterance was rejected on, shown as "word ?"
+     * in its own system-font line until the next input - DESIGN's
+     * fail-visibly rule. Compose state, so the line follows it.
      */
-    private var rejectedWord: String? = null
+    private val rejectedWordState = mutableStateOf<String?>(null)
+    private var rejectedWord: String?
+        get() = rejectedWordState.value
+        set(value) { rejectedWordState.value = value }
 
     /** One press per broadcast: parse the word, press the engine, redraw. */
     private val tokenReceiver = object : BroadcastReceiver() {
@@ -265,11 +279,12 @@ class CalcActivity : ComponentActivity() {
     /**
      * Every register at the current DSP - and X as the display proper
      * shows it: entry keystrokes mid-entry, the error word when raised.
+     * Rejections do NOT enter here: they show in their own system-font
+     * line, and X stays the truth.
      */
     private fun currentValues(): Map<String, String> =
         RegisterReadout.registerTexts(engine, field) +
-            ("X" to (rejectedWord?.let { "$it?" }
-                ?: RegisterReadout.displayText(engine, field)))
+            ("X" to RegisterReadout.displayText(engine, field))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -414,6 +429,21 @@ class CalcActivity : ComponentActivity() {
                     }
 
                     CalculatorDisplay(values = values.value, knobs = knobs)
+
+                    // The rejection line - the fail-visibly voice, in the
+                    // system font where a word cannot pass for digits.
+                    rejectedWord?.let { word ->
+                        Text(
+                            text = "$word ?",
+                            color = LedPalette.LABEL,
+                            fontSize = REJECT_TEXT,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .offset(y = REJECT_OFFSET_BELOW_CENTRE),
+                        )
+                    }
 
                     if (showControls) {
                         DisplayTuningPanel(knobs, Modifier.align(Alignment.Center))
