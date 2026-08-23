@@ -26,3 +26,6 @@ captures/
 # OS clutter.
 .DS_Store
 Thumbs.db
+
+# Excel's lock file for an open workbook (~$speech_tokens.xlsx and kin).
+~$*
