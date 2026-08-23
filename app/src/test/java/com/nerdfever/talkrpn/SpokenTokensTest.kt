@@ -99,6 +99,22 @@ class SpokenTokensTest {
         assertEquals(4.0, engine.x, 0.0)
     }
 
+    @Test fun theBarePostfixVerbsWork() {
+        // The real RPN forms, straight from the first wrist test: the
+        // display answered "divide?" because only "divided by" existed.
+        say("six enter two divide")
+        assertEquals(3.0, engine.x, 0.0)
+
+        say("four multiply")
+        assertEquals(12.0, engine.x, 0.0)
+
+        say("two add")
+        assertEquals(14.0, engine.x, 0.0)
+
+        say("four subtract")
+        assertEquals(10.0, engine.x, 0.0)
+    }
+
     @Test fun squareRootIsOnePhrase() {
         say("nine square root")
         assertEquals(3.0, engine.x, 0.0)

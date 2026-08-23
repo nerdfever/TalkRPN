@@ -51,13 +51,23 @@ object SpokenTokens {
     private val PHRASES: Map<List<String>, Token> = mapOf(
         listOf("enter") to Token.Enter,
 
+        // The bare verbs are the REAL RPN forms - "six enter two divide" -
+        // and the first thing a live wrist test asked for. The infix-
+        // flavoured aliases stay for how people actually talk. (Word-wise
+        // the prefix rule is safe: "divide" is not a prefix of
+        // "divided by", because "divide" and "divided" are different
+        // words.)
         listOf("plus") to Token.Add,
+        listOf("add") to Token.Add,
         listOf("+") to Token.Add,
         listOf("minus") to Token.Subtract,
+        listOf("subtract") to Token.Subtract,
         listOf("-") to Token.Subtract,
         listOf("times") to Token.Multiply,
+        listOf("multiply") to Token.Multiply,
         listOf("multiplied", "by") to Token.Multiply,
         listOf("*") to Token.Multiply,
+        listOf("divide") to Token.Divide,
         listOf("divided", "by") to Token.Divide,
         listOf("over") to Token.Divide,
         listOf("/") to Token.Divide,
