@@ -17,6 +17,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -112,10 +114,12 @@ private val TRAIL_END_MARGIN = 8.dp
  * The rejection message: SYSTEM font, never the segment font - a rejected
  * word is a meta-message, not a register value, and segment glyphs invite
  * misreading ("3:55?" read as 3:557, the question mark passing for a 7).
- * Sits just below the X row; X keeps showing the true register.
+ * Sits UNDER the trail with a little air, where nothing overlaps it -
+ * below X it collided with the STO row. X keeps showing the true
+ * register throughout.
  */
 private val REJECT_TEXT = 12.sp
-private val REJECT_OFFSET_BELOW_CENTRE = 42.dp
+private val REJECT_GAP_ABOVE = 6.dp
 
 /**
  * The recognizer-at-work indicator: an orange ellipsis on the dark left
@@ -464,7 +468,9 @@ class CalcActivity : ComponentActivity() {
                             indication = null
                         ) { showControls = !showControls }
                 ) {
-                    // The trail first, so register ink draws over it.
+                    // The trail first, so register ink draws over it -
+                    // and the rejection line rides beneath it, separated
+                    // by a breath of air.
                     Column(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
@@ -476,6 +482,17 @@ class CalcActivity : ComponentActivity() {
                                 text = label,
                                 color = LedPalette.LABEL,
                                 fontSize = TRAIL_TEXT,
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        }
+
+                        rejectedWord?.let { word ->
+                            Spacer(Modifier.height(REJECT_GAP_ABOVE))
+                            Text(
+                                text = "$word ?",
+                                color = LedPalette.LABEL,
+                                fontSize = REJECT_TEXT,
                                 maxLines = 1,
                                 softWrap = false,
                             )
@@ -497,21 +514,6 @@ class CalcActivity : ComponentActivity() {
                                 .align(Alignment.CenterStart)
                                 .padding(start = HEARING_START_PADDING)
                                 .offset(y = HEARING_OFFSET_ABOVE_CENTRE),
-                        )
-                    }
-
-                    // The rejection line - the fail-visibly voice, in the
-                    // system font where a word cannot pass for digits.
-                    rejectedWord?.let { word ->
-                        Text(
-                            text = "$word ?",
-                            color = LedPalette.LABEL,
-                            fontSize = REJECT_TEXT,
-                            maxLines = 1,
-                            softWrap = false,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .offset(y = REJECT_OFFSET_BELOW_CENTRE),
                         )
                     }
 

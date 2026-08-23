@@ -157,6 +157,30 @@ class SpokenTokensTest {
         assertEquals("56", SpokenTokens.trailLabel("5'6"))
     }
 
+    @Test fun aLoneDashSetsTheSignButInlineSubtracts() {
+        // The recognizer writes spoken "negative" as a bare "-": alone
+        // it forces the sign; inside an utterance it subtracts.
+        say("five enter")
+        say("-")
+        assertEquals(-5.0, engine.x, 0.0)
+
+        say("clear all 6 enter 2 -")
+        assertEquals(4.0, engine.x, 0.0)
+    }
+
+    @Test fun longBaseIsLogBaseMisheard() {
+        say("16 long base 2")
+        assertEquals(4.0, engine.x, 1e-12)
+    }
+
+    @Test fun theTrailSpeaksCanonicallyForHomophones() {
+        // Dave's note, from the diary: the trail must show what the
+        // machine DID, not the recognizer's mishearing.
+        assertEquals("RAD", SpokenTokens.trailLabel("radiance"))
+        assertEquals("CLx", SpokenTokens.trailLabel("clearlex"))
+        assertEquals("LOG 2", SpokenTokens.trailLabel("long base 2"))
+    }
+
     @Test fun theDiaryHomophones() {
         assertEquals(listOf<Token>(Token.Radians), tokensOf("radiance"))
         assertEquals(listOf<Token>(Token.ClearX), tokensOf("clearlex"))

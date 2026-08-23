@@ -315,7 +315,11 @@ object SpokenTokens {
         listOf("degrees") to "DEG",
         listOf("radians") to "RAD",
         listOf("log", "base") to "LOG",
+        listOf("long", "base") to "LOG",
         listOf("antilog", "base") to "ALOG",
+        listOf("radiance") to "RAD",
+        listOf("clearlex") to "CLx",
+        listOf("archangent") to "tan⁻¹",
         listOf("scientific") to "SCI",
         listOf("engineering") to "ENG",
         listOf("fixed") to "FIX",
@@ -416,6 +420,13 @@ object SpokenTokens {
         // An undo or redo utterance IS the action itself.
         if (words in UNDO_UTTERANCES) return Result.Undo
         if (words in REDO_UTTERANCES) return Result.Redo
+
+        // A LONE "-" is how the recognizer writes a spoken "negative"
+        // (diary, 2026-08-23) - so alone it sets the sign; inside an
+        // utterance it stays SUBTRACT, keeping postfix "6 enter 2 -".
+        if (words == listOf("-")) {
+            return Result.Parsed(listOf(Token.ForceNegative))
+        }
 
         val out = mutableListOf<Token>()
 
@@ -574,7 +585,7 @@ object SpokenTokens {
 
             // log base N / antilog base N - the same trick, the argument
             // resolved against NUMBERS ("e", "ten", "two", or a numeral).
-            if ((word == "log" || word == "antilog") &&
+            if ((word == "log" || word == "antilog" || word == "long") &&
                 words.getOrNull(at + 1) == "base"
             ) {
                 val argument = words.getOrNull(at + 2)
@@ -584,8 +595,8 @@ object SpokenTokens {
                         ?: it.toDoubleOrNull()
                 } ?: return Result.Rejected(word)
 
-                out += if (word == "log") Token.LogBase(base)
-                else Token.AntilogBase(base)
+                out += if (word == "antilog") Token.AntilogBase(base)
+                else Token.LogBase(base)
                 inNumber = false
                 atExponentStart = false
                 at += 3
