@@ -101,6 +101,15 @@ class SpokenTokensTest {
         // Plain multiplication by a number still multiplies.
         say("clear all 3 enter 10 times")
         assertEquals(30.0, engine.x, 0.0)
+
+        // Every costume in the cross product parses - the mixed forms
+        // included ("* 10 to the", "times ten ^").
+        for (phrase in listOf(
+            "times 10 to the", "* 10 to the", "times ten ^", "* ten to the",
+        )) {
+            say("clear all 6.5 $phrase 16 enter")
+            assertEquals(phrase, 6.5e16, engine.x, 1e3)
+        }
     }
 
     @Test fun aSplitUtteranceKeepsItsE() {

@@ -151,15 +151,18 @@ object SpokenTokens {
      * before the phrase table, so it outranks the bare "times". Must be
      * revisited if streaming (partial-result) parsing ever arrives.
      */
-    private val EEX_PHRASES = listOf(
-        listOf("times", "ten", "to", "the"),
-        listOf("times", "10", "to", "the"),
-
-        // The recognizer's symbol costume for the same phrase, as heard
-        // on the wrist: "6.5 * 10 ^ 16".
-        listOf("*", "10", "^"),
-        listOf("times", "10", "^"),
-    )
+    private val EEX_PHRASES: List<List<String>> = buildList {
+        // Every costume the recognizer has for the one phrase: spoken or
+        // starred times, worded or numeral ten, "to the" or the caret -
+        // the full cross product, so no mixed form ever rejects.
+        for (times in listOf("times", "*")) {
+            for (ten in listOf("ten", "10")) {
+                for (tail in listOf(listOf("to", "the"), listOf("^"))) {
+                    add(listOf(times, ten) + tail)
+                }
+            }
+        }
+    }
 
     /**
      * A number wearing time clothes: "three fifty five" can come back as
