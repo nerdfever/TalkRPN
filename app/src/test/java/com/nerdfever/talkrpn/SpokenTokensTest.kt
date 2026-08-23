@@ -22,6 +22,7 @@ class SpokenTokensTest {
         when (val result = SpokenTokens.parse(utterance)) {
             is Result.Parsed -> result.tokens.forEach { engine.press(it) }
             is Result.Rejected -> fail("rejected at '${result.word}': $utterance")
+            Result.Undo -> fail("unexpected undo: $utterance")
         }
     }
 
@@ -137,8 +138,14 @@ class SpokenTokensTest {
         assertEquals(Result.Rejected("foobar"), result)
     }
 
-    @Test fun undoIsReservedAndRejectsVisiblyForNow() {
-        assertEquals(Result.Rejected("undo"), SpokenTokens.parse("undo"))
+    @Test fun undoAloneIsTheUndoUtterance() {
+        assertEquals(Result.Undo, SpokenTokens.parse("undo"))
+        assertEquals(Result.Undo, SpokenTokens.parse("cancel"))
+        assertEquals(Result.Undo, SpokenTokens.parse("escape"))
+    }
+
+    @Test fun undoInsideALongerUtteranceRejects() {
+        assertEquals(Result.Rejected("undo"), SpokenTokens.parse("five undo plus"))
     }
 
     @Test fun theVocabularyRejectsProperPrefixes() {

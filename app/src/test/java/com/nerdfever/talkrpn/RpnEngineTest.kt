@@ -244,6 +244,79 @@ class RpnEngineTest {
         assertEquals(5.0, engine.x, 0.0)
     }
 
+    // ---- Undo: the whole machine, remembered -------------------------------------
+
+    @Test fun undoRestoresTheWholeMachine() {
+        // Mark, disturb everything a token can reach, undo: identical.
+        digits("5")
+        press(Token.Enter, Token.Sto)
+
+        engine.mark()
+        digits("3")
+        press(Token.Add, Token.Dsp(6))
+        engine.press(Token.Digit('9'))
+
+        assertTrue(engine.undo())
+
+        assertStack(x = 5.0, y = 5.0)
+        assertEquals(5.0, engine.storage, 0.0)
+        assertEquals(RpnEngine.DEFAULT_DSP_PLACES, engine.dspPlaces)
+
+        // The noLift bit came back too: STO is disabling, so a digit
+        // OVERWRITES rather than lifting - exactly as before the mark.
+        digits("7")
+        assertStack(x = 7.0, y = 5.0)
+    }
+
+    @Test fun undoIsUnlimited() {
+        // Three marks, three undo steps, back to the very start.
+        for (digit in listOf("1", "2", "3")) {
+            engine.mark()
+            digits(digit)
+            press(Token.Enter)
+        }
+
+        assertTrue(engine.undo())
+        assertTrue(engine.undo())
+        assertTrue(engine.undo())
+        assertStack(x = 0.0, y = 0.0)
+    }
+
+    @Test fun undoWithNothingToUndoSaysSo() {
+        assertFalse(engine.undo())
+    }
+
+    @Test fun saveAndLoadRoundTripTheWholeMachine() {
+        // History, registers, and a mid-entry buffer all survive the trip.
+        engine.mark()
+        digits("5")
+        press(Token.Enter, Token.Sto, Token.Dsp(6))
+        engine.mark()
+        digits("12.")
+
+        val slept = engine.saveState()
+
+        val woken = RpnEngine()
+        assertTrue(woken.loadState(slept))
+
+        assertEquals("12.", woken.entry)
+        assertEquals(5.0, woken.y, 0.0)
+        assertEquals(5.0, woken.storage, 0.0)
+        assertEquals(6, woken.dspPlaces)
+
+        // The history came along: two undo steps still work.
+        assertTrue(woken.undo())
+        assertTrue(woken.undo())
+        assertEquals(0.0, woken.x, 0.0)
+        assertFalse(woken.undo())
+    }
+
+    @Test fun aCorruptStoreLeavesTheMachineUntouched() {
+        digits("7")
+        assertFalse(engine.loadState("not a machine at all"))
+        assertEquals(7.0, engine.x, 0.0)
+    }
+
     // ---- The stack's mechanics --------------------------------------------------------
 
     @Test fun tReplicatesDownward() {

@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material3.AppScaffold
+import kotlinx.coroutines.delay
 
 /*
  * The calculator itself: [RpnEngine] behind [CalculatorDisplay], starting
@@ -70,6 +71,23 @@ private const val KNOBS_EXTRA = "state"
 private const val UTTER_ACTION = "com.nerdfever.talkrpn.UTTER"
 private const val UTTER_EXTRA = "utterance"
 
+/**
+ * With no calculator activity for this long, the app finishes and the
+ * watch returns to its face - a calculator left on the wrist must not
+ * hold the screen and microphone forever. Any applied or rejected input
+ * restarts the clock.
+ */
+private const val IDLE_FINISH_MS = 3L * 60L * 1000L
+
+/**
+ * Where the machine sleeps between runs: the whole engine - stack,
+ * registers, entry, undo history - as [RpnEngine.saveState] text, written
+ * on every pause and restored on launch. A calculator that forgot its
+ * stack on the idle timeout would be no calculator at all.
+ */
+private const val STATE_PREFS = "calculator_state"
+private const val STATE_KEY = "machine"
+
 class CalcActivity : ComponentActivity() {
 
     // The engine's entry field is the display's field, so entry stops
@@ -101,8 +119,10 @@ class CalcActivity : ComponentActivity() {
             val token = TokenWords.parse(word) ?: return
 
             rejectedWord = null
+            engine.mark()
             engine.press(token)
             values.value = currentValues()
+            activityTick.value++
         }
     }
 
@@ -120,15 +140,31 @@ class CalcActivity : ComponentActivity() {
     private fun speakUtterance(utterance: String) {
 
         when (val result = SpokenTokens.parse(utterance)) {
+
             is SpokenTokens.Result.Parsed -> {
                 rejectedWord = null
+
+                // One mark per utterance, so "undo" steps back by what
+                // was SAID, however many presses it contained.
+                engine.mark()
                 result.tokens.forEach { engine.press(it) }
             }
+
             is SpokenTokens.Result.Rejected -> rejectedWord = result.word
+
+            // Undo restores the machine to before the last utterance or
+            // pad press; with nothing left to undo it says so, in the
+            // same asking voice as an unknown word.
+            SpokenTokens.Result.Undo ->
+                rejectedWord = if (engine.undo()) null else "undo"
         }
 
         values.value = currentValues()
+        activityTick.value++
     }
+
+    /** Bumps on every input, applied or rejected - the idle clock's key. */
+    private val activityTick = mutableStateOf(0)
 
     /** Foreground state, as Compose state so the mic follows it. */
     private val resumed = mutableStateOf(false)
@@ -140,6 +176,12 @@ class CalcActivity : ComponentActivity() {
 
     override fun onPause() {
         resumed.value = false
+
+        // The machine sleeps whenever the app does - the idle finish, a
+        // swipe away, the charger; every exit passes through here.
+        getSharedPreferences(STATE_PREFS, MODE_PRIVATE)
+            .edit().putString(STATE_KEY, engine.saveState()).apply()
+
         super.onPause()
     }
 
@@ -161,6 +203,12 @@ class CalcActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Wake up as the machine went to sleep - a corrupt or absent
+        // store simply means power-on state, per loadState's contract.
+        getSharedPreferences(STATE_PREFS, MODE_PRIVATE)
+            .getString(STATE_KEY, null)?.let { engine.loadState(it) }
+        values.value = currentValues()
 
         // A calculator being read must not blank mid-thought.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -238,6 +286,15 @@ class CalcActivity : ComponentActivity() {
                     if (heard.isBlank()) return@LaunchedEffect
 
                     speakUtterance(heard)
+                }
+
+                // The idle clock: every input restarts this effect (the
+                // tick is its key), and a full quiet interval finishes
+                // the activity - back to the watch face, screen and
+                // microphone released.
+                LaunchedEffect(activityTick.value) {
+                    delay(IDLE_FINISH_MS)
+                    finish()
                 }
 
                 // The same tuning overlay as the rig, on the same gesture -

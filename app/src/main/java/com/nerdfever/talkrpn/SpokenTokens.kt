@@ -39,6 +39,9 @@ object SpokenTokens {
     sealed interface Result {
         data class Parsed(val tokens: List<Token>) : Result
         data class Rejected(val word: String) : Result
+
+        /** The whole utterance was an undo word: restore the last mark. */
+        data object Undo : Result
     }
 
     // ---- The vocabulary -----------------------------------------------------
@@ -107,10 +110,11 @@ object SpokenTokens {
 
     /**
      * Reserved in EVERY vocabulary, per DESIGN - the escape hatch must
-     * stay reachable once names exist. Not built yet, so for now it
-     * rejects like an unknown word, but nothing else may ever claim it.
+     * stay reachable once names exist. Alone, any of these IS the undo
+     * utterance; buried inside a longer utterance they still reject,
+     * because "five undo plus" is nobody's intent.
      */
-    private val RESERVED_WORDS = setOf("undo", "cancel", "escape")
+    private val UNDO_WORDS = setOf("undo", "cancel", "escape")
 
     /** A numeral as the recognizer writes one: digits, one optional radix. */
     private val NUMERAL = Regex("""\d+(\.\d+)?|\.\d+""")
@@ -143,6 +147,9 @@ object SpokenTokens {
 
         val words = utterance.trim().lowercase()
             .split(Regex("""\s+""")).filter { it.isNotEmpty() }
+
+        // An undo word as the WHOLE utterance is the undo itself.
+        if (words.size == 1 && words[0] in UNDO_WORDS) return Result.Undo
 
         val out = mutableListOf<Token>()
 
@@ -218,8 +225,8 @@ object SpokenTokens {
                 continue
             }
 
-            // Reserved words reject for now - visibly, never silently.
-            if (word in RESERVED_WORDS) return Result.Rejected(word)
+            // An undo word inside a longer utterance rejects - visibly.
+            if (word in UNDO_WORDS) return Result.Rejected(word)
 
             // Commands: the longest phrase that matches at this position.
             val match = PHRASES.entries

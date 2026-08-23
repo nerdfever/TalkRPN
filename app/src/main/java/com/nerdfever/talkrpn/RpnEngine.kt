@@ -40,6 +40,10 @@ import kotlin.math.sqrt
  * X. The next token clears the flag and executes normally. Provisional -
  * the error UX is undesigned.
  *
+ * UNDO remembers the whole machine at every [mark] - unlimited - and
+ * [saveState]/[loadState] carry the machine and its history across app
+ * exits as plain text.
+ *
  * Everything here is pure Kotlin with no Android in it, tested on the JVM
  * like the formatter.
  */
@@ -88,6 +92,104 @@ class RpnEngine(
 
     /** DSP - shown decimal places. Engine state so DSP is a real (neutral) token. */
     var dspPlaces = DEFAULT_DSP_PLACES; private set
+
+    // ---- Undo: the whole machine, remembered ------------------------------------
+
+    /** A complete copy of the machine - every field above. */
+    private data class Snapshot(
+        val x: Double, val y: Double, val z: Double, val t: Double,
+        val lastX: Double, val storage: Double,
+        val buffer: String, val noLift: Boolean,
+        val error: Boolean, val dspPlaces: Int,
+    )
+
+    /**
+     * UNLIMITED undo: one snapshot per mark, never trimmed. A snapshot is
+     * ten scalars, so even a day of talking costs next to nothing.
+     */
+    private val history = mutableListOf<Snapshot>()
+
+    /**
+     * Remember the machine as it stands. Callers mark once per INPUT
+     * GROUP - a whole utterance, or one typed token - so undo steps by
+     * what the user DID, not by internal keypresses.
+     */
+    fun mark() {
+        history += snapshotNow()
+    }
+
+    /** Restore the newest mark. False when there is nothing to undo. */
+    fun undo(): Boolean {
+        restore(history.removeLastOrNull() ?: return false)
+        return true
+    }
+
+    private fun snapshotNow() =
+        Snapshot(x, y, z, t, lastX, storage, buffer, noLift, error, dspPlaces)
+
+    private fun restore(then: Snapshot) {
+        x = then.x; y = then.y; z = then.z; t = then.t
+        lastX = then.lastX; storage = then.storage
+        buffer = then.buffer; noLift = then.noLift
+        error = then.error; dspPlaces = then.dspPlaces
+    }
+
+    // ---- Persistence: the machine as text ---------------------------------------
+
+    /**
+     * The whole machine as text - the undo history oldest first, then the
+     * machine as it stands on the last line - so the app can keep it
+     * across exits and hand it back to [loadState] on the next launch.
+     * A calculator that forgets its stack on a three-minute timeout would
+     * be no calculator at all.
+     */
+    fun saveState(): String =
+        (history + snapshotNow()).joinToString("\n") { encode(it) }
+
+    /**
+     * Restores a [saveState] text. False - and the machine untouched -
+     * when the text does not parse, so a corrupt store means a clean
+     * power-on rather than a garbled one.
+     */
+    fun loadState(text: String): Boolean {
+
+        val snapshots = text.split('\n')
+            .filter { it.isNotBlank() }
+            .map { decode(it) ?: return false }
+
+        val current = snapshots.lastOrNull() ?: return false
+
+        history.clear()
+        history += snapshots.dropLast(1)
+        restore(current)
+
+        return true
+    }
+
+    /** One snapshot as one tab-separated line; [decode]'s exact inverse. */
+    private fun encode(s: Snapshot): String = listOf(
+        s.x, s.y, s.z, s.t, s.lastX, s.storage,
+        s.buffer, s.noLift, s.error, s.dspPlaces,
+    ).joinToString("\t")
+
+    private fun decode(line: String): Snapshot? {
+
+        val parts = line.split('\t')
+        if (parts.size != 10) return null
+
+        return Snapshot(
+            parts[0].toDoubleOrNull() ?: return null,
+            parts[1].toDoubleOrNull() ?: return null,
+            parts[2].toDoubleOrNull() ?: return null,
+            parts[3].toDoubleOrNull() ?: return null,
+            parts[4].toDoubleOrNull() ?: return null,
+            parts[5].toDoubleOrNull() ?: return null,
+            parts[6],
+            parts[7].toBooleanStrictOrNull() ?: return null,
+            parts[8].toBooleanStrictOrNull() ?: return null,
+            parts[9].toIntOrNull() ?: return null,
+        )
+    }
 
     // ---- The tokens ---------------------------------------------------------------
 
