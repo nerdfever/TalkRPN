@@ -50,8 +50,8 @@ it. Ordered roughly by what blocks what.
   what phonetic distance counts as "obviously a homophone".
 - **Read-back** — see below. The echo problem is the open part.
 
-**Units** — deferred entirely, but one question is already live: whether an
-automatic mode switch converts stored values or only changes the default.
+**Units** — deferred to build, architecture settled (store SI, display the
+tag). Still open: whether speaking a foreign unit auto-switches the mode.
 
 **Display**
 
@@ -667,15 +667,81 @@ state is small enough that nothing cleverer is warranted.
 
 ---
 
-## Units (deferred, but decide the value type now)
+## Units (deferred, but the architecture is settled)
 
-Plus42-style units are a natural fit for voice — saying "five point two kilometres"
+Spoken units are a natural fit for voice — saying "five point two kilometres"
 is far easier than keying a unit. The open-vocabulary engine makes the extra
 vocabulary free.
 
 **Do not build it yet.** But make the value type carry an optional unit from day one
 — `Value(magnitude, unit?)` rather than a bare `Double` — so units can be added
 later without rewriting the stack, display and parser.
+
+### Store SI, display the tag
+
+One canonical unit per dimension inside the engine — SI, no exceptions:
+metres, kilograms, **seconds**, amperes, **kelvins**. The magnitude in a
+register is always canonical; the unit tag says how to SHOW it. Conversion
+happens at the entry and display boundaries only — the same rule the code
+already applies to millimetres.
+
+This diverges deliberately from Plus42, which stores the magnitude in
+whatever unit it was entered in and keeps unit symbols textually. The cost
+of that design is visible in the field: 12 A × 14 Ω comes out `168_A*ohm`,
+and P = EI gives `A^2*ohm`, because symbol-level cancellation cannot know
+those ARE volts and watts (hpmuseum thread 20607, saved in `todo/`). Stored
+canonically, `A·Ω` cannot even exist — a value's unit is a vector of
+exponents over the base dimensions, 12 × 14 = 168 with dimension
+kg·m²·s⁻³·A⁻¹, and the display looks that vector up in a table of named
+units and prints volts. Auto-reduction is not a feature to build; it is
+what is left when there is nothing else to store.
+
+Two consequences of the vector-and-table design:
+
+- **Some vectors have several names** — J, N·m and W·s are one dimension.
+  The display prefers the speaker's most recent compatible unit tag, falling
+  back to the table's first name; torque reads N·m only when asked.
+- **Electrical units cost nothing** and are in — Plus42 has none.
+
+The tag semantics below are unchanged by this: "feet stay feet" means the
+TAG stays feet — what the user sees never silently changes — while the
+magnitude underneath was metres all along. `SI SI` rewrites tags, not
+magnitudes.
+
+### Temperature: kelvins, and the affine bit
+
+Temperatures store in kelvins. °C and °F are display tags whose conversion
+is affine — scale AND offset — and the offset applies only to a temperature
+POINT. A temperature DIFFERENCE is linear (20 K of warming shown "in C" is
+20, not −253.15), so the tag carries one bit saying which of the two it
+holds. Plus42 ducked this by having no temperature units at all; the bit is
+the whole price of not ducking.
+
+### Date and time: Unix seconds, tags for everything visible
+
+Everything time-flavoured — timestamps, times of day, durations — stores as
+canonical seconds; timestamps count from the Unix epoch. A double holds
+Unix seconds to ~0.2 µs resolution out past year 2200, so precision never
+enters into it. What the wrist sees comes from tags:
+
+- `today` / `now` push seconds tagged to display as a date (YYYY.MMDD —
+  sorts, unlike HP's MM.DDYYYY) or a time (HH.MMSS).
+- Durations tag as days or hours; `date − date` is naturally a duration.
+- **A to/from Julian-day converter is required.** `julian` displays MJD
+  (= JD − 2400000.5), preferred to raw JD on both counts that matter: raw
+  JD rolls over at NOON UT — the astronomer convention, so the date changes
+  at lunchtime — and its ~2.46 million reads seven digits where MJD reads
+  five.
+- `today` and `now` mean LOCAL midnight, not UT. A wrist is not an
+  observatory; the resulting MJD differs from an astronomer's by the
+  UTC-offset fraction, and this line is where future-you finds out why.
+- Leap seconds are ignored, as Unix time itself ignores them: every day is
+  86 400 s.
+
+Dates are points and durations are vectors — date + duration and
+date − date make sense, date + date does not. Same point-vs-difference
+distinction as temperature, answered the same way: by the tag, advisory
+for now, not by an engine that polices arithmetic.
 
 ### Unit mode
 

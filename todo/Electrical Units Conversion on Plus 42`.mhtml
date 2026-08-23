@@ -1,0 +1,2464 @@
+From: <Saved by Blink>
+Snapshot-Content-Location: https://www.hpmuseum.org/forum/thread-20607-post-178257.html#pid178257
+Subject: Electrical Units Conversion on Plus 42`
+Date: Sun, 23 Aug 2026 16:06:45 -0400
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	type="text/html";
+	boundary="----MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----"
+
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/html
+Content-ID: <frame-8F23269A002ADE651A8B6BAA6CEDD165@mhtml.blink>
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://www.hpmuseum.org/forum/thread-20607-post-178257.html#pid178257
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.=
+w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><!-- start: showthread --><ht=
+ml xml:lang=3D"en" lang=3D"en" xmlns=3D"http://www.w3.org/1999/xhtml"><head=
+><meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3DUTF-8"><=
+link rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-dab490a9-1a82-42f=
+0-b9af-25f8713c0b2c@mhtml.blink" /><link rel=3D"stylesheet" type=3D"text/cs=
+s" href=3D"cid:css-3a9edd0e-a29f-4972-9e79-30d720867930@mhtml.blink" /><lin=
+k rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-b9fc890c-d88b-413b-8=
+a26-5132c2bc76fd@mhtml.blink" /><link rel=3D"stylesheet" type=3D"text/css" =
+href=3D"cid:css-819f3081-c2be-4169-9d41-33833981a5a4@mhtml.blink" /><link r=
+el=3D"stylesheet" type=3D"text/css" href=3D"cid:css-ba1a539b-e338-4084-8c44=
+-0f56ad043015@mhtml.blink" /><link rel=3D"stylesheet" type=3D"text/css" hre=
+f=3D"cid:css-c8f47584-fe7c-489a-bcd0-c735358154fc@mhtml.blink" /><link rel=
+=3D"stylesheet" type=3D"text/css" href=3D"cid:css-ecdd017b-4014-4257-831d-5=
+edc1d3349bb@mhtml.blink" /><link rel=3D"stylesheet" type=3D"text/css" href=
+=3D"cid:css-36e3ec80-9147-46b3-91cb-4a6c400c7ea4@mhtml.blink" /><link rel=
+=3D"stylesheet" type=3D"text/css" href=3D"cid:css-72fea7e6-cae5-438a-9e6c-b=
+7da67980528@mhtml.blink" />
+<title>Electrical Units Conversion on Plus 42`</title>
+<!-- start: headerinclude -->
+<link rel=3D"alternate" type=3D"application/rss+xml" title=3D"Latest Thread=
+s (RSS 2.0)" href=3D"https://www.hpmuseum.org/forum/syndication.php">
+<link rel=3D"alternate" type=3D"application/atom+xml" title=3D"Latest Threa=
+ds (Atom 1.0)" href=3D"https://www.hpmuseum.org/forum/syndication.php?type=
+=3Datom1.0">
+
+<meta http-equiv=3D"Content-Script-Type" content=3D"text/javascript">
+
+
+
+
+<link type=3D"text/css" rel=3D"stylesheet" href=3D"https://www.hpmuseum.org=
+/forum/cache/themes/theme2/global.css?t=3D1736981080">
+<link type=3D"text/css" rel=3D"stylesheet" href=3D"https://www.hpmuseum.org=
+/forum/cache/themes/theme1/css3.css?t=3D1736563697">
+<link type=3D"text/css" rel=3D"stylesheet" href=3D"https://www.hpmuseum.org=
+/forum/css.php?stylesheet%5B0%5D=3D27&amp;stylesheet%5B1%5D=3D28">
+
+
+
+<!-- end: headerinclude -->
+
+<!-- jeditable (jquery) -->
+
+
+
+</head>
+<body><div id=3D"MathJax_Message" style=3D"display: none;"></div>
+	<!-- start: header -->
+<div id=3D"container">
+		<a name=3D"top" id=3D"top"></a>
+		<div id=3D"header">
+			<div id=3D"logo">
+				<div class=3D"wrapper">
+					<a href=3D"https://www.hpmuseum.org/"><img src=3D"https://www.hpmuseum=
+.org/forum/mohpcf18.png" alt=3D"HP Forums" title=3D"HP Forums" width=3D"299=
+" height=3D"42"></a>
+					<ul class=3D"menu top_links">
+						<!-- start: header_menu_portal -->
+<li><a href=3D"https://www.hpmuseum.org/forum/portal.php" class=3D"portal">=
+Portal</a></li>
+<!-- end: header_menu_portal -->
+						<!-- start: header_menu_search -->
+<li><a href=3D"https://www.hpmuseum.org/forum/search.php" class=3D"search">=
+Search</a></li>
+<!-- end: header_menu_search -->
+					=09
+					=09
+						<li><a href=3D"https://www.hpmuseum.org/forum/misc.php?action=3Dhelp"=
+ class=3D"help">Help</a></li>
+					</ul>
+				</div>
+			</div>
+			<div id=3D"panel">
+				<div class=3D"upper">
+					<div class=3D"wrapper">
+						<!-- start: header_quicksearch -->
+						<form action=3D"https://www.hpmuseum.org/forum/search.php">
+						<fieldset id=3D"search">
+							<input name=3D"keywords" type=3D"text" class=3D"textbox">
+							<input value=3D"Search" type=3D"submit" class=3D"button">
+						=09
+						=09
+						</fieldset>
+						</form>
+<!-- end: header_quicksearch -->
+						<!-- start: header_welcomeblock_guest -->
+						<!-- Continuation of div(class=3D"upper") as opened in the header tem=
+plate -->
+						<span class=3D"welcome">Hello There, Guest! <a href=3D"https://www.hp=
+museum.org/forum/member.php?action=3Dlogin" class=3D"login">Login</a> <a hr=
+ef=3D"https://www.hpmuseum.org/forum/member.php?action=3Dregister" class=3D=
+"register">Register</a></span>
+					</div>
+				</div>
+				<div class=3D"modal" id=3D"quick_login" style=3D"display: none;">
+					<form method=3D"post" action=3D"https://www.hpmuseum.org/forum/member.=
+php">
+					=09
+					=09
+					=09
+					=09
+						<table width=3D"100%" cellspacing=3D"0" cellpadding=3D"5" border=3D"0=
+" class=3D"tborder">
+							<tbody><tr>
+								<td class=3D"thead" colspan=3D"2"><strong>Login</strong></td>
+							</tr>
+							<!-- start: header_welcomeblock_guest_login_modal -->
+<tr>
+	<td class=3D"trow1" width=3D"25%"><strong>Username:</strong></td>
+	<td class=3D"trow1"><input name=3D"quick_username" id=3D"quick_login_usern=
+ame" type=3D"text" value=3D"" class=3D"textbox initial_focus"></td>
+</tr>
+<tr>
+	<td class=3D"trow2"><strong>Password:</strong></td>
+	<td class=3D"trow2">
+		<input name=3D"quick_password" id=3D"quick_login_password" type=3D"passwo=
+rd" value=3D"" class=3D"textbox"><br>
+		<a href=3D"https://www.hpmuseum.org/forum/member.php?action=3Dlostpw" cla=
+ss=3D"lost_password">Lost Password?</a>
+	</td>
+</tr>
+<tr>
+	<td class=3D"trow1">&nbsp;</td>
+	<td class=3D"trow1 remember_me">
+		<input name=3D"quick_remember" id=3D"quick_login_remember" type=3D"checkb=
+ox" value=3D"yes" class=3D"checkbox" checked=3D"checked">
+		<label for=3D"quick_login_remember">Remember me</label>
+	</td>
+</tr>
+<tr>
+	<td class=3D"trow2" colspan=3D"2">
+		<div align=3D"center"><input name=3D"submit" type=3D"submit" class=3D"but=
+ton" value=3D"Login"></div>
+	</td>
+</tr>
+<!-- end: header_welcomeblock_guest_login_modal -->
+						</tbody></table>
+					</form>
+				</div>
+			=09
+<!-- end: header_welcomeblock_guest -->
+					<!-- </div> in header_welcomeblock_member and header_welcomeblock_gues=
+t -->
+				<!-- </div> in header_welcomeblock_member and header_welcomeblock_guest=
+ -->
+			</div>
+		</div>
+		<div id=3D"content">
+			<div class=3D"wrapper">
+			=09
+			=09
+			=09
+			=09
+			=09
+			=09
+			=09
+				<!-- start: nav -->
+
+<div class=3D"navigation">
+<!-- start: nav_bit -->
+<a href=3D"https://www.hpmuseum.org/forum/index.php">HP Forums</a><!-- star=
+t: nav_sep -->
+=E2=80=BA
+<!-- end: nav_sep -->
+<!-- end: nav_bit --><!-- start: nav_bit -->
+<a href=3D"https://www.hpmuseum.org/forum/forum-7.html">Not HP Calculators<=
+/a><!-- start: nav_sep -->
+=E2=80=BA
+<!-- end: nav_sep -->
+<!-- end: nav_bit --><!-- start: nav_bit -->
+<a href=3D"https://www.hpmuseum.org/forum/forum-8-page-15.html">Not quite H=
+P Calculators - but related</a><!-- start: nav_dropdown -->
+ <img src=3D"https://www.hpmuseum.org/forum/images/arrow_down.png" alt=3D"v=
+" title=3D"" class=3D"pagination_breadcrumb_link" id=3D"breadcrumb_multipag=
+e"><!-- start: multipage_breadcrumb -->
+<div id=3D"breadcrumb_multipage_popup" class=3D"pagination pagination_bread=
+crumb" style=3D"display: none;">
+<!-- start: multipage_prevpage -->
+<a href=3D"https://www.hpmuseum.org/forum/forum-8-page-14.html" class=3D"pa=
+gination_previous">=C2=AB Previous</a>
+<!-- end: multipage_prevpage --><!-- start: multipage_start -->
+<a href=3D"https://www.hpmuseum.org/forum/forum-8.html" class=3D"pagination=
+_first">1</a>  =E2=80=A6
+<!-- end: multipage_start --><!-- start: multipage_page -->
+<a href=3D"https://www.hpmuseum.org/forum/forum-8-page-13.html" class=3D"pa=
+gination_page">13</a>
+<!-- end: multipage_page --><!-- start: multipage_page -->
+<a href=3D"https://www.hpmuseum.org/forum/forum-8-page-14.html" class=3D"pa=
+gination_page">14</a>
+<!-- end: multipage_page --><!-- start: multipage_page_link_current -->
+ <a href=3D"https://www.hpmuseum.org/forum/forum-8-page-15.html" class=3D"p=
+agination_current">15</a>
+<!-- end: multipage_page_link_current --><!-- start: multipage_page -->
+<a href=3D"https://www.hpmuseum.org/forum/forum-8-page-16.html" class=3D"pa=
+gination_page">16</a>
+<!-- end: multipage_page --><!-- start: multipage_page -->
+<a href=3D"https://www.hpmuseum.org/forum/forum-8-page-17.html" class=3D"pa=
+gination_page">17</a>
+<!-- end: multipage_page --><!-- start: multipage_end -->
+=E2=80=A6  <a href=3D"https://www.hpmuseum.org/forum/forum-8-page-67.html" =
+class=3D"pagination_last">67</a>
+<!-- end: multipage_end --><!-- start: multipage_nextpage -->
+<a href=3D"https://www.hpmuseum.org/forum/forum-8-page-16.html" class=3D"pa=
+gination_next">Next =C2=BB</a>
+<!-- end: multipage_nextpage -->
+</div>
+
+<!-- end: multipage_breadcrumb -->
+<!-- end: nav_dropdown -->
+<!-- end: nav_bit --><!-- start: nav_sep_active -->
+<br><img src=3D"https://www.hpmuseum.org/forum/images/nav_bit.png" alt=3D""=
+>
+<!-- end: nav_sep_active --><!-- start: nav_bit_active -->
+<span class=3D"active">Electrical Units Conversion on Plus 42`</span>
+<!-- end: nav_bit_active -->
+</div>
+<!-- end: nav -->
+				<br>
+<!-- end: header -->
+=09
+=09
+	<div class=3D"float_left">
+	=09
+	</div>
+	<div class=3D"float_right">
+	=09
+	</div>
+=09
+	<table border=3D"0" cellspacing=3D"0" cellpadding=3D"5" class=3D"tborder t=
+fixed clear">
+		<tbody><tr>
+			<td class=3D"thead">
+				<div class=3D"float_right">
+					<span class=3D"smalltext"><strong><a href=3D"https://www.hpmuseum.org/=
+forum/showthread.php?mode=3Dthreaded&amp;tid=3D20607&amp;pid=3D178257#pid17=
+8257">Threaded Mode</a></strong></span>
+				</div>
+				<div>
+					<strong>Electrical Units Conversion on Plus 42`</strong>
+				</div>
+			</td>
+		</tr>
+<tr><td id=3D"posts_container">
+	<div id=3D"posts">
+		<!-- start: postbit -->
+
+<a name=3D"pid178209" id=3D"pid178209"></a>
+<div class=3D"post " style=3D"" id=3D"post_178209">
+<div class=3D"post_author">
+	<!-- start: postbit_avatar -->
+<div class=3D"author_avatar"><a href=3D"https://www.hpmuseum.org/forum/user=
+-3411.html"><img src=3D"https://www.hpmuseum.org/forum/images/default_avata=
+r.png" alt=3D"" width=3D"70" height=3D"70"></a></div>
+<!-- end: postbit_avatar -->
+	<div class=3D"author_information">
+			<strong><span class=3D"largetext"><a href=3D"https://www.hpmuseum.org/fo=
+rum/user-3411.html">codycbradio</a></span></strong> <!-- start: postbit_off=
+line -->
+<img src=3D"https://www.hpmuseum.org/forum/images/buddy_offline.png" title=
+=3D"Offline" alt=3D"Offline" class=3D"buddy_status">
+<!-- end: postbit_offline --><br>
+			<span class=3D"smalltext">
+				Junior Member<br>
+				<br>
+			=09
+			</span>
+	</div>
+	<div class=3D"author_statistics">
+		<!-- start: postbit_author_user -->
+
+	Posts: 10<br>
+	Threads: 7<br>
+	Joined: Sep 2015
+=09
+<!-- end: postbit_author_user -->
+	</div>
+</div>
+<div class=3D"post_content">
+	<div class=3D"post_head">
+		<!-- start: postbit_posturl -->
+<div class=3D"float_right" style=3D"vertical-align: top">
+<strong><a href=3D"https://www.hpmuseum.org/forum/thread-20607-post-178209.=
+html#pid178209" title=3D"Electrical Units Conversion on Plus 42`">#1</a></s=
+trong>
+
+</div>
+<!-- end: postbit_posturl -->
+	=09
+		<span class=3D"post_date">10-08-2023, 09:59 PM <span class=3D"post_edit" =
+id=3D"edited_by_178209"></span></span>
+	=09
+	</div>
+	<div class=3D"post_body scaleimages" id=3D"pid_178209">
+		Does anybody know how to calculate the different electrical units with a =
+given set of other units in Plus42?
+	</div>
+=09
+=09
+	<div class=3D"post_meta" id=3D"post_meta_178209">
+	=09
+		<div class=3D"float_right">
+		=09
+		</div>
+	</div>
+=09
+</div>
+<div class=3D"post_controls">
+	<div class=3D"postbit_buttons author_buttons float_left">
+		<!-- start: postbit_find -->
+<a href=3D"https://www.hpmuseum.org/forum/search.php?action=3Dfinduser&amp;=
+uid=3D3411" title=3D"Find all posts by this user" class=3D"postbit_find"><s=
+pan>Find</span></a>
+<!-- end: postbit_find -->
+	</div>
+	<div class=3D"postbit_buttons post_management_buttons float_right">
+		<!-- start: postbit_quote -->
+<a href=3D"https://www.hpmuseum.org/forum/newreply.php?tid=3D20607&amp;repl=
+yto=3D178209" title=3D"Quote this message in a reply" class=3D"postbit_quot=
+e postbit_mirage"><span>Reply</span></a>
+<!-- end: postbit_quote -->
+	</div>
+</div>
+</div>
+<!-- end: postbit --><!-- start: postbit -->
+
+<a name=3D"pid178256" id=3D"pid178256"></a>
+<div class=3D"post " style=3D"" id=3D"post_178256">
+<div class=3D"post_author">
+	<!-- start: postbit_avatar -->
+<div class=3D"author_avatar"><a href=3D"https://www.hpmuseum.org/forum/user=
+-639.html"><img src=3D"https://www.hpmuseum.org/forum/uploads/avatars/avata=
+r_639.png?dateline=3D1661701969" alt=3D"" width=3D"70" height=3D"70"></a></=
+div>
+<!-- end: postbit_avatar -->
+	<div class=3D"author_information">
+			<strong><span class=3D"largetext"><a href=3D"https://www.hpmuseum.org/fo=
+rum/user-639.html">johnb</a></span></strong> <!-- start: postbit_offline --=
+>
+<img src=3D"https://www.hpmuseum.org/forum/images/buddy_offline.png" title=
+=3D"Offline" alt=3D"Offline" class=3D"buddy_status">
+<!-- end: postbit_offline --><br>
+			<span class=3D"smalltext">
+				Member<br>
+				<br>
+			=09
+			</span>
+	</div>
+	<div class=3D"author_statistics">
+		<!-- start: postbit_author_user -->
+
+	Posts: 261<br>
+	Threads: 12<br>
+	Joined: Feb 2014
+=09
+<!-- end: postbit_author_user -->
+	</div>
+</div>
+<div class=3D"post_content">
+	<div class=3D"post_head">
+		<!-- start: postbit_posturl -->
+<div class=3D"float_right" style=3D"vertical-align: top">
+<strong><a href=3D"https://www.hpmuseum.org/forum/thread-20607-post-178256.=
+html#pid178256" title=3D"RE: Electrical Units Conversion on Plus 42`">#2</a=
+></strong>
+
+</div>
+<!-- end: postbit_posturl -->
+	=09
+		<span class=3D"post_date">10-09-2023, 07:39 PM <span class=3D"post_edit" =
+id=3D"edited_by_178256"></span></span>
+	=09
+	</div>
+	<div class=3D"post_body scaleimages" id=3D"pid_178256">
+		<blockquote class=3D"mycode_quote"><cite><span> (10-08-2023, 09:59 PM)</s=
+pan>codycbradio Wrote:  <a href=3D"https://www.hpmuseum.org/forum/post-1782=
+09.html#pid178209" class=3D"quick_jump"></a></cite>Does anybody know how to=
+ calculate the different electrical units with a given set of other units i=
+n Plus42?</blockquote><br>
+Pretty much the same way you do other units.<br>
+Using the simplest example (length):<br>
+[Units] [Leng]<br>
+10 [enter]<br>
+[m]  =3D&gt; (results in) 10_m on stack<br>
+1 [enter]<br>
+[in] =3D&gt; 1_in (in x register), 10_m (in y register).<br>
+[f] [UNIT.FCN] [Conv]<br>
+x: 393.7_in<br>
+<br>
+Just make sure your units are compatible.  <br>
+Farads are not convertible to Newton-meters per second squared.<br>
+<br>
+Hope this helps!
+	</div>
+=09
+	<!-- start: postbit_signature -->
+<div class=3D"signature scaleimages">
+Daily drivers: 15c, 32sII, 35s, 41cx, 48g, WP 34s/31s.  Favorite: 16c.<br>
+Latest: 15ce, 48s, 50g.   Gateway drug: 28s found in yard sale ~2009.<br>
+
+</div>
+<!-- end: postbit_signature -->
+	<div class=3D"post_meta" id=3D"post_meta_178256">
+	=09
+		<div class=3D"float_right">
+		=09
+		</div>
+	</div>
+=09
+</div>
+<div class=3D"post_controls">
+	<div class=3D"postbit_buttons author_buttons float_left">
+		<!-- start: postbit_find -->
+<a href=3D"https://www.hpmuseum.org/forum/search.php?action=3Dfinduser&amp;=
+uid=3D639" title=3D"Find all posts by this user" class=3D"postbit_find"><sp=
+an>Find</span></a>
+<!-- end: postbit_find -->
+	</div>
+	<div class=3D"postbit_buttons post_management_buttons float_right">
+		<!-- start: postbit_quote -->
+<a href=3D"https://www.hpmuseum.org/forum/newreply.php?tid=3D20607&amp;repl=
+yto=3D178256" title=3D"Quote this message in a reply" class=3D"postbit_quot=
+e postbit_mirage"><span>Reply</span></a>
+<!-- end: postbit_quote -->
+	</div>
+</div>
+</div>
+<!-- end: postbit --><!-- start: postbit -->
+
+<a name=3D"pid178257" id=3D"pid178257"></a>
+<div class=3D"post " style=3D"" id=3D"post_178257">
+<div class=3D"post_author">
+	<!-- start: postbit_avatar -->
+<div class=3D"author_avatar"><a href=3D"https://www.hpmuseum.org/forum/user=
+-639.html"><img src=3D"https://www.hpmuseum.org/forum/uploads/avatars/avata=
+r_639.png?dateline=3D1661701969" alt=3D"" width=3D"70" height=3D"70"></a></=
+div>
+<!-- end: postbit_avatar -->
+	<div class=3D"author_information">
+			<strong><span class=3D"largetext"><a href=3D"https://www.hpmuseum.org/fo=
+rum/user-639.html">johnb</a></span></strong> <!-- start: postbit_offline --=
+>
+<img src=3D"https://www.hpmuseum.org/forum/images/buddy_offline.png" title=
+=3D"Offline" alt=3D"Offline" class=3D"buddy_status">
+<!-- end: postbit_offline --><br>
+			<span class=3D"smalltext">
+				Member<br>
+				<br>
+			=09
+			</span>
+	</div>
+	<div class=3D"author_statistics">
+		<!-- start: postbit_author_user -->
+
+	Posts: 261<br>
+	Threads: 12<br>
+	Joined: Feb 2014
+=09
+<!-- end: postbit_author_user -->
+	</div>
+</div>
+<div class=3D"post_content">
+	<div class=3D"post_head">
+		<!-- start: postbit_posturl -->
+<div class=3D"float_right" style=3D"vertical-align: top">
+<strong><a href=3D"https://www.hpmuseum.org/forum/thread-20607-post-178257.=
+html#pid178257" title=3D"RE: Electrical Units Conversion on Plus 42`">#3</a=
+></strong>
+
+</div>
+<!-- end: postbit_posturl -->
+	=09
+		<span class=3D"post_date">10-09-2023, 07:54 PM <span class=3D"post_edit" =
+id=3D"edited_by_178257"><!-- start: postbit_editedby -->
+<span class=3D"edited_post">(This post was last modified: 10-09-2023, 07:55=
+ PM by <a href=3D"https://www.hpmuseum.org/forum/user-639.html">johnb</a>.)=
+</span>
+<!-- end: postbit_editedby --></span></span>
+	=09
+	</div>
+	<div class=3D"post_body scaleimages" id=3D"pid_178257">
+		This probably does not need saying in this venue, but I'll say it anyway.=
+<br>
+(Unless you know tricks with the 42 that I don't -- which is pretty likely!=
+) you have to understand the units you're working with.  For example, if yo=
+u have a simple 14 ohm resistive circuit and measure 12 amps going through =
+it, E=3DIR gives you 168 volts, but Plus 42 will give you 168 amp-ohms, whi=
+ch you'd need to convert using the simple steps in my prior post.  Same wit=
+h simple resistive power, if you want P=3DEI and just entered 12_A x, you'l=
+l get 2,106_A^2*ohms, which you'd need to convert to watts.<br>
+<br>
+Unless there's a trick that someone knows to get it to automatically reduce=
+ [funky] amp-ohms to [sane] volts, and so forth.  I'm guessing there is one=
+?
+	</div>
+=09
+	<!-- start: postbit_signature -->
+<div class=3D"signature scaleimages">
+Daily drivers: 15c, 32sII, 35s, 41cx, 48g, WP 34s/31s.  Favorite: 16c.<br>
+Latest: 15ce, 48s, 50g.   Gateway drug: 28s found in yard sale ~2009.<br>
+
+</div>
+<!-- end: postbit_signature -->
+	<div class=3D"post_meta" id=3D"post_meta_178257">
+	=09
+		<div class=3D"float_right">
+		=09
+		</div>
+	</div>
+=09
+</div>
+<div class=3D"post_controls">
+	<div class=3D"postbit_buttons author_buttons float_left">
+		<!-- start: postbit_find -->
+<a href=3D"https://www.hpmuseum.org/forum/search.php?action=3Dfinduser&amp;=
+uid=3D639" title=3D"Find all posts by this user" class=3D"postbit_find"><sp=
+an>Find</span></a>
+<!-- end: postbit_find -->
+	</div>
+	<div class=3D"postbit_buttons post_management_buttons float_right">
+		<!-- start: postbit_quote -->
+<a href=3D"https://www.hpmuseum.org/forum/newreply.php?tid=3D20607&amp;repl=
+yto=3D178257" title=3D"Quote this message in a reply" class=3D"postbit_quot=
+e postbit_mirage"><span>Reply</span></a>
+<!-- end: postbit_quote -->
+	</div>
+</div>
+</div>
+<!-- end: postbit -->
+	</div>
+</td></tr>
+		<tr>
+			<td class=3D"tfoot">
+				<!-- start: showthread_search -->
+	<div class=3D"float_right">
+		<form action=3D"https://www.hpmuseum.org/forum/search.php" method=3D"post=
+">
+		=09
+		=09
+			<input type=3D"text" name=3D"keywords" value=3D"Enter Keywords" class=3D=
+"textbox" size=3D"25">
+			<input type=3D"submit" class=3D"button" value=3D"Search Thread">
+		</form>
+	</div>
+<!-- end: showthread_search -->
+				<div>
+					<strong>=C2=AB <a href=3D"https://www.hpmuseum.org/forum/thread-20607-=
+nextoldest.html">Next Oldest</a> | <a href=3D"https://www.hpmuseum.org/foru=
+m/thread-20607-nextnewest.html">Next Newest</a> =C2=BB</strong>
+				</div>
+			</td>
+		</tr>
+	</tbody></table>
+	<div class=3D"float_left">
+	=09
+	</div>
+	<div style=3D"padding-top: 4px;" class=3D"float_right">
+	=09
+	</div>
+	<br class=3D"clear">
+=09
+=09
+=09
+	<br>
+	<div class=3D"float_left">
+		<ul class=3D"thread_tools">
+			<!-- start: showthread_printthread -->
+<li class=3D"printable"><a href=3D"https://www.hpmuseum.org/forum/printthre=
+ad.php?tid=3D20607">View a Printable Version</a></li>
+<!-- end: showthread_printthread -->
+		=09
+		=09
+		=09
+		</ul>
+	</div>
+
+	<div class=3D"float_right" style=3D"text-align: right;">
+	=09
+	=09
+	</div>
+	<br class=3D"clear">
+	<!-- start: showthread_usersbrowsing -->
+<br>
+<span class=3D"smalltext">Users browsing this thread: 1 Guest(s)</span>
+<br>
+<!-- end: showthread_usersbrowsing -->
+	<!-- start: footer -->
+
+	</div>
+</div>
+<div id=3D"footer">
+	<div class=3D"upper">
+		<div class=3D"wrapper">
+		=09
+		=09
+			<ul class=3D"menu bottom_links">
+				<!-- start: footer_showteamlink -->
+<li><a href=3D"https://www.hpmuseum.org/forum/showteam.php">Forum Team</a><=
+/li>
+<!-- end: footer_showteamlink -->
+				<!-- start: footer_contactus -->
+<li><a href=3D"https://www.hpmuseum.org/contact.htm">Contact Us</a></li>
+<!-- end: footer_contactus -->
+				<li><a href=3D"https://www.hpmuseum.org/">The Museum of HP Calculators<=
+/a></li>
+				<li><a href=3D"https://www.hpmuseum.org/forum/thread-20607-post-178257.=
+html#top">Return to Top</a></li>
+				<li><a href=3D"https://www.hpmuseum.org/forum/archive/index.php?thread-=
+20607.html">Lite (Archive) Mode</a></li>
+				<li><a href=3D"https://www.hpmuseum.org/forum/misc.php?action=3Dmarkrea=
+d">Mark all forums read</a></li>
+				<li><a href=3D"https://www.hpmuseum.org/forum/misc.php?action=3Dsyndica=
+tion">RSS Syndication</a></li>
+			</ul>
+		</div>
+	</div>
+	<div class=3D"lower">
+		<div class=3D"wrapper">
+			<span id=3D"current_time"><strong>Current time:</strong> 08-23-2026, 08:=
+00 PM</span>
+			<span id=3D"copyright">
+				<!-- MyBB is free software developed and maintained by a volunteer comm=
+unity.
+					It would be much appreciated by the MyBB Group if you left the full co=
+pyright and "powered by" notice intact,
+					to show your support for MyBB.  If you choose to remove or modify the =
+copyright below,
+					you may be refused support on the MyBB Community Forums.
+
+					This is free software, support us and we'll support you. -->
+				Powered By <a href=3D"https://mybb.com/" target=3D"_blank" rel=3D"noope=
+ner">MyBB</a>, =C2=A9 2002-2026 <a href=3D"https://mybb.com/" target=3D"_bl=
+ank" rel=3D"noopener">MyBB Group</a>.
+				<!-- End powered by -->
+			</span>
+		</div>
+	</div>
+</div>
+<!-- The following piece of code allows MyBB to run scheduled tasks. DO NOT=
+ REMOVE --><!-- start: task_image -->
+<img src=3D"https://www.hpmuseum.org/forum/task.php" width=3D"1" height=3D"=
+1" alt=3D"">
+<!-- end: task_image --><!-- End task image code -->
+
+</div>
+<!-- end: footer -->
+=09
+<iframe height=3D"1" width=3D"1" style=3D"position: absolute; top: 0px; lef=
+t: 0px; border-width: medium; border-style: none; border-color: currentcolo=
+r; border-image: none; visibility: hidden;"></iframe>
+
+
+</body></html><!-- end: showthread -->
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/gif
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/task.php
+
+R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/uploads/avatars/avatar_639.png?dateline=1661701969
+
+iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAIAAABt+uBvAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA
+B3RJTUUH4AQVFjgEQI4XbwAAAAd0RVh0QXV0aG9yAKmuzEgAAAAMdEVYdERlc2NyaXB0aW9uABMJ
+ISMAAAAKdEVYdENvcHlyaWdodACsD8w6AAAADnRFWHRDcmVhdGlvbiB0aW1lADX3DwkAAAAJdEVY
+dFNvZnR3YXJlAF1w/zoAAAALdEVYdERpc2NsYWltZXIAt8C0jwAAAAh0RVh0V2FybmluZwDAG+aH
+AAAAB3RFWHRTb3VyY2UA9f+D6wAAAAh0RVh0Q29tbWVudAD2zJa/AAAABnRFWHRUaXRsZQCo7tIn
+AAAXFklEQVR4nO2caXhURbrH36o6+znd2UMCCavZQEgIyCowiCLoCDgMuIHLKM69I+N49aoz13ud
+GWccvc84zkWdEUGWQZBdwLAqi6xBdkgISSCEhE5IZ++9+2x1PzRLaBI6QCB8yP9Dnn761Dn11q+r
+3reW9wRFfrQWOtSycHsbcLerA1AYdQAKow5AYdQBKIw6AIVRB6AwursAUQCNcCZC7W3IFd1FgEwK
+mGXTPJUSBgPuFkZ3DyBq8GJGY7n70991K8xlJJnS9rYIAO4eQCpme+GAa+WXxfb6C2sWpzltOi8A
+tD+kuwKQAShKEuTvlhXm5ylKXEV1nX/FnK5EVxHT3qbdBYAopURSkk/uOblhHSNGAFBBsRYcORS9
+Y1WUIhvt3YfaHRDVObGrw1axfJ4PMQxDAAABYNF6Kuebnqd/xO3tjNoZkI6ZOGKqK+ZUVtcIokgv
+wWAZxqlR29dzUn3VGsu3ozNqT0AUQJCkiF1ry44eEpQI2qSrUEpFWS6vrKRrFiTxoCHSXka2HyAK
+VFTiTx8uX7ecCsq10x5KqSBH5O/dHb83R5GV9nJG7QZIZ7lYb51zxRyPZrAs22wZhBDl5eI1y1Jt
+J0CUaXt4o/YBZCIscwysWVBz/jwvK9dpOcdxdV7Vvnh2it6oMfydNDKodgBEAYikWPdvtu/7gUgR
+1+8XlFJRUc6eK2VzFiWKjHbHlyB3HBClVBCt54vqvllk8iLGrWgwpZwUkbdta5dDW0RZMe/sOLvT
+gEyGlTW/uuILt8fHcK0dMoRgnRPOrPoqo/a0KUh3MurfUUAUgBFEsnFJw5kCTrG03ulSSnmetze6
+65Z83p16Api7rXY21R0ERCnIFun4nsZt64kUAU3oIIQQQgBAL6npl5fupqJiLS48Zf1uaYIi3DFn
+dMdWg9TkRaXW5ln5pUFYhhAAoJTquqGqqmmqAHpwjQGAASiAEexwGHMcxzIMgxCilLJSRP7mDdk9
+0hszRpke1x3YWbtDgAzMWkDHy/7pravlLJG6rvt8HgBdEMQePZLT0lK6dk2KiY21KIooiWpAdbqc
+9XW1ZWW2U6eKKyor3G4nACOKCsMQHzBnl81Peb3HSTmRVX1wm7vSnQBEAXhRlDcstJ08hkSLy1WP
+EJud3W/s2IfGjBnVu3d6YmIiQs0MdkppVVVVQcGp7Tt2fv/dtsNHjvt8mihaKmvqLcvnJrz4X3bM
+MKZxW41Ht/1sngKVlc4FuRWff+g0NIy5sWMfmDHjhQcffMBqtbb+MS63a9vWHfMXLNq08Xtd1zjQ
++0yeVvHQdL/beVv9KBHGPnk7n091Tkh0VdfP+aDBUz9w4JBPP/3ovfd+37t3Bs/zANDKQIYQ4jk+
+PT3tySenZGf3Ky0tK7OVek4XdklJdcR3R1oAbps3ur2AdMzEcNg/9337+eK33v7vuXP/kZWVFXS3
+N/dAhFBqaurUqY+znLh9527/qeOxQ0a5ORnftoF2G7unCSBJMrt+gV5RsmzZyv/98E8RERGXo3iI
+UHO6tljwdqs14r0/vrtq9QrWDDj/9XeRYYzmXFib6LYBohQki3J4K1dwcPWmjU888XNobkA1ZaHr
+emNjY11tbUNDo6ZpIVevfjYFgEmTHlu3cYO1tpxsWSwpt2sJcruimM4JcdWlUQc2fbZk8ZDhw+Aa
+OpebXVBQsHdf7uHDx4sKTztr7LqmEpa1xsanpadkZ2cNHTq4X9++l6eRl2+nlCKEhg0b8vXaNS89
++QTX454zqUPB62pzZ3RbopiOiQWM+NWfvv/GzEcfn9QCGrp+/eb5Cxbt2rm3rq4awATQIWM4pPWF
+vMNQcgCAA4Co6NiRI4Y+//yzEyb8FGMMzYHeuH7Dm6+/RX/xu3IxltUDbduWtnfSJgAvyp12LH92
+RPZzv3w55GqQTl5e/iuvvPaHP/yloCBP16koKoJh4KHjUOZ9fNERGDGOM5BYU8XKVp/XX1CQv3Ll
+mmPHjqelpyQmJIaMOIRQSmoq6OrB1V+T7JFew8RtupRtc0AURCUhf88A74X3P/4bIYReveYCgKVL
+l097YvrBw7kCFkTZSlgW6ZoZFauNmcivWUTOHsc1NdroiaTwGDJ0huN4TsS6mX/q6Kpl38QnJGRl
+ZV7LaMDgwbkbcmrOlqi97zPVQBsOszZ20jrhYty14t6cmW++znLctXRmzfrs2aenVxlE6jsKJXSh
+agC8HuT3GX3vw+fO4NoL1NKJlJ9FtZV6n/7I70VeN9VU1DlZvHdEnUlefOH5jz+eBU1cGARP1jB+
+5/0/oyM7Es6dMPi23A9pyx5EAXGi6F48a/KwrBdevmpwBdvz5ZcLfv3KK0baAPaxaaZFMdKyjPQs
+AIrrq/XBY9hj+7DHBYRBpg4IG70ySOFRPXuUOmq82aO3GRlNBj0AtdWbVyxO7Nxl4IDskH4UHx9f
+ecG+96s5McPGOIHF1GyTRrWdk6YUlAgxdxNaN2/Hj7mpaakh3Sc3d//48RNcDifzzKvkyB5y6ghY
+IoyuqXrWMGqxgq4LCz4ClgOWg4AfMPa/+AYENOR2MEf3EdtZ8DRqgx+m3VOM5Z/yUsT69atGj/5J
+SBVl5eeH9MuOGDDMMfU3Xre7TZxRWw0xavKipbq8dtk/x016PDUttek1hJDb7X7jjd85HA0yL1NN
+RZqKGB4MSoqOC0s+IeeKjLTe2ojxYFLkdgDG2qhHjJ79yJl8YdlnpOQUAEKYRZoKuiERwet1v/32
+uw6HI6QTdeuaPOnpp09v/zb+xC4kKdAWpyBtA8jEjITMwNJ/Gqp/ylNT4ZpgvGjRktzcvZIcTbUA
+rrMbPdKorgMhIMqAMHh87Pc51GIN/Ox5o2uvwJQZFAGz41twOQBxIEqAEFAwk3vgynMAIMuRBw/u
+mzNnXtMqgjVOmfI4ZqTKpbM7Ndh0Xrx1Z9QGgCgAI0n81pU1hQcy+mQOHnRf06sIIafTOXfuQgQs
+wRhYjhTlGT3SqWIBVQVNo1Sj0bGktJDPmQdup/edT5CtRNi8mLEV0dhOlAZA10BVzZhOZnwiKTpG
+OR4hhBC/cOFil8sVsjQZcf/wfpn9axvsdOWcOKTr+FZnwrc8k6YUZItScLB+4yoKTL9+90ZFRYUU
+2fHDzry8PEGUKKXAcsRWhCtK9ezh7N7NZnwSSF3N5G7I3ehK7grZQ+B0vnr/WFVTOWu0mdTd6J6B
+vV5cV6kOGEaKTuD6SqrEAFBRlAsLz3y9dPnDYx/0en2maZimaRgmwzBJSYlHj0i2YwdTdqx2jZ2m
+uV23EvVvFZDJCYqjxrtitmoCAJPdPwuajK/gr7ply1bDUAlRkN9HAYwuvcDQ1YnTjR6pSAsAALVE
+BkaMuwfw9L27erk9p6KjFj40uUIzsR4whowxMFDBovfJ5NYvMxJ64poLgDEWRJ4Xfvv279/74we6
+rgOYpmmaJgUEhg6SZDENvXzD6phuGfZ7shmf66Y3Hm8JEEWYJ5iumuuqukCkCBKg96T0CinjD/hP
+niwAIMjn1VPu1QeOBI7DZwuZ3RtpQjK/5B+g6+5X3x3ics1b/U0Ph8vguJ+pgYlHD09/8ukij5tf
+NotKsb6XfstuzQGGVX/6FPK6mf07yLliIsk+X8Dt9iIEwfYHXTZDGEwwYVmfV3Uun9vpP96vZhWi
+q+0ACMuKsOOb2sN7WSVS13WO46JjQsdXbU2t7XwlAUMd9ojepz+3fzspzgOfF1HD/9Sv9AEjjQa7
+2Ln7O1/O7eHx11qtlFIkCJlO92+3fvfiM89pXe6BtP64rJjbtAQQz8qKnpGljZ8CB3YyR/exgsiy
+LTSBUlaSGyvPJ37zRfT0/6wzMHNTM6ObddKUUlEWS/Ic6xYjQQGEKKUcJ4iCGFKwoaGhwV6FktKN
+tH7CV7PIiR8BEChWKshczhJ9wP3as79JLDndu77RKfBAaXDZ7uD5wfXunjabf8Y7RrdUfuNSkCJB
+toBpsgd38ss/1waOMGI7gaZd30hOjjiduzt6T44gyzcXz24SkMlyot+tLv9CVTXMssGNLI5jOC70
+SM/vV1XVCA4CRBECdCX0UgBqgm5QQMCQkFmLBqaGEWAEGAfDPCC4OLWhqJXhG2MweeX8umVdyvJN
+Qb6JqH8zgCggluNg7UJ3eQkjWy7Nx5CqaqoaOtR5gWMlGdvOMIXH/c+9pvcdBAgjtwP8bvWxp5lD
+O9mvPrGnpBVHWiL9fgooeGZoDfh/jI4o79xZ+Px9XFqojn8S+RqQ20EZRhs0OvDEy8yB7aTWDi3k
+zVwxlQLHcQ6f6lg6OyHg0MkN54fcuA+igBRFOPB9w+4tRL5yQIoxVtWA3+8PKR4VFRUZE+l0ueS9
+36PqSn3gCG3g/aS0mEbFQWQsk3eACQTcFefefXj8vNWr72l0GAzLaerR2NiPHhxPS0uYC2epuzHw
+/JuBR59FumYk9UIeN7dpJS47TSWlVfZSystKxbmzKev/ZZn6qser4RuZYd8oIEoFSao86141H3gR
+YXwFEEIBVa2rrw+5IS4uLjmp87mzpWCJYEpOkZJTNCZe6z9MHzaWHNsTmPwrAB2L0kFemPTvrzyZ
+u7u7y1sSGbl00LByvwPzUYFpb4CJwN2o/eRRbuNKbv0SXGsHjEGyIARer88wQn4SyjCi2CTdMWg1
+K0WU/bC1R490333jqOcGZkY3BogSljd1bfnsgNvNKtar1ooYGYZ2urgk5BaB5/v0zti9aycFCoII
+FLC9DKFh3Jr57L7vzPgkKolm5FT+xx/OmuZfRo4HvxcEATYu4qMTjMSu7J4NyOdHNRXamMmg+Ym9
+jCrRQW8UCATS01Mys+6llCJAGGNCMM8L+fknDx06yl2dOoIJ0lihevW/EpJTKmK7kYC3lTOjGwBk
+AIoUBWHNnLLiPE6Jbm4jlR49ejz4OXg1uHM8ftzYOXMWGLpBCAFdNZJSjaSe/NLPKSeghlpU5cK2
+clxRbi0+4IuK0cY/wa34UsjdrGWNBl0n54qoYAGGZ47uCUx4zjx5BPm9QBjTpKoaePfdt6dO/XmI
+nTN//fq+fXs47upEfQoczzc4nOKy2ZH/9vtGwhJDb02rW+ukKQUiKxGHt1Zt+ZaRIpoLBwgh7sSJ
+vPqG0FE26icj7r23t8/nRQghTTUy+uHSYuxxAcsBxwFicV2t0SvDP+ElYHnpzzNpYnLg0efM5F6o
+1g6IA4YDjsf1Ndh+Xk/pizQVEPL5PBkZ6Q8++EBIXS6Xa/euvQg1kzlMKeUVa1VRvvT9UkEUaet6
+UCsBUYMXO9nP1qxaqHICJs0m5VJBEIuLzxw4cDDErIiIiBkzngdQTcOgLGdGdyLnioBhwTCQ1wPU
+BIuijXkMNTbw674iFef5VfOoYapjJlCLFaiK/F6gFBDC5WdpQjJQSk1Kqf+FF6ZFR0fTJgKAgwcP
+FxcXB49tmzWSSBEXtuREn9hNJaU1Ub9VgAzMxoCqLv+ivsHB8UJL+yyEYE3zfbP6W7h6SxQAnntu
+2pAhwz3eRgQICAsMC5ofMNYy+geefMVI6kmKCtg9mwEzVLYApezOTbg4z+jZ2//0q3pKb6AAhp+K
+ArAcQsjjaczKGjRjxi+aVhGscc3aHL/f3eL0GgBj7EeMY8WXSQ3ndS50WttMo8JuuZrBdO/Ni8/v
++4FTIsIUNpCtovLxSY9FR1+15uB5vndG2oqVa31eB0c47f6xZvd7jD4DaXQn5uSP3Na1Rnomcjuw
+ox4YBqkBI60f8Aq/7DNgRT1rmN4ny0jLNHtlsAd2+attkqIsWPhFRkZ6yI6izWZ7683/8XgCLeUV
+X2wzy7obG5T6C0z2cB9F14/64QBRCrK1U8G+iqXzTEEOnkxdRwzL1NdXSbLlwTGjm3YihFBy1+To
+6Kic9d9BlY2vOo+cDubUMebIHlJbjXTDjOlkJiaTwuPAC8jvV0eMJbZSUlGG7Tam4AiuuYCcTu7w
+HrWsWAc6a9bfpkyZHFI1QmjWJ/9Yt3aNLIdPGiEc31BeEidyanq2qarX8UZhABmcEOeyu+b9ze1X
+Gb5VmYGU4lMFhY888nB8fFxIAwYOzLZalS1bt2uOOsHRCAE/cCwwHGCMG2v14WPxuSLcYNO7putZ
+Q7jtOYAJcDxgglxOUmv3OusNhD788M+vvTYTrt60RAidPn3mlZlv+L0qE256fVGYDRTnR/ZK9cYn
+I11tKepfD5CJiYVBZMknVSXFvGxp5TqGZdmGBrvdXjv554+H9DiE0NChQ3r27L5//8E6Ry1mREII
+AAWMsbMBCKMNfxgw0keO5/ZvJ7ZzwPMAgDA2KPUEnDGxcZ/P/uSVX/0SrqEDADNnvrY/d48kh3EC
+V1pOSCCgQlmxmD08wIqohfyQFgFRAEZWon9YXbFtA6NEtrLWS3ULJ04ci42LGTxo0LWHfJmZ/R5+
++KELF+ynCgv9fhcAwRgDx5HyEkSQ0Xsge3gPc/IIFWVKqaZpPp/TMPTHHvvpvHmzx40bC82dPs+d
+O//DDz8SRWurEq8v28ly3rqqKHcd7j9MNcxmV8AtHPtQakpKp9LjNZ++F0AsYW5swo0Q8vl8siys
+WbN89OhRLaUt5ORsmL9g0c6d+xrqawAoAAYIXPrAAxgAKCoqZsTIoc9Of2bSpAnkUupnyNN27do9
+YeJUj8srStKNZh5RSqmnsdtTM+yjJhtu57V0mwdkMFyU5tY/eae2soqXbuYtEoSQy+Xs3Dlh3brl
+AwcODM6rQwoEP+Tl5efm/pi7/6DtvM3lcqqqyrKsxWLpkpQ0eNCA4cOHZGZmXm7MtU/Iy8ufOHFK
+aWm5xWK9CTsBQNc0haFxr/7B1iWD+D0hzqgZQCbCgihIiz+u3LeDt0TdSjaYy9XYvXu3r5cuHDpk
+CLSQH3T5s6ZpPr8vuCIRBKHp1lJLNx46dPiZaS8UFxVbbs1Ov9uV2K0r+fWfaojEXL0524wPQrIl
+ev9G+/oVpNUOryXxvFhdbc9Zv7lXrx4ZGenNJo1dtpIQwvO8KIo8zzc7mpoWBoA1a9ZNn/5S2bky
+RYm6xfMvhucd1ZVxmsfMHKrqelMrQwBRU5CjKooaFvyfilnS/JLixsTzYmODY/XqNW6Pa/Dg+wRB
+uA6msAqefzmdzg8++Otrr73tcDgtlmYXhjf+ZEZwni5IjI9xd+9DVfWyjVcBMghnNVVj4V8d1TWc
+KN16rUHxPG+asHvXjm3bdsbHx6WlpV4nC7F565uU37hx08svz1y8eDEhvHTjXvk6VeiAzTP58fdm
+Oaxx2NCCzugKIBOQReLltfOqDudyStv8LJfFMAzLiufOla5ete7AgYOiJHTp3Jnn+ZayNq/93u12
+b9ny3Vtvv/On9z4sLy+X5UiWZdv2HUSGYTxOl2QvEwbc70FMMD/kkpOmFGRrwpFtlfM+1kVL2CXF
+zQkhpGma3+/GmMvM7PPIo+NGjry/7729OyV0wi1k2tvt9oKCUzt37d28acuhQ8dMUxUES5ujaWqj
+5q7vNf7x2okz/G4PBnoREGV5sbE68Pff+dwepsW9grayAQzd8Pm9ABrLSN27d0tN65GQkJCUlBRh
+jRAEXlU1h9Nps9kuVFYWFpWUl51XNQ8AIwgyQ5jb/bKYYRis6k2e8UZ5v1HY52EAABAiiKpr5/sa
+qxghEozrHja1hQggRRABBMMwS86cPn0mHy4e6zQVBUAYeI7hFN4CCAFQMG7ygPSGbAuYUL/ii9Qu
+Xc9EJKHIj9YCQtjQif08EHK7X565Vujin6syzNHFWH75JOxOi2qBiNi4ejGSAQCg1MTE6Jp28Vfq
+EAAAsmsqYxpXFlnBRIsOXVbQ+7T7Pze529UBKIw6AIVRB6Aw6gAURh2AwqgDUBh1AAqjDkBh1AEo
+jDoAhVEHoDDqABRGHYDCqANQGHUACqMOQGHUASiMOgCFUQegMOoAFEb/D8BjsY45dvdhAAAAAElF
+TkSuQmCC
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/buddy_offline.png
+
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABH0lEQVR4AWP4//8/RXgQGhAcHMwe
+EhJiCsThQJwCpU1B4gQN8Pf3Zw8MDPSfO3fu/Bs3bjx+9OjRr+vXrz+ePXv2fJA4SB6vAT4+PuYz
+ZsxYANT099y5c/9h+OrVq38nT568ACSP1wB3d/fYkydPPjlw4MD//fv3/9+5c+f/LVu2/N+0adP/
+bdu2PQHJ4zXA0dEx59SpU79AmlasWPV/6dJlcLx69ZpfIHm8BlhZWSVu2bL96erVG/+j44ULlz0F
+yeM1wNjY2Ka0tGL5li37/m7atOc/DG/cuOdvXl7xcpA8XgMMDAw4NDU1Y7Kzi1YvX771+datR34v
+X77leVZW4WqQOEieYDqQk5PjFBIScgHiQiBuhNIuIHGKU+IwNQAARQC7QUXY/ycAAAAASUVORK5C
+YII=
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/default_avatar.png
+
+iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAAAAABVicqIAAADp0lEQVR4Ae3X1YLqOACA4X3/66Mw
+HcE7OIw77u7u3jYdFyDZc7cW0hmSdf4X+CrRn+S/oA2yQTbIBtkgG2TdNojUK/qP7PyP7Kfh2ujP
+QEDpwmS0e7K1TqeaujIbzMEea0QoOb5YY/3bOUQ/gq9i63qX8wwAS2TsUZsrL0v0q+YgwPElhsjw
+SB14QL9v0bFwRcAKmTjU2Vf0x6Bs5XKADSJ6v1UgwiY7tEM2SEblWyB8cKQ6Elggwr77Aa0KZrki
+CyT7uY1Wd291TekRweFcEBBY5Or0SGO3ikg9Grz0SMwEiAj0mSRaRDw/e0XEeuouLTK2xSEZudPl
+aZGhuYHIvThjtEjfOETk3s69tEjPJCJyC78H0CK8pIQE/y2IoIQEqJG+qYvIza+8tMjIUlAawodh
+mRKZHQaXZOTJnKFFpJvTFzIi71VpETluuyMjHW5IjZR5kYykeIka6WjaRAOenDLYGffjRORZn6BH
+5PMTIjLaazBAEpo5CSmaBgyQ9tcZwVgG3FMGyFSTI/2SoxuJASIdnhG+l2xJyQwQENONVyPlnRoL
+RG7rVy9fC4dTZIJINyoB4YONLzlG95Ph7skLHrmzW2aMEDnOlbEfbJnk8jIrZOzU3+KQyfczgRki
+N7k2xpifaUYyO0Taj2IQYIgxvcdfXmCQId9iikRc8I9Iy9JjimQsmOFVdQyZIkXrHxFYcE2YIkkc
+kjuYskSk42OIWRytfYYIKG1lcBc5TXTKCBGHGfe25RaDPJ1zxqv6FFAjw8wJp3IXAESYHvsR41eD
+rylQIaMIv+dK3ULCmX7gNWiOGtK6iFC7+a666DxBRGwhZPWfLdkhWAMRyye7ptDDEikHXxvOHUt0
+/FFknLd9t6RkDIHvuXG+pfH0xQ8g06xly15/xBCEt5kEuL3rFngnApoOztl8RR9ODOv2QpN3IUJY
+pas+onVaTK++WvvvQYLqywe0brDBuYbKSPHz9RNav2WR8wAlZOq0viCa5gGdoITUtWWIqJp87Soh
+SV5CdM13CgoIuDl+Q5TZwgqI5A5BWuTyRAER+SKiLWUWyMhsp0ONtHQ9MjL4DqiRqalGRmrqN2pE
+tmbISNIIqZEndwAQEd8xom7uORVICDj00SMwaZuQEMGcQ/Q1+CEJ6etbiL7xXpuENEwTRN+TJk9C
+8hYJ0be0BwiIFHA+IAZ5XOJqZHzseWOBFPVdsBLpubNLFsjYUJZWIyd1yAJ5cFYIyGH8hQUys/7m
+TX4Gk2P4GuXXH+8AAAAASUVORK5CYII=
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/nav_bit.png
+
+iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAHUlEQVR4AWPAA/4z0AEMvM2jNuOj
+lZWV6eqyUQAABI4JYTpmd24AAAAASUVORK5CYII=
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/arrow_down.png
+
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA6ElEQVR4AWP4//8/RXi4GGA7+5mx
+/dwXZ0jBID1wA6ymPxK1mHJ/XebeD88m3fv3v+vaHxTceRWC+279/Z+26/0zkFqQHhQvGPfdFNVr
+v7QueeuLZ/Wnv/9PXv/qf+TSB//9Z1/77zn14v+ENXf/By+9/wykBqQWaxhoNpwWVa48vC546Z1n
+sZse/7eeehmMg1be/+8669ozkBxIDd5AlC3cIyqRtXWd+fRrz8y2fPxvsPHDf91JV56BxEByRMWC
+UPI6Ud6Y5eskey8/k+i5/AzEBomRFI2coQtEWQNmrwNhEJuG6WDUAACYNtVVIYFZNQAAAABJRU5E
+rkJggg==
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/mohpcf18.png
+
+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
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/showthread_sprite.png
+
+iVBORw0KGgoAAAANSUhEUgAAABAAAABkCAMAAAC4nkCEAAACMVBMVEUAAABEbGtsbGwMISELCwtr
+QyBgOxtOLhMkIBxJSUlhYWFcaGgKCgo/Pz9VVVU9Y2IyGgcoSEc0WFcvLy8OHR0XMDAYIwgNDQ09
+PT0PaQweGCJBCwNEbGwThhGIAAd4eHkRhg4MXQhlZWUyMjJtbW1rQyA7Ozs/Pz9hAAa8vLyXl6YL
+WAednZ19fISTAARvAAPx8fH////7/f3Q0ND39/fk5OTt7e3T5OT479+Tk5NHR0fU1NTx+Pjq6urv
+5tHCwsK6urrbzbl9fX00NDv2+/vz8/Pe8fHS0tLVyLSlpaV0dIViYmLY6OeqqqptbW3q8/Pb6+rM
+4N/o3sofhsG9vb21tbWxsbGtra08PEhCQkUsLC/b8PDn7+7k7u3g4ODY2Ni+0dEpldHLy8vHx8ez
+x8bd0r/DtqJqampVVVd1wjLQ4eDd3d1MTEzyRUw850Eppi5lsCbTAB36+vrs+fnm9fXf5+c2qOXb
+5OTU39/L2dktnNglkMvh2MStrMGovLvXzrrQwq6Yq6rKvKlcXFyAzjtuuy18Gx9XnB4eHh7Nzc2h
+tLSSpKSBlJM9l2gwgFgsbk0zMzQljSnfBh+XFx6wAA2dAAtIwP/98uWurrlAkrgcfbeioayMn55z
+a4hrXHn8XWM3jGBR7lqd71M+oETqGTQp4CgklijAFiimHyZLiBfJABe8AA+Nuf89f/+WvMw0YJcm
+VHRmT21hRmRTv1tb/1Q/kkOI10J8sUCHOTyeODw/dhFi7CS1AAAAMHRSTlMAZ2aGd2dufHRraCSI
+bWlqknVvbmR/tVlG8bW1TeLioJmZf1hNTSkU8Onp1cXFmZnViBysAAAC/UlEQVQ4y9XQ91dSYRzH
+8a+VikqBK1d72e7CBRVBwQ0KCuIIARUFArXAvWeae+80Tc2V7V1/Xd8H8Ebn9Kt1eh3OHe/znHs4
+H0BnfFyC4JBPfaZerx/BwgR1vEbTy2MKR2JQV2nGxsbCmZBnIGf0HCAiA9g5HuyASIDYS0Jb7gOX
+XFv1pVi4dp5OzLHV6KZKStISi89fg8jbBVO2tBIibWrlTiRcvlE0pEtzG/p08zKEqkRDuvtuQyJF
+KLAKV2zZHrbOThawlpYSGSSEsdls3utXbybfvU3HxzBA4TzER4d/Pey4Rxj8NTi5tzPg02XgMQxd
+PsAxdBn5HsYuAwc4/MaRxnQXfOBzICRd0tzbLEHklh4CIZK8vJbeFryM4kWCod5oVJpHW1tHzUqj
+sT4EghvU8eXxraurrXhTNwRjqCqvUirLy5VKfCBBbdbEe2jM6mAINyszCT35Kc3hzFzMaP/KlWOM
+ICCOCSiKShIKS0sL3SUwg4qLSxJWl4kVvMAgEgTFsjhVkUxRJhKJWK6QQR2eKQ3EcEqQKqrQ1eSm
+ClNF0lOuQNMUvj9OkkqFJATUFcky8F0XpyoWBpDAp2n8DH6nojKJhJN8VYGgSCZTUFuOjyddIStL
+kEXTw5Rjw0FCKE9aWFdYULnl2NlwnL1AgjgLD9E7j4izACyxtFisqiz4PD29PR2FJyJOHIrajooA
+bxdvXfxfJ1R4T5jxpwkVFRQzIU0mHMbgNeH3vdnZvXN3XROK+Tjy7EPi3K8Jvz1B1+95T4gi4Ghc
+9f3NVfBdTPCy6At+lhS0rNUuk7vFD/wSkpF2YUFL7gkYUuRI29Q27nR+ladgSM5HT5tM45ubzvxk
+DPKe3YNdEr7YnT1yDPkdB+vr2U2m5/32wY58P/Dv6Zt7MfOsrZ2Evh5/8O/odoeJ/oHB7g4Mfda5
+mdo1d7D2YbDI52tr10zaCfvAvtyCwWqdr3353qSdtDv3rVZ/4Fq6MXwwtU/aB350W7jA4nJjYmKi
+o6NPIy6XBUfhJ3rWHSB3t+onAAAAAElFTkSuQmCC
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://www.hpmuseum.org/forum/css.php?stylesheet%5B0%5D=27&stylesheet%5B1%5D=28
+
+@charset "utf-8";
+
+.star_rating, .star_rating li a:hover, .star_rating .current_rating { backg=
+round: url("images/star_rating.png") left -1000px repeat-x; vertical-align:=
+ middle; }
+
+.star_rating { position: relative; width: 80px; height: 16px; overflow: hid=
+den; list-style: none; margin: 0px; padding: 0px; background-position: left=
+ top; }
+
+td .star_rating { margin: auto; }
+
+.star_rating li { display: inline; }
+
+.star_rating li a, .star_rating .current_rating { position: absolute; text-=
+indent: -1000px; height: 16px; line-height: 16px; outline: none; overflow: =
+hidden; border-width: medium; border-style: none; border-color: currentcolo=
+r; border-image: none; top: 0px; left: 0px; }
+
+.star_rating_notrated li a:hover { background-position: left bottom; }
+
+.star_rating li a.one_star { width: 20%; z-index: 6; }
+
+.star_rating li a.two_stars { width: 40%; z-index: 5; }
+
+.star_rating li a.three_stars { width: 60%; z-index: 4; }
+
+.star_rating li a.four_stars { width: 80%; z-index: 3; }
+
+.star_rating li a.five_stars { width: 100%; z-index: 2; }
+
+.star_rating .current_rating { z-index: 1; background-position: left center=
+; }
+
+.star_rating_success, .success_message { color: rgb(0, 178, 0); font-weight=
+: bold; font-size: 10px; margin-bottom: 10px; }
+
+.inline_rating { background: url("images/star_rating.png") left -1000px rep=
+eat-x; float: left; vertical-align: middle; padding-right: 5px; }
+
+ul.thread_tools, ul.thread_tools li { list-style: none; padding: 0px; margi=
+n: 0px; }
+
+ul.thread_tools li { padding-left: 24px; padding-bottom: 4px; margin-bottom=
+: 3px; font-size: 11px; background-image: url("images/showthread_sprite.png=
+"); background-repeat: no-repeat; }
+
+ul.thread_tools li.printable { background-position: 0px 0px; }
+
+ul.thread_tools li.sendthread { background-position: 0px -20px; }
+
+ul.thread_tools li.subscription_add { background-position: 0px -40px; }
+
+ul.thread_tools li.subscription_remove { background-position: 0px -60px; }
+
+ul.thread_tools li.poll { background-position: 0px -80px; }
+
+.showthread_spinner { width: 100%; margin: 0px auto; display: block; text-a=
+lign: center; padding: 20px; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://www.hpmuseum.org/forum/cache/themes/theme1/css3.css?t=1736563697
+
+@charset "utf-8";
+
+tr td.trow1:first-child, tr td.trow2:first-child, tr td.trow_shaded:first-c=
+hild { border-left: 0px; }
+
+tr td.trow1:last-child, tr td.trow2:last-child, tr td.trow_shaded:last-chil=
+d { border-right: 0px; }
+
+.tborder { border-radius: 7px; }
+
+.tborder tbody tr:last-child > td { border-bottom: 0px; }
+
+.tborder tbody tr:last-child > td:first-child { border-bottom-left-radius: =
+6px; }
+
+.tborder tbody tr:last-child > td:last-child { border-bottom-right-radius: =
+6px; }
+
+.thead { border-top-left-radius: 6px; border-top-right-radius: 6px; }
+
+.thead_collapsed { border-bottom-left-radius: 6px; border-bottom-right-radi=
+us: 6px; }
+
+.thead_left { border-top-right-radius: 0px; }
+
+.thead_right { border-top-left-radius: 0px; }
+
+.tcat_menu { border-radius: 0px !important; }
+
+.tborder tbody:nth-last-child(2) .tcat_collapse_collapsed { border-bottom-l=
+eft-radius: 6px !important; border-bottom-right-radius: 6px !important; }
+
+button, input.button, input.textbox, input.invalid_field, input.valid_field=
+, select, textarea, .editor_control_bar, blockquote, .codeblock, fieldset, =
+.pm_alert, .red_alert, .popup_menu, .postbit_buttons > a, a.button { border=
+-radius: 6px; }
+
+.post.classic .post_author { border-radius: 0px 6px 6px 0px; }
+
+.popup_menu .popup_item_container:first-child .popup_item { border-top-left=
+-radius: 6px; border-top-right-radius: 6px; }
+
+.popup_menu .popup_item_container:last-child .popup_item { border-bottom-le=
+ft-radius: 6px; border-bottom-right-radius: 6px; }
+
+.pagination a { border-radius: 6px; }
+
+.pollbar { border-radius: 3px; }
+
+div.error { border-radius: 6px; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/jump.png
+
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA+ElEQVR4AdSMQ2IDUBRFu7vatrWX
+urFt27btvdzkT2OM8syzAmAhXwLAe/CJ+R56upob8Ox5yBB/ct1czQW4M19nPB0XSL7RX16NBFzI
+T5kXypPMMNeU1bA2zCD1uezkaijgmLOfMVR1kBbEkObFEOeFEOeEEGb5YKUY+I/9Ql6Ugtztc3bW
+BgA7PxsZVUkBQZYHfobbe6LjJ/qJ7lr2Nf4v2pr/P21d0v/GvXX/Qer8+rwwDfBodZnp3upyBhvO
+3pjxv3hrwX8Q26PVOYakQHSstD+TuSHtP4h2qLKNITkWbPKtzoCwbb4VedFonm46E4hxJqRhkJkA
+aJHO6LevCuwAAAAASUVORK5CYII=
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/buttons_sprite.png
+
+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
+nAHWJeKRcA1k63HgXvpYmwAAAABJRU5ErkJggg==
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/buttons_bg.png
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAAeCAIAAABi9+OQAAAALElEQVR4AW1MhQ0AMAgj+//i4R7D
+re0TkQcAm0S0MzOf84UV4e66N0TMfmgYnU4a6Th9zgcAAAAASUVORK5CYII=
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/thead.png
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAAoCAIAAACw1AcgAAAAOklEQVR4AW1LBQHAMAzLZ/wuZ2bM
+ZW4g4I8BwO6W56au+ew2uHrwgZXKNMW7j75JvDE+58fRrsL/oXXpPyFe93mEwAAAAABJRU5ErkJg
+gg==
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/tcat.png
+
+iVBORw0KGgoAAAANSUhEUgAAAAIAAAA8CAIAAADDpPyuAAAASklEQVR4AWLQAQOaUKqAQuTCCEAA
+hqEoG+Du7D8kP+hpqu/Sq4RLEce+M+JPlmWZGSXBOvq+T9gHHl+Kqer6gdFTsBF5ljPiT44TTRYs
+HTyyTLcAAAAASUVORK5CYII=
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.hpmuseum.org/forum/images/headerlinks_sprite.png
+
+iVBORw0KGgoAAAANSUhEUgAAABAAAADECAMAAAChglFqAAACuFBMVEUAAAAWL0c7OztFR0k3PT0j
+KjuGkJ+5yd7Y4u/N1eGjtc+vx+Te5/Q3KRzH2O2rv9sqLCw1LysaGhoODg6bm5sWFRaEiY7n7fcd
+HR4WEROurq8GBgYVAAAPBQVFRUe4uMPMzN4gJiABAQEMAgB9SgN5MQBwMwBdKAB8QwqfaC9YHwDA
+kFASAABACADhs27wwn86KytgUVENAADquXgfAAADAAC7mGYRBwc9GQCLUQT1zYWrhUBcLgZVQwDZ
+pGUnahg4YSd2OQLPoVxmwXlsplwddRt+1pJbrWz7/PxWrEQGQasIQaweY5hvmpri4+MaaxoKQrEQ
+S7JmneF5kbIUWW0ZYQITSwRAecp0p+uIvPpnl9sGN5Jun+NgkNIIM3wHMX8INYgHPJ7UAADRAAB9
+AADIycr2amvDKiyhoae7AADyWVusHiFwCQv3zc3lkpPbxLjrTE7iRkfUNjimAADjREb////1+vru
+9vbn8PDq9PTh6+vk9fXa5+fT5OTe8PCasrC3ubm8vsvV1tUFAABLQUFWhMZqampcisrV6P96n9Fy
+l8mCocuQsNlfX1/T3fbM1fGxxd9PfLzDze1KdrNTgcIEMYhSUlJHcasAG2AAHWJZqD5YqT2o0J5P
+mDeYx4uKv3tFhTBFgTB2tGVfpEk9dCw0YyeZXQGeYgCtbAO0gADfvV7ozXrfw2XatEz724m2jDCS
+ZgiuhQ31yVTrznC6mBGSbQPjuEWDUwqZgAF8TgP0137Tr0/uv0h3NQDIpka0mybGnDlOJwJfNgug
+dB93NgZoRABeOgDWtGBHJAEtHByeYB10WDWEghz15FSZmilsagkpT2Xn4q7+8s08Xl6Hh4cJJgBh
+YWHc3NvAwb+jo6ORkZGBgIWgoK7i4fd5TAWVXQrcvW22kDzWpj7CnlLaq0G4llPPtHNVMhSa8sc5
+AAAA6HRSTlMADjtgaCGStsi3o8DOQMevdWhHGf+Hp9Z9J/9NeImB//+ZM2MZncqe7v/L/6TM///w
+99b/mMP/8rtS///Esv2WXIX88/5s////zjl3wvj/s2mV7/+vvsTN/f//pf//XriwmoKuzP////++
+////////////x////////////////////7L//////////////////////6r//8aVmVz/zP//SMz/
+/8zMLm2Ao+T+/+D/zbvR/efdgP2ayoP8//5I///9BHS0PLIu/KjO1Ob3///svP//a//LkP//29rg
+z/+8mOT////l0//b+u3X0gAABTVJREFUeAHF1GOUI/kagPHnj0pnM0p3JtNpdzBurHfHnrVtDr5e
+rY1P17ZbYxtnW2trrGtbjVTd5D2VrTrzdTG/8H3OG0OBUAVeARrhaGttxGoH2UDpMqUAd8CVDUYa
+ZQCsGSkb2BHDiOG8BOJDoAC01hKURWYGlB/+i9wGzw//jMlMPiaLOPGxyXHRyui4VBVFVfHqZFVN
+bV1tTYIiXd+QrCJQUd+YzhASb0xXEFaVzPKJyY2fMD4HaHymKBSqTLFVIRJ1TXW1zS2trc1ZZCOW
+cBLjcKylHAmpiBtx+B//w0qYpi2W/FB0iH9LwBmwA/9MYKhIIObNnz1/1oKFYxcumLNIWWD/KOPV
+anW252EXarj4TJJEy4gAgzGlrlBKdc/xBqN7ZhNRf+WSG2686eYLb77pxhsuoUjHHYuJGHDiSDDG
+attrddQYPlaZbCa40Nx9z/z58+8pKF7cjUaZEIUmYkMiaEBr40QEYInlJVIUMUDt50JqscA7lDSD
+hXdaKHlbQouipOVdLChFiGZAhwygiYZDFAsoSjywVIYClb+E2qaQWj4iFXV3lVwCCuruRqlf1b3a
+lH9r9zAKng5ezOEfYwH9tkUMn4YErJoCvJ+3+IEpCmh61wM0gIvWBjPFHZRAGeSHiOQBCRsxuI7V
+UYKfhzsyaoxxmS6B06aMwXFcxkwBrCzk9X+tzuO+IhswBqtdC2M82ciDHi5jWAMSAJdBADPtpyio
+rbkLn1rGqfa97xMGF10kJRR+IEWWfyh+8IMf+uWHP/hR0Y9//KMf/gQ0WA1K2XZrLWJOm/j5wra5
+hLT/vF3mIJw0M0fmU6yjs6urs4MiDTDNGGMjZhqAAjqMoxRK/Td/M6Jz0+YtudyWzVs7EWxbu11s
+3IZgx86dO1fv2rp79w5AA/bf/KPCxgb/bRF09/Su3PXcc9t7uimVvv7Ve/v7ugkUA0LjK1MnBe2d
+FFxF2MTVqycS9uLqF0cRNur8UXzUVLapKasIZF8644yXsgSePv2ZZ05/msCZ57a2nntm8FrmORas
+My/4iTn/tPx7FIHxs1taZo8nsOfl2bNf3gN99/Qh1ITJkyconJ6ln9EAF1/cnky2XzzX27ztYsC5
+8qqbrmlpuebxV19LZlBcXBbRqJ1Me9LT6qGtmkrleHD2nsc977GnKrF4McBM/Mto78kxeGhcY6La
+Xp/QNmGMS8l5s/r4SM257gNzsMA3fkZAQ3Zd+x1UCQTvfO5C3+eu8ze+wGLxjr9x4X2+C/2Nt2+n
+SqCQjfvu9913PbLRdhspgcDe96CvsGEhe8d3drZVU/RrsHDkS8va+E34mX7657fqaoEgGTzKe1hg
+5B2UXMonSlurw1PC3ne/TZSafv/y+vLLLy+vv/x9KZTv27/vwL59B57av69cQqJ+yZKn9u17asmS
++gTAqHj84JKD6XThLB4fBcT3Vz+xJAnJJU9U74+jiXYBRo50RYGKVOrQksOp1OElh1KpCgAn2VDd
+eORIY3VD0qEo2bC84dCTTx4qXCRBQ0RX6ekwvXARQdTUVdU1NhbOahBIk+njdvQoYdO6jh3tnxaa
+ezeteuGF9UHZcbz1hRNb12yhZNvOlqkzfrHxGIAGuvnX2O0cZX+3H+5BMOkeP/xkJM/SQexXT/nh
+c39C/OnrEuiOnvGFZcDgOU90SzD33fxvgKb9rgHIzTu+du2qF3YV/rZ/NS8H9Px61W/OPXfGjBkn
+9m5d1wOUvzjzt7/97doZhbOZL5YD3YmqTCZ7/vnZTCaT6C4GlfiA6ub/2hSg8+GlPKUAAAAASUVO
+RK5CYII=
+
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://www.hpmuseum.org/forum/cache/themes/theme2/global.css?t=1736981080
+
+@charset "utf-8";
+
+body { background: rgb(255, 255, 255); color: rgb(51, 51, 51); text-align: =
+center; line-height: 1.4; margin: 0px; font-family: "MoHPC Sans", Arial, "H=
+elvetica Neue", Helvetica, sans-serif; font-size: 15px; overflow-y: scroll;=
+ }
+
+a:link { color: rgb(0, 114, 188); text-decoration: none; }
+
+a:visited { color: rgb(0, 114, 188); text-decoration: none; }
+
+a:hover, a:active { color: rgb(0, 114, 188); text-decoration: underline; }
+
+#container { color: rgb(51, 51, 51); text-align: left; line-height: 1.4; ma=
+rgin: 0px; font-family: "MoHPC Sans", Arial, "Helvetica Neue", Helvetica, s=
+ans-serif; font-size: 15px; min-width: 810px; }
+
+.wrapper { width: 92%; min-width: 790px; max-width: 1340px; margin: auto; }
+
+#logo { background: rgb(255, 255, 255); padding: 10px 0px; border-bottom: 1=
+px solid rgb(38, 60, 48); }
+
+#content { background: rgb(255, 255, 255); padding: 20px 10px; overflow: hi=
+dden; width: auto !important; }
+
+#header ul.menu { margin: 0px; padding: 0px; list-style: none; }
+
+#header ul.menu li { margin: 0px 7px; display: inline; }
+
+#header ul.menu li a { padding-left: 20px; background-image: url("../../../=
+images/headerlinks_sprite.png"); background-repeat: no-repeat; display: inl=
+ine-block; line-height: 16px; }
+
+#logo ul.top_links { font-weight: bold; text-align: right; margin: -10px 5p=
+x 0px 0px; }
+
+#logo ul.top_links a.search { background-position: 0px 0px; }
+
+#logo ul.top_links a.memberlist { background-position: 0px -20px; }
+
+#logo ul.top_links a.calendar { background-position: 0px -40px; }
+
+#logo ul.top_links a.help { background-position: 0px -60px; }
+
+#logo ul.top_links a.portal { background-position: 0px -180px; }
+
+#panel .upper a.logout { font-weight: bold; background: url("../../../image=
+s/headerlinks_sprite.png") right -80px no-repeat; padding-right: 20px; marg=
+in-left: 10px; }
+
+#panel .upper a.login, #panel .upper a.lost_password { background: url("../=
+../../images/headerlinks_sprite.png") 0px -100px no-repeat; padding-left: 2=
+0px; margin-left: 10px; font-weight: bold; }
+
+#panel .upper a.register { background: url("../../../images/headerlinks_spr=
+ite.png") right -80px no-repeat; padding-right: 20px; margin-left: 10px; fo=
+nt-weight: bold; }
+
+#panel .lower ul.panel_links { float: left; }
+
+#panel .lower ul.panel_links a.usercp { background-position: 0px -120px; }
+
+#panel .lower ul.panel_links a.modcp { background-position: 0px -140px; }
+
+#panel .lower ul.panel_links a.admincp { background-position: 0px -160px; }
+
+#panel .lower ul.user_links { float: right; }
+
+#panel .lower ul.user_links li a { padding: 0px; background-image: none; }
+
+#panel .upper { background: url("../../../images/tcat.png") repeat-x rgb(15=
+, 15, 15); color: rgb(255, 255, 255); border-top: 1px solid rgb(68, 68, 68)=
+; border-bottom: 1px solid rgb(0, 0, 0); padding: 7px; clear: both; }
+
+#panel .upper a:link, #panel .upper a:visited, #panel .upper a:hover, #pane=
+l .upper a:active { color: rgb(255, 255, 255); }
+
+#panel .lower { background: rgb(239, 239, 239); color: rgb(153, 153, 153); =
+border-top: 1px solid rgb(255, 255, 255); border-bottom: 1px solid rgb(204,=
+ 204, 204); padding: 5px; }
+
+#panel .lower a:link, #panel .lower a:visited, #panel .lower a:hover, #pane=
+l .lower a:active { color: rgb(102, 102, 102); }
+
+#search { border: 0px; padding: 0px; margin: 0px; float: right; vertical-al=
+ign: middle; }
+
+#search input.button, #search input.textbox { border-color: rgb(0, 0, 0); }
+
+#search input.button { background: url("../../../images/thead.png") left to=
+p repeat-x rgb(0, 102, 162); color: rgb(255, 255, 255); }
+
+#search input { margin: -3px 0px; }
+
+#quick_login .remember_me input { vertical-align: middle; margin: -3px 0px =
+0px 5px; }
+
+#footer { clear: both; }
+
+#footer ul.menu { margin: 0px; padding: 0px; list-style: none; }
+
+#footer ul.menu li { margin: 0px 5px; display: inline; }
+
+#footer .upper { background: rgb(239, 239, 239); border-top: 1px solid rgb(=
+187, 187, 187); border-bottom: 1px solid rgb(187, 187, 187); padding: 6px; =
+font-size: 12px; overflow: hidden; }
+
+#footer a:link, #footer a:visited, #footer a:hover, #footer a:active { colo=
+r: rgb(119, 119, 119); }
+
+#footer .upper .language { float: right; margin: -1px -1px -1px 15px; }
+
+#footer .upper .language select { border-color: rgb(204, 204, 204); }
+
+#footer .upper .theme { float: right; margin: -1px -1px -1px 15px; }
+
+#footer .upper .theme select { border-color: rgb(204, 204, 204); }
+
+#footer .upper ul.bottom_links { float: left; margin: 4px 0px 0px; }
+
+#footer .lower { color: rgb(102, 102, 102); padding: 6px 6px 12px; overflow=
+: hidden; font-size: 11px; }
+
+#footer .lower a:link, #footer .lower a:visited { color: rgb(68, 68, 68); f=
+ont-weight: bold; }
+
+#footer .lower a:hover, #footer .lower a:active { color: rgb(51, 51, 51); t=
+ext-decoration: underline; font-weight: bold; }
+
+#footer .lower #current_time { float: right; color: rgb(136, 136, 136); }
+
+#debug { float: right; text-align: right; margin-top: 20px; font-size: 11px=
+; }
+
+.scaleimages img { max-width: 100%; }
+
+.forum_status { height: 30px; width: 30px; background: url("../../../images=
+/forum_icon_sprite.png") 0px 0px no-repeat; display: inline-block; }
+
+.forum_on { background-position: 0px 0px; }
+
+.forum_off { background-position: 0px -30px; }
+
+.forum_offclose { background-position: 0px -60px; }
+
+.forum_offlink { background-position: 0px -90px; }
+
+.subforumicon { height: 10px; width: 10px; display: inline-block; margin: 0=
+px 5px; background: url("../../../images/mini_status_sprite.png") 0px 0px n=
+o-repeat; }
+
+.subforum_minion { background-position: 0px 0px; }
+
+.subforum_minioff { background-position: 0px -10px; }
+
+.subforum_minioffclose { background-position: 0px -20px; }
+
+.subforum_miniofflink { background-position: 0px -30px; }
+
+table { color: rgb(51, 51, 51); font-size: 15px; }
+
+.tborder { background: rgb(255, 255, 255); width: 100%; margin: auto; borde=
+r: 1px solid rgb(204, 204, 204); padding: 1px; }
+
+.tfixed { table-layout: fixed; overflow-wrap: break-word; }
+
+.thead { background: url("../../../images/thead.png") left top repeat-x rgb=
+(0, 102, 162); color: rgb(255, 255, 255); border-bottom: 1px solid rgb(38, =
+60, 48); padding: 8px; }
+
+.thead a:link { color: rgb(255, 255, 255); text-decoration: none; }
+
+.thead a:visited { color: rgb(255, 255, 255); text-decoration: none; }
+
+.thead a:hover, .thead a:active { color: rgb(255, 255, 255); text-decoratio=
+n: underline; }
+
+.tcat { background: url("../../../images/tcat.png") repeat-x rgb(15, 15, 15=
+); color: rgb(255, 255, 255); border-top: 1px solid rgb(68, 68, 68); border=
+-bottom: 1px solid rgb(0, 0, 0); padding: 6px; font-size: 12px; }
+
+.tcat a:link { color: rgb(255, 255, 255); }
+
+.tcat a:visited { color: rgb(255, 255, 255); }
+
+.tcat a:hover, .tcat a:active { color: rgb(255, 255, 255); }
+
+.trow1 { background: rgb(245, 245, 245); border-width: 1px; border-style: s=
+olid; border-image: none; border-color: rgb(255, 255, 255) rgb(221, 221, 22=
+1) rgb(221, 221, 221) rgb(255, 255, 255); }
+
+.trow2 { background: rgb(239, 239, 239); border-width: 1px; border-style: s=
+olid; border-image: none; border-color: rgb(255, 255, 255) rgb(221, 221, 22=
+1) rgb(221, 221, 221) rgb(255, 255, 255); }
+
+.trow_shaded { background: rgb(255, 221, 224); border-width: 1px; border-st=
+yle: solid; border-image: none; border-color: rgb(255, 255, 255) rgb(255, 1=
+84, 190) rgb(255, 184, 190) rgb(255, 255, 255); }
+
+.no_bottom_border { border-bottom: 0px; }
+
+.post.unapproved_post { background: rgb(255, 221, 224); }
+
+.thread_start_datetime { color: rgb(153, 153, 153); }
+
+.post.unapproved_post .post_author { border-bottom-color: rgb(255, 184, 190=
+); }
+
+.post.classic.unapproved_post .post_author { border-color: rgb(255, 184, 19=
+0); }
+
+.post.unapproved_post .post_controls { border-top-color: rgb(255, 184, 190)=
+; }
+
+.trow_deleted, .post.deleted_post { background: rgb(232, 222, 255); }
+
+.trow_selected, tr.trow_selected td { background: rgb(255, 251, 217); color=
+: rgb(51, 51, 51); border-right-color: rgb(247, 232, 106); border-bottom-co=
+lor: rgb(247, 232, 106); }
+
+.trow_selected a:link, .trow_selected a:visited, .trow_selected a:hover, .t=
+row_selected a:active { color: rgb(51, 51, 51); }
+
+.trow_sep { background: rgb(221, 221, 221); color: rgb(51, 51, 51); border-=
+bottom: 1px solid rgb(197, 197, 197); padding: 6px; font-size: 13px; font-w=
+eight: bold; }
+
+.tfoot { border-top: 1px solid rgb(255, 255, 255); padding: 6px; background=
+: rgb(221, 221, 221); color: rgb(102, 102, 102); }
+
+.tfoot a:link { color: rgb(68, 68, 68); text-decoration: none; }
+
+.tfoot a:visited { color: rgb(68, 68, 68); text-decoration: none; }
+
+.tfoot a:hover, .tfoot a:active { color: rgb(68, 68, 68); text-decoration: =
+underline; }
+
+.thead input.textbox, .thead select { border: 1px solid rgb(38, 60, 48); }
+
+.bottommenu { background: rgb(239, 239, 239); color: rgb(51, 51, 51); borde=
+r: 1px solid rgb(72, 116, 163); padding: 10px; }
+
+.navigation { color: rgb(51, 51, 51); font-size: 15px; }
+
+.navigation a:link { text-decoration: none; }
+
+.navigation a:visited { text-decoration: none; }
+
+.navigation a:hover, .navigation a:active { text-decoration: underline; }
+
+.navigation .active { color: rgb(51, 51, 51); font-size: small; font-weight=
+: bold; }
+
+.smalltext { font-size: 13px; }
+
+.largetext { font-size: 17px; font-weight: bold; }
+
+fieldset { padding: 12px; border: 1px solid rgb(221, 221, 221); margin: 0px=
+; }
+
+fieldset.trow1, fieldset.trow2 { border-color: rgb(187, 187, 187); }
+
+fieldset.align_right { text-align: right; }
+
+input.textbox { background: rgb(255, 255, 255); color: rgb(51, 51, 51); bor=
+der: 1px solid rgb(204, 204, 204); padding: 3px; outline: 0px; font-size: 1=
+5px; font-family: "MoHPC Sans", Arial, "Helvetica Neue", Helvetica, sans-se=
+rif; }
+
+input.textbox.portal_search { width: 68%; }
+
+textarea { background: rgb(255, 255, 255); color: rgb(51, 51, 51); border: =
+1px solid rgb(204, 204, 204); padding: 2px; line-height: 1.4; outline: 0px;=
+ font-family: "MoHPC Sans", Arial, "Helvetica Neue", Helvetica, sans-serif;=
+ font-size: 15px; }
+
+select { background: rgb(255, 255, 255); padding: 3px; border: 1px solid rg=
+b(204, 204, 204); outline: 0px; font-family: "MoHPC Sans", Arial, "Helvetic=
+a Neue", Helvetica, sans-serif; font-size: 15px; }
+
+button, input.button { padding: 3px 8px; cursor: pointer; font-family: "MoH=
+PC Sans", Arial, "Helvetica Neue", Helvetica, sans-serif; font-size: 15px; =
+background: url("../../../images/buttons_bg.png") repeat-x rgb(238, 238, 23=
+8); border: 1px solid rgb(187, 187, 187); color: rgb(51, 51, 51); outline: =
+0px; }
+
+button:hover, input.button:hover { border-color: rgb(170, 170, 170); }
+
+form { margin: 0px; padding: 0px; }
+
+input.error, textarea.error, select.error { border: 1px solid rgb(255, 51, =
+0); color: rgb(255, 51, 0); }
+
+input.valid, textarea.valid, select.valid { border: 1px solid rgb(0, 204, 0=
+); }
+
+label.error { color: rgb(255, 51, 0); margin: 5px; padding: 0px; display: b=
+lock; font-weight: bold; font-size: 11px; }
+
+form #message { width: 500px; }
+
+.editor { background: rgb(241, 241, 241); border: 1px solid rgb(204, 204, 2=
+04); }
+
+.editor_control_bar { background: rgb(255, 255, 255); border: 1px solid rgb=
+(204, 204, 204); }
+
+.post .editor_control_bar { background: rgb(245, 245, 245); }
+
+.popup_menu { background: rgb(255, 255, 255); border: 1px solid rgb(204, 20=
+4, 204); }
+
+.popup_menu .popup_item { background: rgb(239, 239, 239); color: rgb(51, 51=
+, 51); }
+
+.popup_menu .popup_item:hover { background: rgb(0, 114, 188); color: rgb(25=
+5, 255, 255); }
+
+.trow_reputation_positive { background: rgb(204, 255, 204); }
+
+.trow_reputation_negative { background: rgb(255, 204, 204); }
+
+.reputation_positive { color: green; }
+
+.reputation_neutral { color: rgb(68, 68, 68); }
+
+.reputation_negative { color: red; }
+
+.repbox { font-size: 16px; font-weight: bold; padding: 5px 7px; }
+
+._neutral { background-color: rgb(250, 250, 250); color: rgb(153, 153, 153)=
+; border: 1px solid rgb(204, 204, 204); }
+
+._minus { background-color: rgb(253, 210, 209); color: rgb(203, 2, 0); bord=
+er: 1px solid rgb(152, 2, 1); }
+
+._plus { background-color: rgb(232, 252, 220); color: rgb(0, 136, 0); borde=
+r: 1px solid rgb(0, 136, 0); }
+
+img { border-width: medium; border-style: none; border-color: currentcolor;=
+ border-image: none; }
+
+img.attachment { border: 1px solid rgb(233, 229, 215); padding: 2px; }
+
+hr { background-color: rgb(0, 0, 0); color: rgb(0, 0, 0); height: 1px; bord=
+er: 0px; }
+
+.clear { clear: both; }
+
+.float_left { float: left; }
+
+.float_right { float: right; }
+
+.hidden { display: none; float: none; width: 1%; }
+
+.hiddenrow { display: none; }
+
+.selectall { background: rgb(255, 251, 217); border-bottom: 1px solid rgb(2=
+47, 232, 106); color: rgb(51, 51, 51); text-align: center; }
+
+.expcolimage { float: right; width: auto; vertical-align: middle; margin-to=
+p: 3px; }
+
+.tcat_menu > .expcolimage { margin-top: 0px; }
+
+blockquote { border: 1px solid rgb(204, 204, 204); margin: 0px; background:=
+ rgb(253, 249, 241); padding: 10px; }
+
+blockquote cite { font-weight: bold; border-bottom: 1px solid rgb(204, 204,=
+ 204); font-style: normal; display: block; padding-bottom: 3px; margin: 0px=
+ 0px 10px; }
+
+blockquote cite > span { float: right; font-weight: normal; font-size: 14px=
+; color: rgb(102, 102, 102); }
+
+blockquote cite span.highlight { float: none; font-weight: bold; padding-bo=
+ttom: 0px; }
+
+.codeblock { background: rgb(244, 246, 249); border: 1px solid rgb(204, 204=
+, 204); padding: 10px; }
+
+.codeblock .title { border-bottom: 1px solid rgb(204, 204, 204); font-weigh=
+t: bold; padding-bottom: 3px; margin: 0px 0px 10px; }
+
+.codeblock code { overflow: auto; height: auto; max-height: 200px; display:=
+ block; font-family: "MoHPC Keys", "Lucida Console", "Lucida Sans Typewrite=
+r", monaco, "Bitstream Vera Sans Mono", monospace; font-size: 14px; }
+
+.smilie { vertical-align: middle; }
+
+.smilie_pointer { cursor: pointer; }
+
+.separator { margin: 5px; padding: 0px; height: 0px; font-size: 1px; list-s=
+tyle-type: none; }
+
+.popup_menu .popup_item_container { margin: 1px; text-align: left; }
+
+.popup_menu .popup_item { display: block; padding: 4px; white-space: nowrap=
+; text-decoration: none; }
+
+.popup_menu a.popup_item:hover { text-decoration: none; }
+
+.subject_new { font-weight: bold; }
+
+.highlight { background: rgb(255, 255, 204); padding-top: 3px; padding-bott=
+om: 3px; }
+
+.pm_alert { background: rgb(255, 246, 191); border: 1px solid rgb(255, 211,=
+ 36); text-align: center; padding: 5px 20px; margin-bottom: 15px; font-size=
+: 14px; }
+
+.red_alert { background: rgb(251, 227, 228); border: 1px solid rgb(165, 22,=
+ 26); color: rgb(165, 22, 26); text-align: center; padding: 5px 20px; margi=
+n-bottom: 15px; font-size: 14px; overflow-wrap: break-word; }
+
+.red_alert a:link, .red_alert a:visited, .red_alert a:hover, .red_alert a:a=
+ctive { color: rgb(165, 22, 26); }
+
+.high_warning { color: rgb(204, 0, 0); }
+
+.moderate_warning { color: rgb(243, 97, 27); }
+
+.low_warning { color: rgb(174, 87, 0); }
+
+.imminent_banned { color: rgb(136, 0, 0); }
+
+.high_banned { color: rgb(255, 0, 0); }
+
+.moderate_banned { color: rgb(255, 102, 0); }
+
+.low_banned { color: rgb(0, 128, 0); }
+
+.online { color: rgb(21, 160, 24); }
+
+.offline { color: rgb(199, 199, 199); }
+
+div.error { padding: 5px 10px; border: 2px solid rgb(255, 211, 36); backgro=
+und: rgb(255, 246, 191); font-size: 12px; }
+
+div.error p { margin: 0px; color: rgb(51, 51, 51); font-weight: normal; }
+
+div.error p em { font-style: normal; font-weight: bold; padding-left: 24px;=
+ display: block; color: rgb(204, 0, 0); background: url("../../../images/er=
+ror.png") 0px center no-repeat; }
+
+div.error ul { margin-left: 24px; }
+
+.pagination { font-size: 13px; padding-top: 10px; margin-bottom: 5px; }
+
+.tfoot .pagination, .tcat .pagination { padding-top: 0px; }
+
+.pagination .pages { font-weight: bold; }
+
+.pagination .pagination_current, .pagination a { padding: 3px 6px; margin-b=
+ottom: 3px; }
+
+.pagination a { background: rgb(245, 245, 245); border: 1px solid rgb(204, =
+204, 204); }
+
+.pagination .pagination_current { background: none; color: rgb(51, 51, 51);=
+ border-width: medium; border-style: none; border-color: currentcolor; bord=
+er-image: none; font-weight: bold; }
+
+.pagination a:hover { background: rgb(0, 114, 188); color: rgb(255, 255, 25=
+5); border-color: rgb(38, 60, 48); text-decoration: none; }
+
+.pagination .go_page img { margin-bottom: -4px; }
+
+.drop_go_page { background: rgb(245, 245, 245); padding: 4px; }
+
+.pagination_breadcrumb { background-color: rgb(239, 239, 239); border: 1px =
+solid rgb(255, 255, 255); outline: rgb(204, 204, 204) solid 1px; padding: 5=
+px; margin-top: 5px; font-weight: normal; }
+
+.pagination_breadcrumb_link { vertical-align: middle; cursor: pointer; }
+
+.thread_legend, .thread_legend dd { margin: 0px; padding: 0px; }
+
+.thread_legend dd { padding-bottom: 4px; margin-right: 15px; }
+
+.thread_legend img { margin-right: 4px; vertical-align: bottom; }
+
+.forum_legend, .forum_legend dt, .forum_legend dd { margin: 0px; padding: 0=
+px; }
+
+.forum_legend dd { float: left; margin-right: 10px; margin-top: 7px; }
+
+.forum_legend dt { margin-right: 10px; float: left; }
+
+.success_message { color: rgb(0, 178, 0); font-weight: bold; font-size: 12p=
+x; margin-bottom: 10px; }
+
+.error_message { color: rgb(204, 0, 0); font-weight: bold; font-size: 12px;=
+ margin-bottom: 10px; }
+
+#posts_container { padding: 0px; }
+
+.ignored_post { border-top: 3px solid rgb(51, 51, 51); padding: 15px; }
+
+.ignored_post .show_ignored_post { margin-top: -15px; }
+
+.ignored_post .show_ignored_post a.button span { background-position: 0px -=
+400px; }
+
+.deleted_post_hidden { border-top: 2px solid rgb(204, 204, 204); padding: 1=
+5px; }
+
+.deleted_post_collapsed { border-top: 3px solid rgb(51, 51, 51); padding: 1=
+5px; }
+
+.deleted_post_collapsed .show_deleted_post { margin-top: -15px; }
+
+.deleted_post_collapsed .show_deleted_post a.button span { background-posit=
+ion: 0px -400px; }
+
+.post { overflow: hidden; }
+
+.post.classic { padding-top: 15px; }
+
+.post .post_author { border-bottom: 1px solid rgb(204, 204, 204); border-to=
+p: 2px solid rgb(204, 204, 204); background: rgb(245, 245, 245); padding: 5=
+px; overflow: hidden; }
+
+.post.classic .post_author { border-width: 1px 1px 1px 0px; border-style: s=
+olid solid solid none; border-color: rgb(221, 221, 221) rgb(221, 221, 221) =
+rgb(221, 221, 221) currentcolor; border-image: none; float: left; width: 15=
+%; margin: 0px 1% 15px 0px; padding: 5px 1%; }
+
+.post .post_author .buddy_status { vertical-align: middle; margin-top: -4px=
+; }
+
+.post .post_author div.author_avatar { float: left; margin-right: 3px; }
+
+.post.classic .post_author div.author_avatar { float: none; text-align: cen=
+ter; margin-bottom: 8px; }
+
+.post .post_author div.author_avatar img { padding: 5px; border: 1px solid =
+rgb(221, 221, 221); background: rgb(255, 255, 255); }
+
+.post .post_author div.author_information { float: left; padding: 6px 8px; =
+}
+
+.post.classic .post_author div.author_information { float: none; padding: 0=
+px; text-align: center; }
+
+.post .post_author div.author_statistics { float: right; font-size: 12px; p=
+adding: 3px 10px 3px 5px; color: rgb(102, 102, 102); line-height: 1.3; }
+
+.post.classic .post_author div.author_statistics { border-top: 1px dotted r=
+gb(204, 204, 204); margin: 6px 0px 0px; padding: 6px 6px 3px; float: none; =
+}
+
+.post .post_head { font-size: 12px; padding-bottom: 4px; border-bottom: 1px=
+ dotted rgb(221, 221, 221); margin-bottom: 4px; }
+
+.post .post_head span.post_date { color: rgb(102, 102, 102); }
+
+.post .post_head span.edited_post { font-size: 11px; color: rgb(153, 153, 1=
+53); }
+
+.post .post_head span.edited_post a { color: rgb(102, 102, 102); }
+
+.post_body { font-size: 15px; padding: 12px 0px; }
+
+.post.classic .post_content { float: left; width: 79%; padding: 0px 1% 5px;=
+ }
+
+.post_content { padding: 9px 10px 5px; }
+
+.post_content .signature { margin-top: 5px; border-top: 1px dotted rgb(221,=
+ 221, 221); padding: 10px 0px 4px; }
+
+.post .post_meta { margin: 4px 0px; font-size: 11px; color: rgb(153, 153, 1=
+53); }
+
+.post .post_meta a:link, .post .post_meta a:visited { color: rgb(119, 119, =
+119); }
+
+.post .post_meta a:hover, .post .post_meta a:active { color: rgb(119, 119, =
+119); }
+
+.post_controls { clear: both; background: rgb(245, 245, 245); border-bottom=
+: 1px solid rgb(204, 204, 204); padding: 5px; overflow: hidden; }
+
+.postbit_buttons > a:link, .postbit_buttons > a:hover, .postbit_buttons > a=
+:visited, .postbit_buttons > a:active { display: inline-block; padding: 2px=
+ 5px; margin: 2px; font-size: 12px; background: url("../../../images/button=
+s_bg.png") repeat-x rgb(238, 238, 238); border: 1px solid rgb(204, 204, 204=
+); color: rgb(85, 85, 85); }
+
+.postbit_buttons > a:hover { border-color: rgb(187, 187, 187); }
+
+.postbit_buttons a span { padding-left: 20px; display: inline-block; height=
+: 16px; background-image: url("../../../images/buttons_sprite.png"); backgr=
+ound-repeat: no-repeat; }
+
+.postbit_buttons a.postbit_find span { background-position: 0px 0px; }
+
+.postbit_buttons a.postbit_reputation_add span { background-position: 0px -=
+20px; }
+
+.postbit_buttons a.postbit_email span { background-position: 0px -40px; }
+
+.postbit_buttons a.postbit_website span { background-position: 0px -60px; }
+
+.postbit_buttons a.postbit_pm span { background-position: 0px -80px; }
+
+.postbit_buttons a.postbit_quote span { background-position: 0px -100px; }
+
+.postbit_buttons a.postbit_multiquote span { background-position: 0px -120p=
+x; }
+
+.postbit_buttons a.postbit_multiquote_on span { background-position: 0px -1=
+40px; }
+
+.postbit_buttons a.postbit_edit span { background-position: 0px -160px; }
+
+.postbit_buttons a.postbit_qdelete span { background-position: 0px -180px; =
+}
+
+.postbit_buttons a.postbit_qrestore span { background-position: 0px -200px;=
+ }
+
+.postbit_buttons a.postbit_report span { background-position: 0px -220px; }
+
+.postbit_buttons a.postbit_warn span { background-position: 0px -240px; }
+
+.postbit_buttons a.postbit_purgespammer span { background-position: 0px -54=
+0px; }
+
+.postbit_buttons a.postbit_reply_pm span { background-position: 0px -260px;=
+ }
+
+.postbit_buttons a.postbit_reply_all span { background-position: 0px -280px=
+; }
+
+.postbit_buttons a.postbit_forward_pm span { background-position: 0px -300p=
+x; }
+
+.postbit_buttons a.postbit_delete_pm span { background-position: 0px -320px=
+; }
+
+.post:not(.deleted_post) .postbit_qrestore, .post:not(.deleted_post) .statu=
+s_type, .post.deleted_post .postbit_mirage { display: none; }
+
+a.button:link, a.button:hover, a.button:visited, a.button:active { backgrou=
+nd: url("../../../images/tcat.png") repeat-x rgb(15, 15, 15); color: rgb(25=
+5, 255, 255); display: inline-block; padding: 4px 8px; margin: 2px 2px 6px;=
+ border: 1px solid rgb(0, 0, 0); font-size: 14px; }
+
+a.button.small_button { font-size: 13px; margin: 0px; padding: 3px 6px; }
+
+a.button span { padding-left: 20px; display: inline-block; background-image=
+: url("../../../images/buttons_sprite.png"); background-repeat: no-repeat; =
+}
+
+a.button.new_thread_button span { background-position: 0px -340px; }
+
+a.button.new_reply_button span { background-position: 0px -360px; }
+
+a.button.closed_button span { background-position: 0px -380px; }
+
+a.button.rate_user_button span { background-position: 0px -400px; }
+
+a.button.add_buddy_button span { background-position: 0px -440px; }
+
+a.button.remove_buddy_button span { background-position: 0px -480px; }
+
+a.button.add_ignore_button span { background-position: 0px -460px; }
+
+a.button.remove_ignore_button span { background-position: 0px -500px; }
+
+a.button.report_user_button span { background-position: 0px -520px; }
+
+.quick_jump { background: url("../../../images/jump.png") 0px center no-rep=
+eat; width: 13px; height: 13px; padding-left: 13px; margin-top: -3px; borde=
+r-width: medium; border-style: none; border-color: currentcolor; border-ima=
+ge: none; }
+
+.pollbar { background: url("../../../images/pollbar.png") left top repeat-x=
+; border: 1px solid rgb(63, 63, 63); height: 10px; }
+
+.pollbar .percent { display: none; }
+
+.poll_votedfor { background: rgb(239, 239, 239); border-width: 1px; border-=
+style: solid; border-image: none; border-color: rgb(255, 255, 255) rgb(221,=
+ 221, 221) rgb(221, 221, 221) rgb(255, 255, 255); }
+
+.posticons_label { white-space: nowrap; }
+
+.ie6 { position: absolute; }
+
+.ie6.top-right { right: auto; bottom: auto; }
+
+.ie6.top-left { }
+
+.ie6.bottom-right { }
+
+.ie6.bottom-left { }
+
+.ie6.center { width: 100%; }
+
+.jGrowl { z-index: 9999; color: rgb(255, 255, 255); font-size: 12px; font-f=
+amily: "Helvetica Neue", Helvetica, Arial, sans-serif; position: fixed; }
+
+.jGrowl.top-left { left: 0px; top: 0px; }
+
+.jGrowl.top-right { right: 0px; top: 0px; }
+
+.jGrowl.bottom-left { left: 0px; bottom: 0px; }
+
+.jGrowl.bottom-right { right: 0px; bottom: 0px; }
+
+.jGrowl.center { top: 0px; width: 50%; left: 25%; }
+
+.jGrowl.center .jGrowl-notification, .jGrowl.center .jGrowl-closer { margin=
+-left: auto; margin-right: auto; }
+
+.jGrowl-notification { background-color: transparent; opacity: 0.9; transfo=
+rm: scale(1); width: 250px; padding: 10px; margin: 10px; text-align: left; =
+display: none; border-radius: 5px; word-break: break-all; }
+
+.jGrowl .jGrowl-notification { min-height: 40px; }
+
+.jGrowl-notification .ui-state-highlight, .jGrowl-notification .ui-widget-c=
+ontent .ui-state-highlight, .jGrowl-notification .ui-widget-header .ui-stat=
+e-highlight { border: 1px solid rgb(0, 0, 0); background: rgb(0, 0, 0); col=
+or: rgb(255, 255, 255); }
+
+.jGrowl-notification .jGrowl-header { font-weight: bold; font-size: 0.85em;=
+ }
+
+.jGrowl-notification .jGrowl-close { background-color: transparent; color: =
+inherit; border-width: medium; border-style: none; border-color: currentcol=
+or; border-image: none; z-index: 99; float: right; font-weight: bold; font-=
+size: 1em; cursor: pointer; }
+
+.jGrowl-closer { background-color: rgb(0, 0, 0); opacity: 0.9; transform: s=
+cale(1); width: 250px; padding: 4px 10px; margin: 10px; display: none; bord=
+er-radius: 5px; word-break: break-all; cursor: pointer; font-size: 0.9em; f=
+ont-weight: bold; text-align: center; }
+
+.jGrowl-closer .ui-state-highlight, .jGrowl-closer .ui-widget-content .ui-s=
+tate-highlight, .jGrowl-closer .ui-widget-header .ui-state-highlight { bord=
+er: 1px solid rgb(0, 0, 0); background: rgb(0, 0, 0); color: rgb(255, 255, =
+255); }
+
+.jGrowl .jGrowl-notification.jgrowl_success { background: lightgreen; borde=
+r: 1px solid lightgreen; color: rgb(51, 51, 51); }
+
+.jGrowl .jGrowl-notification.jgrowl_error { background: red; border: 1px so=
+lid red; color: rgb(51, 51, 51); }
+
+.jGrowl .jGrowl-notification.jgrowl_process, .jGrowl .jGrowl-closer { backg=
+round: yellow; border: 1px solid yellow; color: rgb(51, 51, 51); }
+
+@media print {
+  .jGrowl { display: none; }
+}
+
+.blocker { position: fixed; inset: 0px; width: 100%; height: 100%; overflow=
+: auto; z-index: 9999; padding: 20px; box-sizing: border-box; background-co=
+lor: rgba(0, 0, 0, 0.75); text-align: center; }
+
+.blocker::before { content: ""; display: inline-block; height: 100%; vertic=
+al-align: middle; margin-right: -0.05em; }
+
+.blocker.behind { background-color: transparent; }
+
+.modal { width: 400px; text-align: left; background: rgb(255, 255, 255); di=
+splay: inline-block; vertical-align: middle; position: relative; z-index: 2=
+; box-sizing: border-box; border-radius: 8px; box-shadow: rgb(0, 0, 0) 0px =
+0px 10px; }
+
+.modal a.close-modal { position: absolute; top: -12.5px; right: -12.5px; di=
+splay: block; width: 30px; height: 30px; text-indent: -9999px; background: =
+url("../../../images/close.png") 0px 0px no-repeat; }
+
+.modal-spinner { display: none; width: 64px; height: 64px; position: fixed;=
+ top: 50%; left: 50%; margin-right: -32px; margin-top: -32px; background: u=
+rl("../../../images/spinner_big.gif") center center no-repeat; border-radiu=
+s: 8px; }
+
+.jqifade { position: absolute; background-color: rgb(119, 119, 119); }
+
+iframe.jqifade { display: block; z-index: -1; }
+
+div.jqi { width: 400px; max-width: 90%; font-family: Verdana, Geneva, Arial=
+, Helvetica, sans-serif; position: absolute; background-color: rgb(255, 255=
+, 255); font-size: 11px; text-align: left; border: 1px solid rgb(238, 238, =
+238); border-radius: 6px; padding: 7px; }
+
+div.jqi .jqicontainer { }
+
+div.jqi .jqiclose { position: absolute; top: 4px; right: -2px; width: 18px;=
+ cursor: default; color: rgb(187, 187, 187); font-weight: bold; }
+
+div.jqi .jqistate { background-color: rgb(255, 255, 255); }
+
+div.jqi .jqititle { padding: 5px 10px; font-size: 16px; line-height: 20px; =
+border-bottom: 1px solid rgb(238, 238, 238); }
+
+div.jqi .jqimessage { padding: 10px; line-height: 20px; color: rgb(68, 68, =
+68); overflow: auto; }
+
+div.jqi .jqibuttonshide { display: none; }
+
+div.jqi .jqibuttons { text-align: right; margin: 0px -7px -7px; border-top:=
+ 1px solid rgb(228, 228, 228); background-color: rgb(244, 244, 244); border=
+-radius: 0px 0px 6px 6px; }
+
+div.jqi .jqibuttons button { margin: 0px; padding: 15px 20px; background-co=
+lor: transparent; border-width: medium medium medium 1px; border-style: non=
+e none none solid; border-color: currentcolor currentcolor currentcolor rgb=
+(228, 228, 228); border-image: none; color: rgb(119, 119, 119); font-weight=
+: bold; font-size: 12px; }
+
+div.jqi .jqibuttons button.jqidefaultbutton { color: rgb(72, 154, 254); }
+
+div.jqi .jqibuttons button:hover, div.jqi .jqibuttons button:focus { color:=
+ rgb(40, 122, 222); outline: none; }
+
+div.jqi .jqibuttons button[disabled] { color: rgb(170, 170, 170); }
+
+.jqiwarning .jqi .jqibuttons { background-color: rgb(185, 86, 86); }
+
+div.jqi .jqiparentstate::after { background-color: rgb(119, 119, 119); opac=
+ity: 0.6; content: ""; position: absolute; inset: 0px; border-radius: 6px; =
+}
+
+div.jqi .jqisubstate { position: absolute; top: 0px; left: 20%; width: 60%;=
+ padding: 7px; border-width: medium 1px 1px; border-style: none solid solid=
+; border-color: currentcolor rgb(238, 238, 238) rgb(238, 238, 238); border-=
+image: none; border-radius: 0px 0px 6px 6px; }
+
+div.jqi .jqisubstate .jqibuttons button { padding: 10px 18px; }
+
+.jqi .jqiarrow { position: absolute; height: 0px; width: 0px; line-height: =
+0; font-size: 0px; border: 10px solid transparent; }
+
+.jqi .jqiarrowtl { left: 10px; top: -20px; border-bottom-color: rgb(255, 25=
+5, 255); }
+
+.jqi .jqiarrowtc { left: 50%; top: -20px; border-bottom-color: rgb(255, 255=
+, 255); margin-left: -10px; }
+
+.jqi .jqiarrowtr { right: 10px; top: -20px; border-bottom-color: rgb(255, 2=
+55, 255); }
+
+.jqi .jqiarrowbl { left: 10px; bottom: -20px; border-top-color: rgb(255, 25=
+5, 255); }
+
+.jqi .jqiarrowbc { left: 50%; bottom: -20px; border-top-color: rgb(255, 255=
+, 255); margin-left: -10px; }
+
+.jqi .jqiarrowbr { right: 10px; bottom: -20px; border-top-color: rgb(255, 2=
+55, 255); }
+
+.jqi .jqiarrowlt { left: -20px; top: 10px; border-right-color: rgb(255, 255=
+, 255); }
+
+.jqi .jqiarrowlm { left: -20px; top: 50%; border-right-color: rgb(255, 255,=
+ 255); margin-top: -10px; }
+
+.jqi .jqiarrowlb { left: -20px; bottom: 10px; border-right-color: rgb(255, =
+255, 255); }
+
+.jqi .jqiarrowrt { right: -20px; top: 10px; border-left-color: rgb(255, 255=
+, 255); }
+
+.jqi .jqiarrowrm { right: -20px; top: 50%; border-left-color: rgb(255, 255,=
+ 255); margin-top: -10px; }
+
+.jqi .jqiarrowrb { right: -20px; bottom: 10px; border-left-color: rgb(255, =
+255, 255); }
+
+@font-face { font-family: "MoHPC Sans"; font-style: normal; font-weight: 40=
+0; font-display: swap; src: local(""), url("/fonts/mohpcsans-v4.woff2") for=
+mat("woff2"), url("/fonts/mohpcsans-v4.woff") format("woff"), url("/fonts/m=
+ohpcsans-v4.ttf") format("truetype"); }
+
+@font-face { font-family: "MoHPC Sans"; font-style: italic; font-weight: 40=
+0; font-display: swap; src: local(""), url("/fonts/mohpcsans-italic-v4.woff=
+2") format("woff2"), url("/fonts/mohpcsans-italic-v4.woff") format("woff"),=
+ url("/fonts/mohpcsans-italic-v4.ttf") format("truetype"); }
+
+@font-face { font-family: "MoHPC Sans"; font-style: normal; font-weight: 70=
+0; font-display: swap; src: local(""), url("/fonts/mohpcsans-bold-v4.woff2"=
+) format("woff2"), url("/fonts/mohpcsans-bold-v4.woff") format("woff"), url=
+("/fonts/mohpcsans-bold-v4.ttf") format("truetype"); }
+
+@font-face { font-family: "MoHPC Keys"; font-weight: normal; font-style: no=
+rmal; font-display: swap; src: url("/fonts/mohpckeys-v4.woff2") format("wof=
+f2"), url("/fonts/mohpckeys-v4.woff") format("woff"), url("/fonts/mohpckeys=
+-v4.ttf") format("truetype"); }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-72fea7e6-cae5-438a-9e6c-b7da67980528@mhtml.blink
+
+@charset "utf-8";
+=0A
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-36e3ec80-9147-46b3-91cb-4a6c400c7ea4@mhtml.blink
+
+@charset "utf-8";
+
+.MJXp-script { font-size: 0.8em; }
+
+.MJXp-right { transform-origin: right center; }
+
+.MJXp-bold { font-weight: bold; }
+
+.MJXp-italic { font-style: italic; }
+
+.MJXp-scr { font-family: MathJax_Script, "Times New Roman", Times, STIXGene=
+ral, serif; }
+
+.MJXp-frak { font-family: MathJax_Fraktur, "Times New Roman", Times, STIXGe=
+neral, serif; }
+
+.MJXp-sf { font-family: MathJax_SansSerif, "Times New Roman", Times, STIXGe=
+neral, serif; }
+
+.MJXp-cal { font-family: MathJax_Caligraphic, "Times New Roman", Times, STI=
+XGeneral, serif; }
+
+.MJXp-mono { font-family: MathJax_Typewriter, "Times New Roman", Times, STI=
+XGeneral, serif; }
+
+.MJXp-largeop { font-size: 150%; }
+
+.MJXp-largeop.MJXp-int { vertical-align: -0.2em; }
+
+.MJXp-math { display: inline-block; line-height: 1.2; text-indent: 0px; fon=
+t-family: "Times New Roman", Times, STIXGeneral, serif; white-space: nowrap=
+; border-collapse: collapse; }
+
+.MJXp-display { display: block; text-align: center; margin: 1em 0px; }
+
+.MJXp-math span { display: inline-block; }
+
+.MJXp-box { display: block !important; text-align: center; }
+
+.MJXp-box::after { content: " "; }
+
+.MJXp-rule { display: block !important; margin-top: 0.1em; }
+
+.MJXp-char { display: block !important; }
+
+.MJXp-mo { margin: 0px 0.15em; }
+
+.MJXp-mfrac { margin: 0px 0.125em; vertical-align: 0.25em; }
+
+.MJXp-denom { display: inline-table !important; width: 100%; }
+
+.MJXp-denom > * { display: table-row !important; }
+
+.MJXp-surd { vertical-align: top; }
+
+.MJXp-surd > * { display: block !important; }
+
+.MJXp-script-box > * { display: table !important; height: 50%; }
+
+.MJXp-script-box > * > * { display: table-cell !important; vertical-align: =
+top; }
+
+.MJXp-script-box > :last-child > * { vertical-align: bottom; }
+
+.MJXp-script-box > * > * > * { display: block !important; }
+
+.MJXp-mphantom { visibility: hidden; }
+
+.MJXp-munderover, .MJXp-munder { display: inline-table !important; }
+
+.MJXp-over { display: inline-block !important; text-align: center; }
+
+.MJXp-over > * { display: block !important; }
+
+.MJXp-munderover > *, .MJXp-munder > * { display: table-row !important; }
+
+.MJXp-mtable { vertical-align: 0.25em; margin: 0px 0.125em; }
+
+.MJXp-mtable > * { display: inline-table !important; vertical-align: middle=
+; }
+
+.MJXp-mtr { display: table-row !important; }
+
+.MJXp-mtd { text-align: center; padding: 0.5em 0px 0px 0.5em; display: tabl=
+e-cell !important; }
+
+.MJXp-mtr > .MJXp-mtd:first-child { padding-left: 0px; }
+
+.MJXp-mtr:first-child > .MJXp-mtd { padding-top: 0px; }
+
+.MJXp-mlabeledtr { display: table-row !important; }
+
+.MJXp-mlabeledtr > .MJXp-mtd:first-child { padding-left: 0px; }
+
+.MJXp-mlabeledtr:first-child > .MJXp-mtd { padding-top: 0px; }
+
+.MJXp-merror { background-color: rgb(255, 255, 136); color: rgb(204, 0, 0);=
+ border: 1px solid rgb(204, 0, 0); padding: 1px 3px; font-style: normal; fo=
+nt-size: 90%; }
+
+.MJXp-scale0 { transform: scaleX(0); }
+
+.MJXp-scale1 { transform: scaleX(0.1); }
+
+.MJXp-scale2 { transform: scaleX(0.2); }
+
+.MJXp-scale3 { transform: scaleX(0.3); }
+
+.MJXp-scale4 { transform: scaleX(0.4); }
+
+.MJXp-scale5 { transform: scaleX(0.5); }
+
+.MJXp-scale6 { transform: scaleX(0.6); }
+
+.MJXp-scale7 { transform: scaleX(0.7); }
+
+.MJXp-scale8 { transform: scaleX(0.8); }
+
+.MJXp-scale9 { transform: scaleX(0.9); }
+
+.MathJax_PHTML .noError { font-size: 90%; text-align: left; color: black; p=
+adding: 1px 3px; border: 1px solid; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-ecdd017b-4014-4257-831d-5edc1d3349bb@mhtml.blink
+
+@charset "utf-8";
+
+.imageye-selected { outline: black solid 2px !important; box-shadow: rgba(0=
+, 0, 0, 0.5) 0px 0px 10px !important; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-c8f47584-fe7c-489a-bcd0-c735358154fc@mhtml.blink
+
+@charset "utf-8";
+
+.MathJax_Preview { color: rgb(136, 136, 136); display: contents; }
+
+#MathJax_Message { position: fixed; left: 1em; bottom: 1.5em; background-co=
+lor: rgb(230, 230, 230); border: 1px solid rgb(149, 149, 149); margin: 0px;=
+ padding: 2px 8px; z-index: 102; color: black; font-size: 80%; width: auto;=
+ white-space: nowrap; }
+
+#MathJax_MSIE_Frame { position: absolute; top: 0px; left: 0px; width: 0px; =
+z-index: 101; border: 0px; margin: 0px; padding: 0px; }
+
+.MathJax_Error { color: rgb(204, 0, 0); font-style: italic; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-ba1a539b-e338-4084-8c44-0f56ad043015@mhtml.blink
+
+@charset "utf-8";
+
+#MathJax_Zoom { position: absolute; background-color: rgb(240, 240, 240); o=
+verflow: auto; display: block; z-index: 301; padding: 0.5em; border: 1px so=
+lid black; margin: 0px; font-weight: normal; font-style: normal; text-align=
+: left; text-indent: 0px; text-transform: none; line-height: normal; letter=
+-spacing: normal; word-spacing: normal; overflow-wrap: normal; white-space:=
+ nowrap; float: none; box-sizing: content-box; box-shadow: rgb(170, 170, 17=
+0) 5px 5px 15px; }
+
+#MathJax_ZoomOverlay { position: absolute; left: 0px; top: 0px; z-index: 30=
+0; display: inline-block; width: 100%; height: 100%; border: 0px; padding: =
+0px; margin: 0px; background-color: white; opacity: 0; }
+
+#MathJax_ZoomFrame { position: relative; display: inline-block; height: 0px=
+; width: 0px; }
+
+#MathJax_ZoomEventTrap { position: absolute; left: 0px; top: 0px; z-index: =
+302; display: inline-block; border: 0px; padding: 0px; margin: 0px; backgro=
+und-color: white; opacity: 0; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-819f3081-c2be-4169-9d41-33833981a5a4@mhtml.blink
+
+@charset "utf-8";
+
+.MJX_Assistive_MathML { top: 0px; left: 0px; clip: rect(1px, 1px, 1px, 1px)=
+; user-select: none; position: absolute !important; padding: 1px 0px 0px !i=
+mportant; border: 0px !important; height: 1px !important; width: 1px !impor=
+tant; overflow: hidden !important; display: block !important; }
+
+.MJX_Assistive_MathML.MJX_Assistive_MathML_Block { width: 100% !important; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-b9fc890c-d88b-413b-8a26-5132c2bc76fd@mhtml.blink
+
+@charset "utf-8";
+
+.MathJax_Preview .MJXf-math { color: inherit !important; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-3a9edd0e-a29f-4972-9e79-30d720867930@mhtml.blink
+
+@charset "utf-8";
+
+#MathJax_About { position: fixed; left: 50%; width: auto; text-align: cente=
+r; border: 3px outset; padding: 1em 2em; background-color: rgb(221, 221, 22=
+1); color: black; cursor: default; font-family: message-box; font-size: 120=
+%; font-style: normal; text-indent: 0px; text-transform: none; line-height:=
+ normal; letter-spacing: normal; word-spacing: normal; overflow-wrap: norma=
+l; white-space: nowrap; float: none; z-index: 201; border-radius: 15px; box=
+-shadow: rgb(128, 128, 128) 0px 10px 20px; }
+
+#MathJax_About.MathJax_MousePost { outline: none; }
+
+.MathJax_Menu { position: absolute; background-color: white; color: black; =
+width: auto; padding: 2px; border: 1px solid rgb(204, 204, 204); margin: 0p=
+x; cursor: default; font-style: ; font-variant: normal; font-weight: ; font=
+-stretch: ; font-size: ; font-family: ; font-optical-sizing: ; font-size-ad=
+just: ; font-kerning: ; font-feature-settings: ; font-variation-settings: ;=
+ font-language-override: ; text-align: left; text-indent: 0px; text-transfo=
+rm: none; line-height: normal; letter-spacing: normal; word-spacing: normal=
+; overflow-wrap: normal; white-space: nowrap; float: none; z-index: 201; bo=
+x-shadow: rgb(128, 128, 128) 0px 10px 20px; }
+
+.MathJax_MenuItem { padding: 2px 2em; background: transparent; }
+
+.MathJax_MenuArrow { position: absolute; right: 0.5em; padding-top: 0.25em;=
+ color: rgb(102, 102, 102); font-size: 0.75em; }
+
+.MathJax_MenuActive .MathJax_MenuArrow { color: white; }
+
+.MathJax_MenuArrow.RTL { left: 0.5em; right: auto; }
+
+.MathJax_MenuCheck { position: absolute; left: 0.7em; }
+
+.MathJax_MenuCheck.RTL { right: 0.7em; left: auto; }
+
+.MathJax_MenuRadioCheck { position: absolute; left: 1em; }
+
+.MathJax_MenuRadioCheck.RTL { right: 1em; left: auto; }
+
+.MathJax_MenuLabel { padding: 2px 2em 4px 1.33em; font-style: italic; }
+
+.MathJax_MenuRule { border-top: 1px solid rgb(204, 204, 204); margin: 4px 1=
+px 0px; }
+
+.MathJax_MenuDisabled { color: graytext; }
+
+.MathJax_MenuActive { background-color: highlight; color: highlighttext; }
+
+.MathJax_MenuDisabled:focus, .MathJax_MenuLabel:focus { background-color: r=
+gb(232, 232, 232); }
+
+.MathJax_ContextMenu:focus { outline: none; }
+
+.MathJax_ContextMenu .MathJax_MenuItem:focus { outline: none; }
+
+#MathJax_AboutClose { top: 0.2em; right: 0.2em; }
+
+.MathJax_Menu .MathJax_MenuClose { top: -10px; left: -10px; }
+
+.MathJax_MenuClose { position: absolute; cursor: pointer; display: inline-b=
+lock; border: 2px solid rgb(170, 170, 170); border-radius: 18px; font-famil=
+y: "Courier New", Courier; font-size: 24px; color: rgb(240, 240, 240); }
+
+.MathJax_MenuClose span { display: block; background-color: rgb(170, 170, 1=
+70); border: 1.5px solid; border-radius: 18px; line-height: 0; padding: 8px=
+ 0px 6px; }
+
+.MathJax_MenuClose:hover { color: white !important; border: 2px solid rgb(2=
+04, 204, 204) !important; }
+
+.MathJax_MenuClose:hover span { background-color: rgb(204, 204, 204) !impor=
+tant; }
+
+.MathJax_MenuClose:hover:focus { outline: none; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-dab490a9-1a82-42f0-b9af-25f8713c0b2c@mhtml.blink
+
+@charset "utf-8";
+
+.MathJax_Hover_Frame { border-radius: 0.25em; box-shadow: rgb(136, 51, 170)=
+ 0px 0px 15px; display: inline-block; position: absolute; border: 1px solid=
+ rgb(170, 102, 221) !important; }
+
+.MathJax_Menu_Button .MathJax_Hover_Arrow { position: absolute; cursor: poi=
+nter; display: inline-block; border: 2px solid rgb(170, 170, 170); border-r=
+adius: 4px; font-family: "Courier New", Courier; font-size: 9px; color: rgb=
+(240, 240, 240); }
+
+.MathJax_Menu_Button .MathJax_Hover_Arrow span { display: block; background=
+-color: rgb(170, 170, 170); border: 1px solid; border-radius: 3px; line-hei=
+ght: 0; padding: 4px; }
+
+.MathJax_Hover_Arrow:hover { color: white !important; border: 2px solid rgb=
+(204, 204, 204) !important; }
+
+.MathJax_Hover_Arrow:hover span { background-color: rgb(204, 204, 204) !imp=
+ortant; }
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0----
+Content-Type: text/html
+Content-ID: <frame-6F58D9002047021CFEFCB8B6FF49FED4@mhtml.blink>
+Content-Transfer-Encoding: quoted-printable
+
+<html><head><meta http-equiv=3D"Content-Type" content=3D"text/html; charset=
+=3DUTF-8"></head><body></body></html>
+------MultipartBoundary--Y3WZVQBXjJhmI0JOagTcH14nBt0GpcorRQ8BN6L6T0------
