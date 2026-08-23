@@ -23,6 +23,7 @@ class SpokenTokensTest {
             is Result.Parsed -> result.tokens.forEach { engine.press(it) }
             is Result.Rejected -> fail("rejected at '${result.word}': $utterance")
             Result.Undo -> fail("unexpected undo: $utterance")
+            Result.Redo -> fail("unexpected redo: $utterance")
         }
     }
 
@@ -126,7 +127,7 @@ class SpokenTokensTest {
         say("3:55 enter")
         assertEquals(355.0, engine.x, 0.0)
 
-        assertEquals("355 enter", SpokenTokens.trailLabel("3:55 enter"))
+        assertEquals("355 ↵", SpokenTokens.trailLabel("3:55 enter"))
     }
 
     @Test fun eOutsideANumberIsRejected() {
@@ -181,6 +182,35 @@ class SpokenTokensTest {
         assertEquals(Result.Rejected("foobar"), result)
     }
 
+    @Test fun theWristBatchOfRewrites() {
+        // pie is pi; "* 10 ^" is EEX in symbol costume; "23e17" is
+        // glued scientific notation - all straight from the diary.
+        say("pie enter two times")
+        assertEquals(6.283185307179586, engine.x, 1e-12)
+
+        say("clear all 6.5 * 10 ^ 16 enter")
+        assertEquals(6.5e16, engine.x, 1e3)
+
+        say("clear all 23e17 enter")
+        assertEquals(2.3e18, engine.x, 1e5)
+    }
+
+    @Test fun trailSymbolsReadAsSymbols() {
+        assertEquals("6.5E16 ↵", SpokenTokens.trailLabel("6.5 times ten to the 16 enter"))
+        assertEquals("6.5E16", SpokenTokens.trailLabel("6.5 * 10 ^ 16"))
+        assertEquals("2 ↵ 3 +", SpokenTokens.trailLabel("two enter three plus"))
+        assertEquals("5E-3", SpokenTokens.trailLabel("five e minus three"))
+        assertEquals("9 √x", SpokenTokens.trailLabel("nine square root"))
+        assertEquals("π ×", SpokenTokens.trailLabel("pie times"))
+    }
+
+    @Test fun redoAndTheStrongUndoForms() {
+        assertEquals(Result.Undo, SpokenTokens.parse("undo that"))
+        assertEquals(Result.Undo, SpokenTokens.parse("undo it"))
+        assertEquals(Result.Redo, SpokenTokens.parse("redo"))
+        assertEquals(Result.Redo, SpokenTokens.parse("redo that"))
+    }
+
     @Test fun undoAloneIsTheUndoUtterance() {
         assertEquals(Result.Undo, SpokenTokens.parse("undo"))
         assertEquals(Result.Undo, SpokenTokens.parse("cancel"))
@@ -192,14 +222,14 @@ class SpokenTokensTest {
     }
 
     @Test fun trailLabelsCompactSpokenDigits() {
-        assertEquals("23 times", SpokenTokens.trailLabel("two three times"))
-        assertEquals("2.5 e 6 enter", SpokenTokens.trailLabel("two point five e six enter"))
-        assertEquals("988 enter", SpokenTokens.trailLabel("988 enter"))
-        assertEquals("988 plus 2", SpokenTokens.trailLabel("nine eight eight plus 2"))
+        assertEquals("23 ×", SpokenTokens.trailLabel("two three times"))
+        assertEquals("2.5E6 ↵", SpokenTokens.trailLabel("two point five e six enter"))
+        assertEquals("988 ↵", SpokenTokens.trailLabel("988 enter"))
+        assertEquals("988 + 2", SpokenTokens.trailLabel("nine eight eight plus 2"))
 
         // The continuation merge leans on this gluing: the old label and
         // the new utterance, re-compacted, read as the number formed.
-        assertEquals("1.51535 *", SpokenTokens.trailLabel("1.515 35 *"))
+        assertEquals("1.51535 ×", SpokenTokens.trailLabel("1.515 35 *"))
     }
 
     @Test fun theVocabularyRejectsProperPrefixes() {

@@ -42,6 +42,9 @@ object SpokenTokens {
 
         /** The whole utterance was an undo word: restore the last mark. */
         data object Undo : Result
+
+        /** The whole utterance was a redo word: replay the last undo. */
+        data object Redo : Result
     }
 
     // ---- The vocabulary -----------------------------------------------------
@@ -87,6 +90,7 @@ object SpokenTokens {
         listOf("roll", "up") to Token.RollUp,
         listOf("last", "x") to Token.LastX,
         listOf("pi") to Token.Pi,
+        listOf("pie") to Token.Pi, // the recognizer's spelling of pi - first live homophone
 
         listOf("store") to Token.Sto,
         listOf("recall") to Token.Rcl,
@@ -116,6 +120,11 @@ object SpokenTokens {
     private val EEX_PHRASES = listOf(
         listOf("times", "ten", "to", "the"),
         listOf("times", "10", "to", "the"),
+
+        // The recognizer's symbol costume for the same phrase, as heard
+        // on the wrist: "6.5 * 10 ^ 16".
+        listOf("*", "10", "^"),
+        listOf("times", "10", "^"),
     )
 
     /**
@@ -133,14 +142,30 @@ object SpokenTokens {
 
     /**
      * Reserved in EVERY vocabulary, per DESIGN - the escape hatch must
-     * stay reachable once names exist. Alone, any of these IS the undo
-     * utterance; buried inside a longer utterance they still reject,
-     * because "five undo plus" is nobody's intent.
+     * stay reachable once names exist. Alone (or in the two-word forms,
+     * which carry more acoustic weight - the recognizer often refuses to
+     * finalise a lone short word), these ARE the undo utterance; buried
+     * inside longer utterances the words still reject.
      */
     private val UNDO_WORDS = setOf("undo", "cancel", "escape")
+    private val UNDO_UTTERANCES = setOf(
+        listOf("undo"), listOf("cancel"), listOf("escape"),
+        listOf("undo", "that"), listOf("undo", "it"),
+    )
+
+    /** Redo, same shape: the redo stack lives in the engine. */
+    private val REDO_UTTERANCES = setOf(
+        listOf("redo"), listOf("redo", "that"), listOf("redo", "it"),
+    )
 
     /** A numeral as the recognizer writes one: digits, one optional radix. */
     private val NUMERAL = Regex("""\d+(\.\d+)?|\.\d+""")
+
+    /**
+     * Scientific notation glued into one token - "23e17" - another wrist
+     * find. Groups: mantissa, optional sign, exponent digits.
+     */
+    private val SCI_NUMERAL = Regex("""(\d+(?:\.\d+)?)e(-?)(\d+)""")
 
     init {
         // The table fails loudly the first time someone adds a phrase that
@@ -165,12 +190,54 @@ object SpokenTokens {
     }
 
     /**
-     * The utterance as the undo TRAIL shows it: spoken digits and the
-     * radix compact into numerals - "two three" reads "23", "two point
-     * five" reads "2.5" - because the trail's column is narrow and
-     * digits are its bulk. Everything else passes through as spoken.
-     * The diagnostic log keeps the verbatim utterance; only the glass
-     * gets the shorthand.
+     * Command phrases as the TRAIL abbreviates them - symbols where a
+     * standard one exists, Dave's ask after reading spelled-out words
+     * down the column. Longest phrase matched first, like the parser.
+     */
+    private val TRAIL_SYMBOLS: List<Pair<List<String>, String>> = listOf(
+        listOf("times", "ten", "to", "the") to "E",
+        listOf("times", "10", "to", "the") to "E",
+        listOf("*", "10", "^") to "E",
+        listOf("times", "10", "^") to "E",
+        listOf("multiplied", "by") to "\u00D7",
+        listOf("divided", "by") to "\u00F7",
+        listOf("square", "root") to "\u221Ax",
+        listOf("change", "sign") to "\u00B1",
+        listOf("clear", "x") to "CLx",
+        listOf("clear", "all") to "CLR",
+        listOf("roll", "down") to "R\u2193",
+        listOf("roll", "up") to "R\u2191",
+        listOf("last", "x") to "LASTX",
+        listOf("plus") to "+",
+        listOf("add") to "+",
+        listOf("subtract") to "\u2212",
+        listOf("-") to "\u2212",
+        listOf("times") to "\u00D7",
+        listOf("multiply") to "\u00D7",
+        listOf("*") to "\u00D7",
+        listOf("divide") to "\u00F7",
+        listOf("over") to "\u00F7",
+        listOf("/") to "\u00F7",
+        listOf("enter") to "\u21B5",
+        listOf("reciprocal") to "1/x",
+        listOf("swap") to "x\u2194y",
+        listOf("exchange") to "x\u2194y",
+        listOf("pi") to "\u03C0",
+        listOf("pie") to "\u03C0",
+        listOf("store") to "STO",
+        listOf("recall") to "RCL",
+        listOf("fix") to "FIX",
+    )
+
+    /**
+     * The utterance as the undo TRAIL shows it: digits and the radix
+     * compact into numerals ("two three" reads "23"), EEX forms glue an
+     * E into the number ("6.5 times ten to the 16" reads "6.5E16"), and
+     * commands wear their symbols ("plus" reads "+") - because the
+     * trail's column is narrow. A minus right after the E signs it, the
+     * parser's own sign rule; anywhere else it is the subtract symbol.
+     * Unknown words pass through as spoken. The diagnostic log keeps
+     * the verbatim utterance; only the glass gets the shorthand.
      */
     fun trailLabel(utterance: String): String {
 
@@ -180,27 +247,65 @@ object SpokenTokens {
         val pieces = mutableListOf<String>()
         var run: StringBuilder? = null
 
-        for (word in words) {
+        fun closeRun() {
+            run?.let { pieces += it.toString() }
+            run = null
+        }
 
-            val digitText = when {
+        var at = 0
+        while (at < words.size) {
+
+            val word = words[at]
+
+            // What glues INTO a number run: digits in any costume, the
+            // radix, an EEX form as E, and the exponent's sign.
+            val sci = SCI_NUMERAL.matchEntire(word)
+            val glue = when {
                 NUMERAL.matches(word) -> word
+                sci != null ->
+                    sci.groupValues[1] + "E" + sci.groupValues[2] + sci.groupValues[3]
                 TIME_REWRITE.matches(word) -> word.replace(":", "")
                 DIGIT_WORDS.containsKey(word) -> DIGIT_WORDS[word].toString()
                 word == POINT_WORD -> NumberFormatter.RADIX.toString()
+                word in EEX_WORDS && run != null -> "E"
+                (word == "minus" || word == "negative") &&
+                    run?.endsWith("E") == true -> "-"
                 else -> null
             }
 
-            if (digitText != null) {
-                // Glue onto the run in progress, or start one.
-                run = (run ?: StringBuilder()).append(digitText)
+            if (glue != null) {
+                run = (run ?: StringBuilder()).append(glue)
+                at++
+                continue
+            }
+
+            // The EEX phrases glue an E too, and open a run if none.
+            val eexPhrase = EEX_PHRASES.firstOrNull {
+                it == words.subList(at, minOf(at + it.size, words.size))
+            }
+            if (eexPhrase != null) {
+                run = (run ?: StringBuilder()).append("E")
+                at += eexPhrase.size
+                continue
+            }
+
+            // A command wears its symbol; longest phrase wins.
+            val symbol = TRAIL_SYMBOLS.firstOrNull { (phrase, _) ->
+                phrase == words.subList(at, minOf(at + phrase.size, words.size))
+            }
+
+            closeRun()
+
+            if (symbol != null) {
+                pieces += symbol.second
+                at += symbol.first.size
             } else {
-                run?.let { pieces += it.toString() }
-                run = null
                 pieces += word
+                at++
             }
         }
 
-        run?.let { pieces += it.toString() }
+        closeRun()
 
         return pieces.joinToString(" ")
     }
@@ -212,8 +317,9 @@ object SpokenTokens {
         val words = utterance.trim().lowercase()
             .split(Regex("""\s+""")).filter { it.isNotEmpty() }
 
-        // An undo word as the WHOLE utterance is the undo itself.
-        if (words.size == 1 && words[0] in UNDO_WORDS) return Result.Undo
+        // An undo or redo utterance IS the action itself.
+        if (words in UNDO_UTTERANCES) return Result.Undo
+        if (words in REDO_UTTERANCES) return Result.Redo
 
         val out = mutableListOf<Token>()
 
@@ -231,6 +337,20 @@ object SpokenTokens {
         while (at < words.size) {
 
             val word = words[at]
+
+            // Glued scientific notation: "23e17" is 23 EEX 17, sign and
+            // all - the number lexer's fields, packed into one token.
+            val sci = SCI_NUMERAL.matchEntire(word)
+            if (sci != null) {
+                for (character in sci.groupValues[1]) out += Token.Digit(character)
+                out += Token.Eex
+                if (sci.groupValues[2] == "-") out += Token.Chs
+                for (character in sci.groupValues[3]) out += Token.Digit(character)
+                inNumber = true
+                atExponentStart = false
+                at++
+                continue
+            }
 
             // A time-rewrite: the colon drops and the digits glue.
             val time = TIME_REWRITE.matchEntire(word)

@@ -56,6 +56,8 @@ fun main() {
                 is SpokenTokens.Result.Rejected -> System.err.println("rejected: ${result.word}")
                 SpokenTokens.Result.Undo ->
                     if (!engine.undo()) System.err.println("nothing to undo")
+                SpokenTokens.Result.Redo ->
+                    if (!engine.redo()) System.err.println("nothing to redo")
             }
             emit(engine, field)
             continue

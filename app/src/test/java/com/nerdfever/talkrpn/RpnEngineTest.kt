@@ -319,6 +319,25 @@ class RpnEngineTest {
         assertEquals(0.0, engine.x, 0.0)
     }
 
+    @Test fun redoReplaysAnUndo() {
+        engine.mark("5 enter")
+        digits("5")
+        press(Token.Enter)
+
+        assertTrue(engine.undo())
+        assertEquals(0.0, engine.x, 0.0)
+
+        assertTrue(engine.redo())
+        assertEquals(5.0, engine.x, 0.0)
+        assertEquals(listOf("5 enter"), engine.undoLabels)
+
+        // A new mark clears the future: nothing left to redo.
+        assertTrue(engine.undo())
+        engine.mark("3")
+        digits("3")
+        assertFalse(engine.redo())
+    }
+
     @Test fun relabelWithNoMarkSaysSo() {
         assertFalse(engine.relabelLastMark("anything"))
     }

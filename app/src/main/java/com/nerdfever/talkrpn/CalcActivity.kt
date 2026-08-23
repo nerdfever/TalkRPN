@@ -237,6 +237,16 @@ class CalcActivity : ComponentActivity() {
                     rejectedWord = "undo"
                     outcome = "undo-empty"
                 }
+
+            SpokenTokens.Result.Redo ->
+                if (engine.redo()) {
+                    rejectedWord = null
+                    activityTick.value++
+                    outcome = "redo"
+                } else {
+                    rejectedWord = "redo"
+                    outcome = "redo-empty"
+                }
         }
 
         values.value = currentValues()
@@ -380,6 +390,20 @@ class CalcActivity : ComponentActivity() {
                     if (heard.isBlank()) return@LaunchedEffect
 
                     speakUtterance(heard, "mic")
+                }
+
+                // Recognition FAILURES reach the diary too: speech was
+                // detected and nothing came back - the gap that made two
+                // quiet "undo"s look like the calculator ignoring them.
+                LaunchedEffect(source.failureCount) {
+
+                    if (source.failureCount == 0) return@LaunchedEffect
+
+                    log?.record(
+                        "mic", source.lastFailurePartial.orEmpty(),
+                        "no-result:${source.lastFailure ?: "unknown"}",
+                        engine, values.value["X"].orEmpty(),
+                    )
                 }
 
                 // The idle clock: every input restarts this effect (the

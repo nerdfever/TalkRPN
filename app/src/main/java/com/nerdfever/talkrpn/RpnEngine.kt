@@ -123,6 +123,7 @@ class RpnEngine(
      */
     fun mark(label: String = "") {
         history += snapshotNow(label)
+        redoStack.clear()
     }
 
     /**
@@ -146,9 +147,34 @@ class RpnEngine(
         return true
     }
 
+    /**
+     * Undone snapshots, waiting for redo. Cleared by any new mark - a
+     * fresh input invalidates the future it replaced. Session-only:
+     * deliberately not persisted.
+     */
+    private val redoStack = mutableListOf<Snapshot>()
+
     /** Restore the newest mark. False when there is nothing to undo. */
     fun undo(): Boolean {
-        restore(history.removeLastOrNull() ?: return false)
+
+        val then = history.removeLastOrNull() ?: return false
+
+        // Remember where we stand, labelled as the group being undone,
+        // so redo can walk forward again.
+        redoStack += snapshotNow(then.label)
+        restore(then)
+
+        return true
+    }
+
+    /** Replay the newest undo. False when there is nothing to redo. */
+    fun redo(): Boolean {
+
+        val next = redoStack.removeLastOrNull() ?: return false
+
+        history += snapshotNow(next.label)
+        restore(next)
+
         return true
     }
 
