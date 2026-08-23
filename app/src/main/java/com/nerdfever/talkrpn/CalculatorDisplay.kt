@@ -363,9 +363,11 @@ fun CalculatorDisplay(
     values: Map<String, String>,
     knobs: DisplayKnobs,
     modifier: Modifier = Modifier,
+    angleAnnunciator: String = "DEG",
 ) = CalculatorDisplay(
     values = values,
     modifier = modifier,
+    angleAnnunciator = angleAnnunciator,
     heightFraction = knobs.heightFraction,
     gapUnits = knobs.gapUnits,
     vgapUnits = knobs.vgapUnits,
@@ -390,6 +392,7 @@ fun CalculatorDisplay(
     showFieldBoxes: Boolean = false,
     slantDegrees: Float = TalkRpnFont.SLANT_DEGREES,
     strokeUnits: Float = TalkRpnFont.STROKE,
+    angleAnnunciator: String = "DEG",
 ) {
     val context = LocalContext.current
     val metrics = context.resources.displayMetrics
@@ -649,7 +652,9 @@ fun CalculatorDisplay(
                     )
                 },
         ) {
-            Annunciator("DEG")
+            // The angle annunciator is LIVE - the engine's mode. SI
+            // remains the units placeholder.
+            Annunciator(angleAnnunciator)
             Spacer(Modifier.width(GAP_SMALL))
             Annunciator("SI")
         }

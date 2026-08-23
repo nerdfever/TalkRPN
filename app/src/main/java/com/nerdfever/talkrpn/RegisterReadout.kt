@@ -18,7 +18,7 @@ object RegisterReadout {
     ): Map<String, String> {
 
         fun formatted(value: Double) = NumberFormatter.format(
-            value, NumberFormatter.Mode.FIX, engine.dspPlaces, field
+            value, engine.dspMode, engine.dspPlaces, field
         )
 
         return mapOf(
@@ -44,7 +44,7 @@ object RegisterReadout {
         engine.error -> "Error"
         engine.entry.isNotEmpty() -> withEntryRadix(engine.entry)
         else -> NumberFormatter.format(
-            engine.x, NumberFormatter.Mode.FIX, engine.dspPlaces, field
+            engine.x, engine.dspMode, engine.dspPlaces, field
         )
     }
 

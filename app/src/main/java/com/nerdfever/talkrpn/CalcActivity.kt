@@ -258,6 +258,9 @@ class CalcActivity : ComponentActivity() {
     /** Bumps on input that MOVED the machine - the idle clock's key. */
     private val activityTick = mutableStateOf(0)
 
+    /** The live angle mode for the annunciator; refreshed with values. */
+    private val angleMode = mutableStateOf("DEG")
+
     /** Foreground state, as Compose state so the mic follows it. */
     private val resumed = mutableStateOf(false)
 
@@ -292,9 +295,11 @@ class CalcActivity : ComponentActivity() {
      * Rejections do NOT enter here: they show in their own system-font
      * line, and X stays the truth.
      */
-    private fun currentValues(): Map<String, String> =
-        RegisterReadout.registerTexts(engine, field) +
+    private fun currentValues(): Map<String, String> {
+        angleMode.value = engine.angleMode.name
+        return RegisterReadout.registerTexts(engine, field) +
             ("X" to RegisterReadout.displayText(engine, field))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -452,7 +457,10 @@ class CalcActivity : ComponentActivity() {
                         }
                     }
 
-                    CalculatorDisplay(values = values.value, knobs = knobs)
+                    CalculatorDisplay(
+                        values = values.value, knobs = knobs,
+                        angleAnnunciator = angleMode.value,
+                    )
 
                     // The rejection line - the fail-visibly voice, in the
                     // system font where a word cannot pass for digits.

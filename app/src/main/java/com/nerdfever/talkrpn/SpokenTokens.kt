@@ -79,14 +79,45 @@ object SpokenTokens {
         listOf("/") to Token.Divide,
 
         listOf("square", "root") to Token.Sqrt,
+        listOf("root") to Token.Sqrt,
         listOf("reciprocal") to Token.Reciprocal,
+        listOf("inverse") to Token.Reciprocal,
+        listOf("invert") to Token.Reciprocal,
         listOf("change", "sign") to Token.Chs,
+        listOf("negate") to Token.Chs,
+        listOf("c", "h", "s") to Token.Chs,
+
+        // The sheet's function tier.
+        listOf("raise") to Token.Power,
+        listOf("power") to Token.Power,
+        listOf("squared") to Token.Squared,
+        listOf("natural", "log") to Token.Ln,
+        listOf("l", "n") to Token.Ln,
+        listOf("natural", "antilog") to Token.Exp,
+        listOf("sine") to Token.Sin,
+        listOf("cosine") to Token.Cos,
+        listOf("tangent") to Token.Tan,
+        listOf("arcsine") to Token.Asin,
+        listOf("arc", "sine") to Token.Asin,
+        listOf("arccosine") to Token.Acos,
+        listOf("arc", "cosine") to Token.Acos,
+        listOf("arctangent") to Token.Atan,
+        listOf("arc", "tangent") to Token.Atan,
+        listOf("rectangular") to Token.ToRectangular,
+        listOf("polar") to Token.ToPolar,
+        listOf("positive") to Token.Abs,
+        listOf("abs") to Token.Abs,
+        listOf("absolute") to Token.Abs,
+        listOf("degrees") to Token.Degrees,
+        listOf("radians") to Token.Radians,
 
         listOf("clear", "x") to Token.ClearX,
         listOf("clear", "all") to Token.ClearStack,
         listOf("swap") to Token.SwapXY,
         listOf("exchange") to Token.SwapXY,
         listOf("roll", "down") to Token.RollDown,
+        listOf("roll") to Token.RollDown,   // a finished-utterance exemption - see the init check
+        listOf("drop") to Token.RollDown,
         listOf("roll", "up") to Token.RollUp,
         listOf("last", "x") to Token.LastX,
         listOf("pi") to Token.Pi,
@@ -101,10 +132,13 @@ object SpokenTokens {
         "zero" to '0', "one" to '1', "two" to '2', "three" to '3',
         "four" to '4', "five" to '5', "six" to '6', "seven" to '7',
         "eight" to '8', "nine" to '9',
+
+        // The aviation forms, per the sheet - and "oh" for zero.
+        "oh" to '0', "fife" to '5', "niner" to '9',
     )
 
-    /** The radix, spoken. */
-    private const val POINT_WORD = "point"
+    /** The radix, spoken - "point", or the sheet's "dot". */
+    private val POINT_WORDS = setOf("point", "dot")
 
     /** EEX during number entry: the weak form and its strong fallback. */
     private val EEX_WORDS = setOf("e", "exponent")
@@ -138,7 +172,15 @@ object SpokenTokens {
     private val FRACTION = Regex("""(\d+)/(\d+)""")
 
     /** DSP as a parsing word: "fix" consumes exactly one number token. */
-    private const val FIX_WORD = "fix"
+    private val FIX_WORDS = setOf("fix", "fixed")
+    private val SCI_WORDS = setOf("scientific")
+    private val ENG_WORDS = setOf("engineering")
+
+    /**
+     * The bases a log/antilog parsing word accepts by name; numerals
+     * ("10", "2") come through the ordinary number reading.
+     */
+    private val BASE_WORDS = mapOf("e" to Math.E, "ten" to 10.0, "two" to 2.0)
 
     /**
      * Reserved in EVERY vocabulary, per DESIGN - the escape hatch must
@@ -147,9 +189,11 @@ object SpokenTokens {
      * finalise a lone short word), these ARE the undo utterance; buried
      * inside longer utterances the words still reject.
      */
-    private val UNDO_WORDS = setOf("undo", "cancel", "escape")
+    private val UNDO_WORDS =
+        setOf("undo", "cancel", "escape", "delete", "backspace", "back")
     private val UNDO_UTTERANCES = setOf(
         listOf("undo"), listOf("cancel"), listOf("escape"),
+        listOf("delete"), listOf("backspace"), listOf("back"),
         listOf("undo", "that"), listOf("undo", "it"),
     )
 
@@ -171,9 +215,17 @@ object SpokenTokens {
         // The table fails loudly the first time someone adds a phrase that
         // is a proper prefix of another - the rule DESIGN wants enforced
         // at startup. Single-word tokens are included via the full list.
-        val phrases = PHRASES.keys +
+        // "roll" beside "roll down"/"roll up" LOOKS like a violation, but
+        // the rule guards real-time commitment and this parser sees only
+        // finished utterances - longest match keeps them apart, the same
+        // exemption "times ten to the" rides on. The check therefore runs
+        // with the known finished-utterance exemptions removed.
+        val exempt = setOf(listOf("roll"))
+
+        val phrases = PHRASES.keys - exempt +
             DIGIT_WORDS.keys.map { listOf(it) } +
-            listOf(listOf(POINT_WORD), listOf(FIX_WORD)) +
+            POINT_WORDS.map { listOf(it) } +
+            (FIX_WORDS + SCI_WORDS + ENG_WORDS).map { listOf(it) } +
             EEX_WORDS.map { listOf(it) }
 
         assertNoProperPrefixes(phrases)
@@ -224,6 +276,41 @@ object SpokenTokens {
         listOf("exchange") to "x\u2194y",
         listOf("pi") to "\u03C0",
         listOf("pie") to "\u03C0",
+        listOf("raise") to "y^x",
+        listOf("power") to "y^x",
+        listOf("squared") to "x\u00B2",
+        listOf("natural", "log") to "LN",
+        listOf("l", "n") to "LN",
+        listOf("natural", "antilog") to "e^x",
+        listOf("sine") to "sin",
+        listOf("cosine") to "cos",
+        listOf("tangent") to "tan",
+        listOf("arcsine") to "sin\u207B\u00B9",
+        listOf("arc", "sine") to "sin\u207B\u00B9",
+        listOf("arccosine") to "cos\u207B\u00B9",
+        listOf("arc", "cosine") to "cos\u207B\u00B9",
+        listOf("arctangent") to "tan\u207B\u00B9",
+        listOf("arc", "tangent") to "tan\u207B\u00B9",
+        listOf("rectangular") to "\u2192R",
+        listOf("polar") to "\u2192P",
+        listOf("roll") to "R\u2193",
+        listOf("drop") to "R\u2193",
+        listOf("negate") to "\u00B1",
+        listOf("c", "h", "s") to "\u00B1",
+        listOf("root") to "\u221Ax",
+        listOf("inverse") to "1/x",
+        listOf("invert") to "1/x",
+        listOf("positive") to "|x|",
+        listOf("abs") to "|x|",
+        listOf("absolute") to "|x|",
+        listOf("negative") to "-|x|",
+        listOf("degrees") to "DEG",
+        listOf("radians") to "RAD",
+        listOf("log", "base") to "LOG",
+        listOf("antilog", "base") to "ALOG",
+        listOf("scientific") to "SCI",
+        listOf("engineering") to "ENG",
+        listOf("fixed") to "FIX",
         listOf("store") to "STO",
         listOf("recall") to "RCL",
         listOf("fix") to "FIX",
@@ -266,7 +353,7 @@ object SpokenTokens {
                     sci.groupValues[1] + "E" + sci.groupValues[2] + sci.groupValues[3]
                 TIME_REWRITE.matches(word) -> word.replace(":", "")
                 DIGIT_WORDS.containsKey(word) -> DIGIT_WORDS[word].toString()
-                word == POINT_WORD -> NumberFormatter.RADIX.toString()
+                word in POINT_WORDS -> NumberFormatter.RADIX.toString()
                 word in EEX_WORDS && run != null -> "E"
                 (word == "minus" || word == "negative") &&
                     run?.endsWith("E") == true -> "-"
@@ -399,7 +486,7 @@ object SpokenTokens {
                 at++
                 continue
             }
-            if (word == POINT_WORD) {
+            if (word in POINT_WORDS) {
                 out += Token.Digit(NumberFormatter.RADIX)
                 inNumber = true
                 atExponentStart = false
@@ -407,11 +494,20 @@ object SpokenTokens {
                 continue
             }
 
-            // EEX, only while a number is in progress - "e" anywhere else
-            // is rejected until the constant exists in the engine.
+            // The sheet's row-14 rule, verbatim: "e" after digits is EEX;
+            // anywhere else it is the base of the natural logs. Only the
+            // bare "e" carries the constant meaning - "exponent" stays
+            // EEX-only.
             if (word in EEX_WORDS && inNumber) {
                 out += Token.Eex
                 atExponentStart = true
+                at++
+                continue
+            }
+            if (word == "e") {
+                out += Token.EConst
+                inNumber = false
+                atExponentStart = false
                 at++
                 continue
             }
@@ -433,25 +529,56 @@ object SpokenTokens {
             // THE SIGN RULE: minus immediately after the exponent marker
             // signs the exponent (the engine's CHS negates the exponent
             // mid-entry); everywhere else minus is SUBTRACT, matched from
-            // the phrase table below.
+            // the phrase table below - and "negative" outside that spot
+            // is the sheet's force-negative on X.
             if (atExponentStart && (word == "minus" || word == "negative")) {
                 out += Token.Chs
                 atExponentStart = false
                 at++
                 continue
             }
+            if (word == "negative") {
+                out += Token.ForceNegative
+                inNumber = false
+                at++
+                continue
+            }
 
-            // FIX is a parsing word: the next token is resolved as a
-            // NUMBER, DESIGN's separate-vocabulary trick, and the pair
-            // becomes one Dsp token.
-            if (word == FIX_WORD) {
+            // The display parsing words - fix/scientific/engineering N:
+            // the next token resolves as a NUMBER, DESIGN's separate-
+            // vocabulary trick, and the pair becomes one mode token.
+            if (word in FIX_WORDS || word in SCI_WORDS || word in ENG_WORDS) {
                 val places = words.getOrNull(at + 1)
                     ?.let { DIGIT_WORDS[it]?.digitToInt() ?: it.toIntOrNull() }
                     ?: return Result.Rejected(word)
-                out += Token.Dsp(places)
+                out += when (word) {
+                    in SCI_WORDS -> Token.SciMode(places)
+                    in ENG_WORDS -> Token.EngMode(places)
+                    else -> Token.Dsp(places)
+                }
                 inNumber = false
                 atExponentStart = false
                 at += 2
+                continue
+            }
+
+            // log base N / antilog base N - the same trick, the argument
+            // resolved against NUMBERS ("e", "ten", "two", or a numeral).
+            if ((word == "log" || word == "antilog") &&
+                words.getOrNull(at + 1) == "base"
+            ) {
+                val argument = words.getOrNull(at + 2)
+                val base = argument?.let {
+                    BASE_WORDS[it]
+                        ?: DIGIT_WORDS[it]?.digitToInt()?.toDouble()
+                        ?: it.toDoubleOrNull()
+                } ?: return Result.Rejected(word)
+
+                out += if (word == "log") Token.LogBase(base)
+                else Token.AntilogBase(base)
+                inNumber = false
+                atExponentStart = false
+                at += 3
                 continue
             }
 

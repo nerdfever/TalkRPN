@@ -130,10 +130,11 @@ class SpokenTokensTest {
         assertEquals("355 ↵", SpokenTokens.trailLabel("3:55 enter"))
     }
 
-    @Test fun eOutsideANumberIsRejected() {
-        // The constant e is not in the engine yet; a stray weak "e" must
-        // fail visibly rather than vanish.
-        assertTrue(SpokenTokens.parse("e enter") is Result.Rejected)
+    @Test fun eOutsideANumberIsTheConstant() {
+        // The sheet's row-14 rule: "e" after digits is EEX, anywhere else
+        // the base of the natural logs.
+        say("e natural log")
+        assertEquals(1.0, engine.x, 1e-12)
     }
 
     // ---- Commands and rewrites ------------------------------------------------
@@ -173,6 +174,95 @@ class SpokenTokensTest {
     @Test fun fixConsumesExactlyOneNumber() {
         assertEquals(listOf<Token>(Token.Dsp(4)), tokensOf("fix four"))
         assertEquals(listOf<Token>(Token.Dsp(2)), tokensOf("fix 2"))
+    }
+
+    // ---- The sheet's function tier ------------------------------------------------
+
+    @Test fun powerAndSquared() {
+        say("two enter 10 raise")
+        assertEquals(1024.0, engine.x, 0.0)
+
+        say("clear all nine squared")
+        assertEquals(81.0, engine.x, 0.0)
+    }
+
+    @Test fun logsRoundTrip() {
+        say("1000 log base ten")
+        assertEquals(3.0, engine.x, 1e-12)
+
+        say("clear all three antilog base ten")
+        assertEquals(1000.0, engine.x, 1e-9)
+
+        say("clear all five natural log natural antilog")
+        assertEquals(5.0, engine.x, 1e-12)
+
+        say("clear all e natural log")
+        assertEquals(1.0, engine.x, 1e-12)
+    }
+
+    @Test fun trigHonoursTheAngleMode() {
+        // Degrees is the power-on default.
+        say("90 sine")
+        assertEquals(1.0, engine.x, 1e-12)
+
+        say("clear all radians pi enter two divide sine")
+        assertEquals(1.0, engine.x, 1e-12)
+
+        say("clear all degrees one arcsine")
+        assertEquals(90.0, engine.x, 1e-9)
+    }
+
+    @Test fun polarAndRectangularRoundTrip() {
+        // 3,4 -> r 5 at 53.13 degrees -> back to 3,4.
+        say("degrees clear all four enter three polar")
+        assertEquals(5.0, engine.x, 1e-9)
+
+        say("rectangular")
+        assertEquals(3.0, engine.x, 1e-9)
+        assertEquals(4.0, engine.y, 1e-9)
+    }
+
+    @Test fun positiveAndNegativeSetTheSign() {
+        say("five change sign positive")
+        assertEquals(5.0, engine.x, 0.0)
+
+        say("negative")
+        assertEquals(-5.0, engine.x, 0.0)
+    }
+
+    @Test fun aviationDigitsAndDot() {
+        say("niner fife dot oh one enter")
+        assertEquals(95.01, engine.x, 0.0)
+    }
+
+    @Test fun rollAndDropAreRollDown() {
+        say("one enter two enter three enter four roll")
+        assertEquals(3.0, engine.x, 0.0)
+        say("drop")
+        assertEquals(2.0, engine.x, 0.0)
+    }
+
+    @Test fun scientificAndEngineeringAreParsingWords() {
+        assertEquals(
+            listOf<Token>(Token.SciMode(4)),
+            tokensOf("scientific four"),
+        )
+        assertEquals(
+            listOf<Token>(Token.EngMode(2)),
+            tokensOf("engineering 2"),
+        )
+        assertEquals(listOf<Token>(Token.Dsp(3)), tokensOf("fixed three"))
+    }
+
+    @Test fun domainEscapesFailVisiblyAndLeaveTheMachine() {
+        say("five change sign enter")
+        engine.press(Token.Ln)
+        assertTrue(engine.error)
+        assertEquals(-5.0, engine.x, 0.0)
+
+        engine.press(Token.Digit('2'))
+        engine.press(Token.Asin)
+        assertTrue(engine.error)
     }
 
     // ---- Atomicity and reservations ----------------------------------------------

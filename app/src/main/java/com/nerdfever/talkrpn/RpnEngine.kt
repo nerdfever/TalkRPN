@@ -1,6 +1,18 @@
 package com.nerdfever.talkrpn
 
+import kotlin.math.abs
+import kotlin.math.acos
+import kotlin.math.asin
+import kotlin.math.atan
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.exp
+import kotlin.math.hypot
+import kotlin.math.ln
+import kotlin.math.pow
+import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.math.tan
 
 /*
  * RpnEngine - the classical four-level RPN machine, exactly as settled in
@@ -93,6 +105,14 @@ class RpnEngine(
     /** DSP - shown decimal places. Engine state so DSP is a real (neutral) token. */
     var dspPlaces = DEFAULT_DSP_PLACES; private set
 
+    /** The display's notation - FIX, SCI or ENG - set by the mode tokens. */
+    var dspMode = NumberFormatter.Mode.FIX; private set
+
+    /** DEG or RAD - what the trig tokens read, and the annunciator shows. */
+    enum class AngleMode { DEG, RAD }
+
+    var angleMode = AngleMode.DEG; private set
+
     // ---- Undo: the whole machine, remembered ------------------------------------
 
     /**
@@ -105,6 +125,7 @@ class RpnEngine(
         val lastX: Double, val storage: Double,
         val buffer: String, val noLift: Boolean,
         val error: Boolean, val dspPlaces: Int,
+        val dspMode: NumberFormatter.Mode, val angleMode: AngleMode,
         val label: String,
     )
 
@@ -179,13 +200,17 @@ class RpnEngine(
     }
 
     private fun snapshotNow(label: String = "") =
-        Snapshot(x, y, z, t, lastX, storage, buffer, noLift, error, dspPlaces, label)
+        Snapshot(
+            x, y, z, t, lastX, storage, buffer, noLift, error, dspPlaces,
+            dspMode, angleMode, label,
+        )
 
     private fun restore(then: Snapshot) {
         x = then.x; y = then.y; z = then.z; t = then.t
         lastX = then.lastX; storage = then.storage
         buffer = then.buffer; noLift = then.noLift
         error = then.error; dspPlaces = then.dspPlaces
+        dspMode = then.dspMode; angleMode = then.angleMode
     }
 
     // ---- Persistence: the machine as text ---------------------------------------
@@ -222,17 +247,20 @@ class RpnEngine(
 
     /**
      * One snapshot as one tab-separated line; [decode]'s exact inverse.
-     * The label rides LAST - it never holds a tab, so no escaping.
+     * The label rides LAST - it never holds a tab, so no escaping. Older
+     * stores load by their size: ten fields predate labels, eleven
+     * predate the display and angle modes.
      */
     private fun encode(s: Snapshot): String = listOf(
         s.x, s.y, s.z, s.t, s.lastX, s.storage,
-        s.buffer, s.noLift, s.error, s.dspPlaces, s.label,
+        s.buffer, s.noLift, s.error, s.dspPlaces,
+        s.dspMode.name, s.angleMode.name, s.label,
     ).joinToString("\t")
 
     private fun decode(line: String): Snapshot? {
 
         val parts = line.split('\t')
-        if (parts.size != 10 && parts.size != 11) return null
+        if (parts.size != 10 && parts.size != 11 && parts.size != 13) return null
 
         return Snapshot(
             parts[0].toDoubleOrNull() ?: return null,
@@ -246,8 +274,18 @@ class RpnEngine(
             parts[8].toBooleanStrictOrNull() ?: return null,
             parts[9].toIntOrNull() ?: return null,
 
-            // An older ten-field store loads with an empty label.
-            parts.getOrNull(10) ?: "",
+            if (parts.size == 13) {
+                runCatching { NumberFormatter.Mode.valueOf(parts[10]) }
+                    .getOrNull() ?: return null
+            } else NumberFormatter.Mode.FIX,
+
+            if (parts.size == 13) {
+                runCatching { AngleMode.valueOf(parts[11]) }
+                    .getOrNull() ?: return null
+            } else AngleMode.DEG,
+
+            // The label is always last, whatever the vintage.
+            if (parts.size == 13) parts[12] else parts.getOrNull(10) ?: "",
         )
     }
 
@@ -284,10 +322,33 @@ class RpnEngine(
         // One-number operations.
         data object Sqrt : Token
         data object Reciprocal : Token
+        data object Squared : Token
+        data object Ln : Token
+        data object Exp : Token
+        data object Abs : Token
+        data object ForceNegative : Token
+        data object Sin : Token
+        data object Cos : Token
+        data object Tan : Token
+        data object Asin : Token
+        data object Acos : Token
+        data object Atan : Token
+
+        /** log base [base] of X; the base arrives from a parsing word. */
+        data class LogBase(val base: Double) : Token
+
+        /** [base] raised to X - the antilog. */
+        data class AntilogBase(val base: Double) : Token
+
+        // Two-number and two-register operations.
+        data object Power : Token
+        data object ToRectangular : Token
+        data object ToPolar : Token
 
         // Value producers.
         data object LastX : Token
         data object Pi : Token
+        data object EConst : Token
         data object Rcl : Token
 
         // Storage and modes. STO takes no argument - one register, as on
@@ -296,6 +357,14 @@ class RpnEngine(
         // never holds a half-token mode.
         data object Sto : Token
         data class Dsp(val places: Int) : Token
+
+        /** SCI and ENG notation, with their places - NEUTRAL like DSP. */
+        data class SciMode(val places: Int) : Token
+        data class EngMode(val places: Int) : Token
+
+        /** Angle modes for the trig tokens - NEUTRAL too. */
+        data object Degrees : Token
+        data object Radians : Token
     }
 
     /**
@@ -319,7 +388,8 @@ class RpnEngine(
 
     private fun dispositionOf(token: Token): Disposition = when (token) {
         Token.Enter, Token.ClearX, Token.ClearStack, Token.Sto -> Disposition.DISABLING
-        is Token.Dsp -> Disposition.NEUTRAL
+        is Token.Dsp, is Token.SciMode, is Token.EngMode,
+        Token.Degrees, Token.Radians -> Disposition.NEUTRAL
         else -> Disposition.ENABLING
     }
 
@@ -402,13 +472,82 @@ class RpnEngine(
                 if (a == 0.0) return fail() else 1.0 / a
             }
 
+            Token.Squared -> oneNumber { a -> a * a }
+
+            Token.Ln -> oneNumber { a ->
+                if (a <= 0.0) return fail() else ln(a)
+            }
+
+            Token.Exp -> oneNumber { a -> exp(a) }
+
+            Token.Abs -> oneNumber { a -> abs(a) }
+            Token.ForceNegative -> oneNumber { a -> -abs(a) }
+
+            // Trig reads the ANGLE MODE: inputs converted going in,
+            // inverse results converted coming out.
+            Token.Sin -> oneNumber { a -> sin(toRadians(a)) }
+            Token.Cos -> oneNumber { a -> cos(toRadians(a)) }
+            Token.Tan -> oneNumber { a -> tan(toRadians(a)) }
+
+            Token.Asin -> oneNumber { a ->
+                if (abs(a) > 1.0) return fail() else fromRadians(asin(a))
+            }
+            Token.Acos -> oneNumber { a ->
+                if (abs(a) > 1.0) return fail() else fromRadians(acos(a))
+            }
+            Token.Atan -> oneNumber { a -> fromRadians(atan(a)) }
+
+            is Token.LogBase -> oneNumber { a ->
+                if (a <= 0.0 || token.base <= 0.0 || token.base == 1.0) return fail()
+                else ln(a) / ln(token.base)
+            }
+            is Token.AntilogBase -> oneNumber { a -> token.base.pow(a) }
+
+            Token.Power -> twoNumber { a, b -> a.pow(b) }
+
+            // The pair conversions, HP-21 style: polar holds r in X and
+            // theta in Y; rectangular holds x in X and y in Y. Both axes
+            // move, nothing drops, LAST X keeps the old X.
+            Token.ToRectangular -> {
+                val r = x
+                val theta = toRadians(y)
+                val newX = r * cos(theta)
+                val newY = r * sin(theta)
+                if (!newX.isFinite() || !newY.isFinite()) return fail()
+                lastX = x
+                x = newX; y = newY
+            }
+
+            Token.ToPolar -> {
+                val newX = hypot(x, y)
+                val newY = fromRadians(atan2(y, x))
+                if (!newX.isFinite() || !newY.isFinite()) return fail()
+                lastX = x
+                x = newX; y = newY
+            }
+
             Token.LastX -> produce(lastX, wasMidEntry)
             Token.Pi -> produce(Math.PI, wasMidEntry)
+            Token.EConst -> produce(Math.E, wasMidEntry)
             Token.Rcl -> produce(storage, wasMidEntry)
 
             Token.Sto -> storage = x
 
-            is Token.Dsp -> dspPlaces = token.places
+            is Token.Dsp -> {
+                dspMode = NumberFormatter.Mode.FIX
+                dspPlaces = token.places
+            }
+            is Token.SciMode -> {
+                dspMode = NumberFormatter.Mode.SCI
+                dspPlaces = token.places
+            }
+            is Token.EngMode -> {
+                dspMode = NumberFormatter.Mode.ENG
+                dspPlaces = token.places
+            }
+
+            Token.Degrees -> angleMode = AngleMode.DEG
+            Token.Radians -> angleMode = AngleMode.RAD
 
             is Token.Digit, Token.Eex -> Unit // handled above; here for exhaustiveness
         }
@@ -493,10 +632,23 @@ class RpnEngine(
         x = valueOf(buffer)
     }
 
-    /** A two-number operation: consumes X and Y, and T replicates downward. */
+    /** Into radians for the trig inputs, per the angle mode. */
+    private fun toRadians(angle: Double): Double =
+        if (angleMode == AngleMode.DEG) Math.toRadians(angle) else angle
+
+    /** Out of radians for the inverse-trig results, per the angle mode. */
+    private fun fromRadians(angle: Double): Double =
+        if (angleMode == AngleMode.DEG) Math.toDegrees(angle) else angle
+
+    /**
+     * A two-number operation: consumes X and Y, and T replicates downward.
+     * A NON-FINITE result is an error, machine untouched - the HP way of
+     * treating overflow and domain escapes alike.
+     */
     private inline fun twoNumber(operation: (Double, Double) -> Double) {
 
         val result = operation(y, x)
+        if (!result.isFinite()) return fail()
 
         lastX = x
         x = result
@@ -504,10 +656,11 @@ class RpnEngine(
         z = t
     }
 
-    /** A one-number operation: replaces X in place. */
+    /** A one-number operation: replaces X in place. Non-finite fails. */
     private inline fun oneNumber(operation: (Double) -> Double) {
 
         val result = operation(x)
+        if (!result.isFinite()) return fail()
 
         lastX = x
         x = result
