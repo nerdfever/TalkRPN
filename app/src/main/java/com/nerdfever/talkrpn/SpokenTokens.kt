@@ -24,11 +24,11 @@ import com.nerdfever.talkrpn.RpnEngine.Token
  * between 5-3 and 5, -3. Mantissa negation is "change sign", exactly the
  * HP keyboard's CHS.
  *
- * "e" means EEX only while number entry is in progress; anywhere else it
- * is rejected (the constant e is not in the engine yet). "exponent" is
- * its acoustically strong alias - the fallback DESIGN wants for e's
- * weakness, chosen over "times ten to the", which the no-proper-prefix
- * rule forbids ("times" is a token).
+ * "e" carries the sheet's row-14 rule verbatim: after digits it is EEX,
+ * anywhere else the base of the natural logs. "exponent" is EEX's
+ * acoustically strong alias, and "times ten to the" (with its symbol
+ * costumes) is EEX spoken long - legal here because this parser sees
+ * only finished utterances, where longest-match defuses the prefix rule.
  *
  * Pure Kotlin, shared with the :repl process, JVM-tested.
  */
