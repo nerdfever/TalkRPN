@@ -122,6 +122,13 @@ private val REJECT_TEXT = 12.sp
 private val REJECT_GAP_ABOVE = 6.dp
 
 /**
+ * The rejection line sits lower than the trail, where the glass curves
+ * in - right-aligned at the trail's own margin its "?" clipped, so it
+ * steps this much further left.
+ */
+private val REJECT_END_INSET = 12.dp
+
+/**
  * The recognizer-at-work indicator: an orange ellipsis on the dark left
  * side, shown from the moment speech is DETECTED until its result lands -
  * which covers the think-delay after the speaker stops. The protocol it
@@ -495,6 +502,7 @@ class CalcActivity : ComponentActivity() {
                                 fontSize = REJECT_TEXT,
                                 maxLines = 1,
                                 softWrap = false,
+                                modifier = Modifier.padding(end = REJECT_END_INSET),
                             )
                         }
                     }
