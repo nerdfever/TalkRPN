@@ -108,6 +108,9 @@ class CalcActivity : ComponentActivity() {
     // reach it; DisplayKnobs is snapshot state, so the display follows.
     private val knobs = DisplayKnobs()
 
+    /** The durable diagnostic record - one row per event. Set in onCreate. */
+    private var log: CalcLog? = null
+
     /**
      * The unknown word an utterance was rejected on, shown as "word?" in
      * the display until the next input - DESIGN's fail-visibly rule.
@@ -126,21 +129,26 @@ class CalcActivity : ComponentActivity() {
             engine.press(token)
             values.value = currentValues()
             activityTick.value++
+
+            log?.record("pad", word, "applied", engine, values.value["X"].orEmpty())
         }
     }
 
     /** One utterance per broadcast: all of it presses, or none of it. */
     private val utteranceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            speakUtterance(intent?.getStringExtra(UTTER_EXTRA) ?: return)
+            speakUtterance(intent?.getStringExtra(UTTER_EXTRA) ?: return, "utter")
         }
     }
 
     /**
      * One utterance into the machine - the microphone and the UTTER
      * broadcast share this path, so they can never behave differently.
+     * [from] only labels the log row: "mic" or "utter".
      */
-    private fun speakUtterance(utterance: String) {
+    private fun speakUtterance(utterance: String, from: String) {
+
+        val outcome: String
 
         when (val result = SpokenTokens.parse(utterance)) {
 
@@ -152,11 +160,15 @@ class CalcActivity : ComponentActivity() {
                 engine.mark()
                 result.tokens.forEach { engine.press(it) }
                 activityTick.value++
+                outcome = "applied ${result.tokens.size}"
             }
 
             // A rejected utterance shows its word but does NOT touch the
             // idle clock - this is where ambient speech lands.
-            is SpokenTokens.Result.Rejected -> rejectedWord = result.word
+            is SpokenTokens.Result.Rejected -> {
+                rejectedWord = result.word
+                outcome = "rejected:${result.word}"
+            }
 
             // Undo restores the machine to before the last utterance or
             // pad press; with nothing left to undo it says so, in the
@@ -166,12 +178,16 @@ class CalcActivity : ComponentActivity() {
                 if (engine.undo()) {
                     rejectedWord = null
                     activityTick.value++
+                    outcome = "undo"
                 } else {
                     rejectedWord = "undo"
+                    outcome = "undo-empty"
                 }
         }
 
         values.value = currentValues()
+
+        log?.record(from, utterance, outcome, engine, values.value["X"].orEmpty())
     }
 
     /** Bumps on input that MOVED the machine - the idle clock's key. */
@@ -192,6 +208,8 @@ class CalcActivity : ComponentActivity() {
         // swipe away, the charger; every exit passes through here.
         getSharedPreferences(STATE_PREFS, MODE_PRIVATE)
             .edit().putString(STATE_KEY, engine.saveState()).apply()
+
+        log?.record("system", "pause", "saved", engine, values.value["X"].orEmpty())
 
         super.onPause()
     }
@@ -215,11 +233,19 @@ class CalcActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // The diagnostic record first, so even the wake-up is a row.
+        log = CalcLog(this)
+
         // Wake up as the machine went to sleep - a corrupt or absent
         // store simply means power-on state, per loadState's contract.
-        getSharedPreferences(STATE_PREFS, MODE_PRIVATE)
-            .getString(STATE_KEY, null)?.let { engine.loadState(it) }
+        val slept = getSharedPreferences(STATE_PREFS, MODE_PRIVATE).getString(STATE_KEY, null)
+        val restored = slept != null && engine.loadState(slept)
         values.value = currentValues()
+
+        log?.record(
+            "system", "start", if (restored) "restored" else "power-on",
+            engine, values.value["X"].orEmpty(),
+        )
 
         // A calculator being read must not blank mid-thought.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -296,7 +322,7 @@ class CalcActivity : ComponentActivity() {
                     val heard = source.results.firstOrNull()?.text.orEmpty()
                     if (heard.isBlank()) return@LaunchedEffect
 
-                    speakUtterance(heard)
+                    speakUtterance(heard, "mic")
                 }
 
                 // The idle clock: every input restarts this effect (the
@@ -305,6 +331,10 @@ class CalcActivity : ComponentActivity() {
                 // microphone released.
                 LaunchedEffect(activityTick.value) {
                     delay(IDLE_FINISH_MS)
+                    log?.record(
+                        "system", "idle", "finish",
+                        engine, values.value["X"].orEmpty(),
+                    )
                     finish()
                 }
 
