@@ -86,6 +86,40 @@ class SpokenTokensTest {
         )
     }
 
+    @Test fun timesTenToTheIsEexTheLongWay() {
+        // The natural phrase, straight from the wrist: "to?" said the
+        // vocabulary lacked it. Finished-utterance parsing makes it safe
+        // despite "times" being a token.
+        say("6.5 times ten to the 16 enter")
+        assertEquals(6.5e16, engine.x, 1e3)
+
+        // And bare, the engine supplies the implicit 1 - HP-21 style.
+        say("times ten to the six enter")
+        assertEquals(1e6, engine.x, 0.0)
+
+        // Plain multiplication by a number still multiplies.
+        say("clear all 3 enter 10 times")
+        assertEquals(30.0, engine.x, 0.0)
+    }
+
+    @Test fun aSplitUtteranceKeepsItsE() {
+        // The endpointer can cut "6.5 ... e 16" in two; the second
+        // utterance parses with entry still open and keeps its meaning.
+        say("6.5")
+        when (val result = SpokenTokens.parse("e 16", entryOpen = true)) {
+            is Result.Parsed -> result.tokens.forEach { engine.press(it) }
+            else -> fail("split utterance rejected")
+        }
+        assertEquals(6.5e16, engine.x, 1e3)
+    }
+
+    @Test fun aFractionRewriteDivides() {
+        // The recognizer writes "seven eighths"-ish speech as "7/8"; the
+        // notation means the division, so that is what it does.
+        say("7/8")
+        assertEquals(0.875, engine.x, 0.0)
+    }
+
     @Test fun eOutsideANumberIsRejected() {
         // The constant e is not in the engine yet; a stray weak "e" must
         // fail visibly rather than vanish.

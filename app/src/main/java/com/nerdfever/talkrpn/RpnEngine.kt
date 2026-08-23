@@ -95,12 +95,17 @@ class RpnEngine(
 
     // ---- Undo: the whole machine, remembered ------------------------------------
 
-    /** A complete copy of the machine - every field above. */
+    /**
+     * A complete copy of the machine - every field above - plus the
+     * LABEL of the input group that followed it: the utterance or pad
+     * word, which is what an on-screen undo trail shows.
+     */
     private data class Snapshot(
         val x: Double, val y: Double, val z: Double, val t: Double,
         val lastX: Double, val storage: Double,
         val buffer: String, val noLift: Boolean,
         val error: Boolean, val dspPlaces: Int,
+        val label: String,
     )
 
     /**
@@ -112,11 +117,19 @@ class RpnEngine(
     /**
      * Remember the machine as it stands. Callers mark once per INPUT
      * GROUP - a whole utterance, or one typed token - so undo steps by
-     * what the user DID, not by internal keypresses.
+     * what the user DID, not by internal keypresses. [label] is that
+     * input, verbatim; it becomes the trail entry undo removes.
      */
-    fun mark() {
-        history += snapshotNow()
+    fun mark(label: String = "") {
+        history += snapshotNow(label)
     }
+
+    /**
+     * What each un-undone input group WAS, oldest first - the undo
+     * trail. One entry per mark; undo removes the newest.
+     */
+    val undoLabels: List<String>
+        get() = history.map { it.label }
 
     /** Restore the newest mark. False when there is nothing to undo. */
     fun undo(): Boolean {
@@ -124,8 +137,8 @@ class RpnEngine(
         return true
     }
 
-    private fun snapshotNow() =
-        Snapshot(x, y, z, t, lastX, storage, buffer, noLift, error, dspPlaces)
+    private fun snapshotNow(label: String = "") =
+        Snapshot(x, y, z, t, lastX, storage, buffer, noLift, error, dspPlaces, label)
 
     private fun restore(then: Snapshot) {
         x = then.x; y = then.y; z = then.z; t = then.t
@@ -166,16 +179,19 @@ class RpnEngine(
         return true
     }
 
-    /** One snapshot as one tab-separated line; [decode]'s exact inverse. */
+    /**
+     * One snapshot as one tab-separated line; [decode]'s exact inverse.
+     * The label rides LAST - it never holds a tab, so no escaping.
+     */
     private fun encode(s: Snapshot): String = listOf(
         s.x, s.y, s.z, s.t, s.lastX, s.storage,
-        s.buffer, s.noLift, s.error, s.dspPlaces,
+        s.buffer, s.noLift, s.error, s.dspPlaces, s.label,
     ).joinToString("\t")
 
     private fun decode(line: String): Snapshot? {
 
         val parts = line.split('\t')
-        if (parts.size != 10) return null
+        if (parts.size != 10 && parts.size != 11) return null
 
         return Snapshot(
             parts[0].toDoubleOrNull() ?: return null,
@@ -188,6 +204,9 @@ class RpnEngine(
             parts[7].toBooleanStrictOrNull() ?: return null,
             parts[8].toBooleanStrictOrNull() ?: return null,
             parts[9].toIntOrNull() ?: return null,
+
+            // An older ten-field store loads with an empty label.
+            parts.getOrNull(10) ?: "",
         )
     }
 

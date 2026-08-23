@@ -230,8 +230,12 @@ Two consequences in the current vocabulary:
   the same token, but firing on `absolute` leaves `value` behind as a stray word.
   Simplest to drop `absolute value`.
 
-`times ten to the` has been dropped from the vocabulary entirely, which removes the
-case that prompted the original rule.
+`times ten to the` was dropped under this rule, then REINSTATED once the
+parser settled on finished-utterance parsing: the rule above guards
+real-time commitment, and a finished utterance resolves prefixes by
+longest match. The wrist asked for it back on day one ("to?"). If
+streaming (partial-result) parsing ever arrives, this phrase is the first
+thing to revisit.
 
 Worth enforcing at startup: assert that no token is a proper prefix of another, so
 the table fails loudly the first time someone adds one.
@@ -373,6 +377,13 @@ negative mantissa, "five minus three" would be ambiguous between 5−3 and
 This is what HP calculators already do — EEX then CHS negates the exponent, not the
 mantissa. Not a special case; the standard numeric-literal lexing rule.
 
+Two recognizer behaviours the lexer absorbs, both found on the wrist:
+the endpointer can SPLIT a number across utterances ("6.5 … e 16"), so
+the parser is told whether the engine's entry is still open and lets a
+leading `e` continue it; and fractions arrive rewritten ("7/8"), which
+parse as the division the notation means — someone entering digits 78
+says "seventy eight".
+
 **`e` carries three meanings, disambiguated by position:**
 
 | Context | Meaning | Resolved by |
@@ -409,9 +420,9 @@ Two consequences:
 
 - **Do not judge `e` by speaking it in isolation.** That tests the endpointer, not
   the vocabulary.
-- **Keep a long spoken form for EEX.** The fallback is `exponent` — one word,
-  acoustically strong, and prefix-clean. (`times ten to the` would have served,
-  but the no-proper-prefix rule forbids it: `times` is a token.)
+- **Keep a long spoken form for EEX.** Two now exist: `exponent` — one word,
+  acoustically strong — and `times ten to the`, reinstated under
+  finished-utterance parsing (see the alias-constraint section).
 
 Biasing has **not** been tried yet, and this is the token most likely to benefit
 from it.

@@ -48,9 +48,9 @@ fun main() {
         // a rejected utterance leaves the engine exactly as it stood.
         // One mark per utterance, so undo steps back by what was said.
         if (line.lowercase().startsWith("say ")) {
-            when (val result = SpokenTokens.parse(line.drop(4))) {
+            when (val result = SpokenTokens.parse(line.drop(4), engine.entry.isNotEmpty())) {
                 is SpokenTokens.Result.Parsed -> {
-                    engine.mark()
+                    engine.mark(line.drop(4))
                     result.tokens.forEach(engine::press)
                 }
                 is SpokenTokens.Result.Rejected -> System.err.println("rejected: ${result.word}")
@@ -77,7 +77,7 @@ fun main() {
             continue
         }
 
-        engine.mark()
+        engine.mark(line)
         engine.press(token)
         emit(engine, field)
     }

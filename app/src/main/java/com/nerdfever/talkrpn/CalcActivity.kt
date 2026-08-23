@@ -16,7 +16,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +27,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.AppScaffold
 import kotlinx.coroutines.delay
 
@@ -91,6 +96,16 @@ private const val IDLE_FINISH_MS = 3L * 60L * 1000L
 private const val STATE_PREFS = "calculator_state"
 private const val STATE_KEY = "machine"
 
+/**
+ * The undo trail on the glass: the last few input groups, dim and small,
+ * down the usually-dark right side. Each entry is one engine mark, so
+ * "undo" removes exactly one line - the trail IS the undo stack, shown.
+ * It draws UNDER the register ink, so long values win the overlap.
+ */
+private const val TRAIL_LINES = 7
+private val TRAIL_TEXT = 10.sp
+private val TRAIL_END_MARGIN = 8.dp
+
 class CalcActivity : ComponentActivity() {
 
     // The engine's entry field is the display's field, so entry stops
@@ -125,14 +140,22 @@ class CalcActivity : ComponentActivity() {
             val token = TokenWords.parse(word) ?: return
 
             rejectedWord = null
-            engine.mark()
+            engine.mark(word)
             engine.press(token)
             values.value = currentValues()
             activityTick.value++
 
             log?.record("pad", word, "applied", engine, values.value["X"].orEmpty())
+            trail.value = engine.undoLabels
         }
     }
+
+    /**
+     * The trail the glass shows: the engine's own undo labels, re-read
+     * after every event - derived, never tracked in parallel, so it can
+     * never disagree with what undo will actually remove.
+     */
+    private val trail = mutableStateOf<List<String>>(emptyList())
 
     /** One utterance per broadcast: all of it presses, or none of it. */
     private val utteranceReceiver = object : BroadcastReceiver() {
@@ -150,14 +173,16 @@ class CalcActivity : ComponentActivity() {
 
         val outcome: String
 
-        when (val result = SpokenTokens.parse(utterance)) {
+        // The parser learns whether entry is still open, so a number the
+        // endpointer split across utterances keeps its "e".
+        when (val result = SpokenTokens.parse(utterance, engine.entry.isNotEmpty())) {
 
             is SpokenTokens.Result.Parsed -> {
                 rejectedWord = null
 
                 // One mark per utterance, so "undo" steps back by what
                 // was SAID, however many presses it contained.
-                engine.mark()
+                engine.mark(utterance)
                 result.tokens.forEach { engine.press(it) }
                 activityTick.value++
                 outcome = "applied ${result.tokens.size}"
@@ -186,6 +211,7 @@ class CalcActivity : ComponentActivity() {
         }
 
         values.value = currentValues()
+        trail.value = engine.undoLabels
 
         log?.record(from, utterance, outcome, engine, values.value["X"].orEmpty())
     }
@@ -241,6 +267,7 @@ class CalcActivity : ComponentActivity() {
         val slept = getSharedPreferences(STATE_PREFS, MODE_PRIVATE).getString(STATE_KEY, null)
         val restored = slept != null && engine.loadState(slept)
         values.value = currentValues()
+        trail.value = engine.undoLabels
 
         log?.record(
             "system", "start", if (restored) "restored" else "power-on",
@@ -353,6 +380,24 @@ class CalcActivity : ComponentActivity() {
                             indication = null
                         ) { showControls = !showControls }
                 ) {
+                    // The trail first, so register ink draws over it.
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = TRAIL_END_MARGIN),
+                        horizontalAlignment = Alignment.End,
+                    ) {
+                        for (label in trail.value.takeLast(TRAIL_LINES)) {
+                            Text(
+                                text = label,
+                                color = LedPalette.LABEL,
+                                fontSize = TRAIL_TEXT,
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        }
+                    }
+
                     CalculatorDisplay(values = values.value, knobs = knobs)
 
                     if (showControls) {

@@ -105,6 +105,22 @@ object SpokenTokens {
     /** EEX during number entry: the weak form and its strong fallback. */
     private val EEX_WORDS = setOf("e", "exponent")
 
+    /**
+     * EEX spoken the long way: "times ten to the". FORBIDDEN by the
+     * prefix rule for real-time parsing ("times" is a token) - but this
+     * parser only ever sees FINISHED utterances, where longest-match
+     * resolves it safely, so the natural phrase gets to exist. Checked
+     * before the phrase table, so it outranks the bare "times". Must be
+     * revisited if streaming (partial-result) parsing ever arrives.
+     */
+    private val EEX_PHRASES = listOf(
+        listOf("times", "ten", "to", "the"),
+        listOf("times", "10", "to", "the"),
+    )
+
+    /** A fraction as the recognizer writes one: "7/8" means 7 over 8. */
+    private val FRACTION = Regex("""(\d+)/(\d+)""")
+
     /** DSP as a parsing word: "fix" consumes exactly one number token. */
     private const val FIX_WORD = "fix"
 
@@ -143,7 +159,7 @@ object SpokenTokens {
 
     // ---- The parser ----------------------------------------------------------
 
-    fun parse(utterance: String): Result {
+    fun parse(utterance: String, entryOpen: Boolean = false): Result {
 
         val words = utterance.trim().lowercase()
             .split(Regex("""\s+""")).filter { it.isNotEmpty() }
@@ -156,13 +172,33 @@ object SpokenTokens {
         // The number lexer's whole state: is entry in progress, has EEX
         // opened the exponent, and is the NEXT word the exponent's first -
         // the one place a sign word signs instead of subtracting.
-        var inNumber = false
+        //
+        // [entryOpen] seeds the first: the endpointer can split "6.5 ...
+        // e 16" into two utterances, and the second must know the engine
+        // is still mid-entry or its "e" would be rejected.
+        var inNumber = entryOpen
         var atExponentStart = false
 
         var at = 0
         while (at < words.size) {
 
             val word = words[at]
+
+            // A fraction, as the recognizer rewrites one: "7/8" becomes
+            // 7 ENTER 8 DIVIDE - what the notation means. (Saying digits
+            // "seven eight" CAN arrive compounded this way; if 78 was
+            // meant, "seventy eight" survives as "78".)
+            val fraction = FRACTION.matchEntire(word)
+            if (fraction != null) {
+                for (character in fraction.groupValues[1]) out += Token.Digit(character)
+                out += Token.Enter
+                for (character in fraction.groupValues[2]) out += Token.Digit(character)
+                out += Token.Divide
+                inNumber = false
+                atExponentStart = false
+                at++
+                continue
+            }
 
             // Numerals, as the recognizer compounds them: each character
             // is one digit press, the radix included.
@@ -197,6 +233,20 @@ object SpokenTokens {
                 out += Token.Eex
                 atExponentStart = true
                 at++
+                continue
+            }
+
+            // EEX the long way. Works with no number in progress too: the
+            // engine supplies the implicit mantissa 1, so a bare "times
+            // ten to the six" is 1e6, HP-21 style.
+            val eexPhrase = EEX_PHRASES.firstOrNull {
+                it == words.subList(at, minOf(at + it.size, words.size))
+            }
+            if (eexPhrase != null) {
+                out += Token.Eex
+                inNumber = true
+                atExponentStart = true
+                at += eexPhrase.size
                 continue
             }
 

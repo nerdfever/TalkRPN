@@ -286,6 +286,31 @@ class RpnEngineTest {
         assertFalse(engine.undo())
     }
 
+    @Test fun undoLabelsAreTheTrail() {
+        engine.mark("five enter")
+        digits("5")
+        press(Token.Enter)
+        engine.mark("three plus")
+        digits("3")
+        press(Token.Add)
+
+        assertEquals(listOf("five enter", "three plus"), engine.undoLabels)
+
+        // Undo removes exactly the newest entry - the trail IS the stack.
+        assertTrue(engine.undo())
+        assertEquals(listOf("five enter"), engine.undoLabels)
+    }
+
+    @Test fun labelsSurviveTheSaveLoadTrip() {
+        engine.mark("two enter")
+        digits("2")
+        press(Token.Enter)
+
+        val woken = RpnEngine()
+        assertTrue(woken.loadState(engine.saveState()))
+        assertEquals(listOf("two enter"), woken.undoLabels)
+    }
+
     @Test fun saveAndLoadRoundTripTheWholeMachine() {
         // History, registers, and a mid-entry buffer all survive the trip.
         engine.mark()
