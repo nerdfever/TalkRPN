@@ -117,6 +117,17 @@ private val TRAIL_END_MARGIN = 8.dp
 private val REJECT_TEXT = 12.sp
 private val REJECT_OFFSET_BELOW_CENTRE = 42.dp
 
+/**
+ * The recognizer-at-work indicator: an orange ellipsis on the dark left
+ * side, shown from the moment speech is DETECTED until its result lands -
+ * which covers the think-delay after the speaker stops. The protocol it
+ * gives the speaker: dots showing, hold on, it heard you; no dots, it
+ * did not - say it again. Plain listening shows nothing.
+ */
+private val HEARING_TEXT = 18.sp
+private val HEARING_START_PADDING = 12.dp
+private val HEARING_OFFSET_ABOVE_CENTRE = (-46).dp
+
 class CalcActivity : ComponentActivity() {
 
     // The engine's entry field is the display's field, so entry stops
@@ -467,6 +478,19 @@ class CalcActivity : ComponentActivity() {
                         values = values.value, knobs = knobs,
                         angleAnnunciator = angleMode.value,
                     )
+
+                    // The recognizer-at-work dots - see HEARING_TEXT.
+                    if (source.state == TrialState.Hearing) {
+                        Text(
+                            text = "…",
+                            color = LedPalette.LIT,
+                            fontSize = HEARING_TEXT,
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .padding(start = HEARING_START_PADDING)
+                                .offset(y = HEARING_OFFSET_ABOVE_CENTRE),
+                        )
+                    }
 
                     // The rejection line - the fail-visibly voice, in the
                     // system font where a word cannot pass for digits.
