@@ -110,7 +110,8 @@ class RpnEngine(
 
     /**
      * UNLIMITED undo: one snapshot per mark, never trimmed. A snapshot is
-     * ten scalars, so even a day of talking costs next to nothing.
+     * ten scalars and a short label, so even a day of talking costs next
+     * to nothing.
      */
     private val history = mutableListOf<Snapshot>()
 
@@ -130,6 +131,20 @@ class RpnEngine(
      */
     val undoLabels: List<String>
         get() = history.map { it.label }
+
+    /**
+     * Rewrites the newest mark's label - for an utterance that CONTINUES
+     * the previous input group ("1.515" then "35 times" gluing into one
+     * number entry), which extends the group instead of starting one.
+     * False when there is no mark to relabel.
+     */
+    fun relabelLastMark(label: String): Boolean {
+
+        val last = history.removeLastOrNull() ?: return false
+        history += last.copy(label = label)
+
+        return true
+    }
 
     /** Restore the newest mark. False when there is nothing to undo. */
     fun undo(): Boolean {

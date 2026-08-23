@@ -301,6 +301,28 @@ class RpnEngineTest {
         assertEquals(listOf("five enter"), engine.undoLabels)
     }
 
+    @Test fun aContinuationRelabelsInsteadOfMarking() {
+        // "1.515" then "35 times": the second utterance extends the
+        // group - the label rewrites, the mark count stays, and undo
+        // steps past the WHOLE entry.
+        engine.mark("1.515")
+        digits("1.515")
+
+        assertTrue(engine.relabelLastMark("1.51535 *"))
+        digits("35")
+        press(Token.Multiply)
+
+        assertEquals(listOf("1.51535 *"), engine.undoLabels)
+
+        assertTrue(engine.undo())
+        assertEquals("", engine.entry)
+        assertEquals(0.0, engine.x, 0.0)
+    }
+
+    @Test fun relabelWithNoMarkSaysSo() {
+        assertFalse(engine.relabelLastMark("anything"))
+    }
+
     @Test fun labelsSurviveTheSaveLoadTrip() {
         engine.mark("two enter")
         digits("2")

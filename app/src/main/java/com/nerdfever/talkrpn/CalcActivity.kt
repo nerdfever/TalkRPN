@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.AppScaffold
+import com.nerdfever.talkrpn.RpnEngine.Token
 import kotlinx.coroutines.delay
 
 /*
@@ -175,15 +176,28 @@ class CalcActivity : ComponentActivity() {
 
         // The parser learns whether entry is still open, so a number the
         // endpointer split across utterances keeps its "e".
-        when (val result = SpokenTokens.parse(utterance, engine.entry.isNotEmpty())) {
+        val entryWasOpen = engine.entry.isNotEmpty()
+
+        when (val result = SpokenTokens.parse(utterance, entryWasOpen)) {
 
             is SpokenTokens.Result.Parsed -> {
                 rejectedWord = null
 
-                // One mark per utterance, so "undo" steps back by what
-                // was SAID, however many presses it contained - labelled
-                // in the trail's digit shorthand.
-                engine.mark(SpokenTokens.trailLabel(utterance))
+                // One mark per INPUT GROUP. An utterance whose first
+                // token CONTINUES an open entry ("1.515" then "35
+                // times") extends the previous group: no new mark, and
+                // the previous label re-compacts to show the number the
+                // machine actually formed - "1.51535 *", not two lines.
+                val continues = entryWasOpen && result.tokens.firstOrNull()
+                    .let { it is Token.Digit || it == Token.Eex }
+
+                val merged = continues && engine.relabelLastMark(
+                    SpokenTokens.trailLabel(
+                        (engine.undoLabels.lastOrNull().orEmpty() + " " + utterance).trim()
+                    )
+                )
+                if (!merged) engine.mark(SpokenTokens.trailLabel(utterance))
+
                 result.tokens.forEach { engine.press(it) }
                 activityTick.value++
                 outcome = "applied ${result.tokens.size}"

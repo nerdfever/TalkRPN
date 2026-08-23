@@ -187,6 +187,10 @@ class SpokenTokensTest {
         assertEquals("2.5 e 6 enter", SpokenTokens.trailLabel("two point five e six enter"))
         assertEquals("988 enter", SpokenTokens.trailLabel("988 enter"))
         assertEquals("988 plus 2", SpokenTokens.trailLabel("nine eight eight plus 2"))
+
+        // The continuation merge leans on this gluing: the old label and
+        // the new utterance, re-compacted, read as the number formed.
+        assertEquals("1.51535 *", SpokenTokens.trailLabel("1.515 35 *"))
     }
 
     @Test fun theVocabularyRejectsProperPrefixes() {

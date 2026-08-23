@@ -377,6 +377,12 @@ negative mantissa, "five minus three" would be ambiguous between 5−3 and
 This is what HP calculators already do — EEX then CHS negates the exponent, not the
 mantissa. Not a special case; the standard numeric-literal lexing rule.
 
+UNDO granularity, decided for now and revisitable: an utterance that
+CONTINUES an open entry ("1.515" then "35 times") merges into the previous
+input group - one trail line reading "1.51535 *", one undo step past the
+whole entry. Arguably undo should instead peel the continuation, or even
+the last digit; trying the group reading first, by choice.
+
 Two recognizer behaviours the lexer absorbs, both found on the wrist:
 the endpointer can SPLIT a number across utterances ("6.5 … e 16"), so
 the parser is told whether the engine's entry is still open and lets a
