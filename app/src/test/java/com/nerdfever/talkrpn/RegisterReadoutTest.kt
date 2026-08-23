@@ -19,24 +19,26 @@ class RegisterReadoutTest {
 
     private fun display() = RegisterReadout.displayText(engine, field)
 
-    @Test fun entryAlwaysShowsTheDecimalPoint() {
+    @Test fun entryShowsThePointAndTheCursor() {
+        // The HP-55 point and the HP-42S cursor, together: "5" reads
+        // "5._", and the cursor rides the end as digits accumulate.
         digits("5")
-        assertEquals("5.", display())
+        assertEquals("5._", display())
 
         digits("2")
-        assertEquals("52.", display())
+        assertEquals("52._", display())
     }
 
     @Test fun aTypedRadixIsNotDoubled() {
         digits("5.2")
-        assertEquals("5.2", display())
+        assertEquals("5.2_", display())
     }
 
     @Test fun thePointBelongsToTheMantissaNotTheExponent() {
         digits("5")
         engine.press(Token.Eex)
         digits("3")
-        assertEquals("5.E3", display())
+        assertEquals("5.E3_", display())
     }
 
     @Test fun outsideEntryTheFormatterOwnsTheDisplay() {

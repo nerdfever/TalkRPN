@@ -9,6 +9,14 @@ package com.nerdfever.talkrpn
 object RegisterReadout {
 
     /**
+     * The HP-42S entry cursor: an underscore after the last character
+     * typed - digit, point or exponent digit - for as long as the X
+     * register is in digit-add mode. The segment font draws it as the
+     * baseline bar.
+     */
+    private const val ENTRY_CURSOR = '_'
+
+    /**
      * Every register through the final formatter at the engine's current
      * DSP. Keyed by the display's register names.
      */
@@ -34,15 +42,16 @@ object RegisterReadout {
     /**
      * What the X display proper shows: the keystrokes so far while entry
      * is in progress - the HP way, with the HP-55's habit of always
-     * showing the mantissa's decimal point ("5" reads "5.") - formatted X
-     * otherwise, and the error word over everything while the flag is up.
+     * showing the mantissa's decimal point and the HP-42S's entry cursor
+     * after it ("5" reads "5._") - formatted X otherwise, and the error
+     * word over everything while the flag is up.
      */
     fun displayText(
         engine: RpnEngine,
         field: NumberFormatter.FieldShape,
     ): String = when {
         engine.error -> "Error"
-        engine.entry.isNotEmpty() -> withEntryRadix(engine.entry)
+        engine.entry.isNotEmpty() -> withEntryRadix(engine.entry) + ENTRY_CURSOR
         else -> NumberFormatter.format(
             engine.x, engine.dspMode, engine.dspPlaces, field
         )
