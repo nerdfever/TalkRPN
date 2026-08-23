@@ -127,6 +127,15 @@ class CalcActivity : ComponentActivity() {
     private val field =
         NumberFormatter.FieldShape(SEGMENT_FIELD_POSITIONS, punctuationCostsCell = false)
 
+    /**
+     * The live angle mode for the annunciator; refreshed with values.
+     * DECLARED ABOVE [values] because Kotlin initialises fields in
+     * declaration order and values' initialiser writes this one - below
+     * it, construction dies on a null state (the splash-and-vanish
+     * launch crash of 2026-08-23).
+     */
+    private val angleMode = mutableStateOf("DEG")
+
     /** What the display shows; rebuilt after every press. */
     private val values = mutableStateOf(currentValues())
 
@@ -257,9 +266,6 @@ class CalcActivity : ComponentActivity() {
 
     /** Bumps on input that MOVED the machine - the idle clock's key. */
     private val activityTick = mutableStateOf(0)
-
-    /** The live angle mode for the annunciator; refreshed with values. */
-    private val angleMode = mutableStateOf("DEG")
 
     /** Foreground state, as Compose state so the mic follows it. */
     private val resumed = mutableStateOf(false)
