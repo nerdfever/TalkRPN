@@ -182,6 +182,13 @@ class SpokenTokensTest {
         assertEquals(Result.Rejected("undo"), SpokenTokens.parse("five undo plus"))
     }
 
+    @Test fun trailLabelsCompactSpokenDigits() {
+        assertEquals("23 times", SpokenTokens.trailLabel("two three times"))
+        assertEquals("2.5 e 6 enter", SpokenTokens.trailLabel("two point five e six enter"))
+        assertEquals("988 enter", SpokenTokens.trailLabel("988 enter"))
+        assertEquals("988 plus 2", SpokenTokens.trailLabel("nine eight eight plus 2"))
+    }
+
     @Test fun theVocabularyRejectsProperPrefixes() {
         // The startup rule itself: "clear" beside "clear x" must throw.
         try {

@@ -157,6 +157,46 @@ object SpokenTokens {
         }
     }
 
+    /**
+     * The utterance as the undo TRAIL shows it: spoken digits and the
+     * radix compact into numerals - "two three" reads "23", "two point
+     * five" reads "2.5" - because the trail's column is narrow and
+     * digits are its bulk. Everything else passes through as spoken.
+     * The diagnostic log keeps the verbatim utterance; only the glass
+     * gets the shorthand.
+     */
+    fun trailLabel(utterance: String): String {
+
+        val words = utterance.trim().lowercase()
+            .split(Regex("""\s+""")).filter { it.isNotEmpty() }
+
+        val pieces = mutableListOf<String>()
+        var run: StringBuilder? = null
+
+        for (word in words) {
+
+            val digitText = when {
+                NUMERAL.matches(word) -> word
+                DIGIT_WORDS.containsKey(word) -> DIGIT_WORDS[word].toString()
+                word == POINT_WORD -> NumberFormatter.RADIX.toString()
+                else -> null
+            }
+
+            if (digitText != null) {
+                // Glue onto the run in progress, or start one.
+                run = (run ?: StringBuilder()).append(digitText)
+            } else {
+                run?.let { pieces += it.toString() }
+                run = null
+                pieces += word
+            }
+        }
+
+        run?.let { pieces += it.toString() }
+
+        return pieces.joinToString(" ")
+    }
+
     // ---- The parser ----------------------------------------------------------
 
     fun parse(utterance: String, entryOpen: Boolean = false): Result {

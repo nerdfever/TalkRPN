@@ -181,8 +181,9 @@ class CalcActivity : ComponentActivity() {
                 rejectedWord = null
 
                 // One mark per utterance, so "undo" steps back by what
-                // was SAID, however many presses it contained.
-                engine.mark(utterance)
+                // was SAID, however many presses it contained - labelled
+                // in the trail's digit shorthand.
+                engine.mark(SpokenTokens.trailLabel(utterance))
                 result.tokens.forEach { engine.press(it) }
                 activityTick.value++
                 outcome = "applied ${result.tokens.size}"
