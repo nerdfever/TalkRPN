@@ -118,6 +118,13 @@ object SpokenTokens {
         listOf("times", "10", "to", "the"),
     )
 
+    /**
+     * A number wearing time clothes: "three fifty five" can come back as
+     * "3:55". The colon is the recognizer's dressing, not the speaker's -
+     * dropped, the digits glue: 355.
+     */
+    private val TIME_REWRITE = Regex("""(\d+):(\d+)""")
+
     /** A fraction as the recognizer writes one: "7/8" means 7 over 8. */
     private val FRACTION = Regex("""(\d+)/(\d+)""")
 
@@ -177,6 +184,7 @@ object SpokenTokens {
 
             val digitText = when {
                 NUMERAL.matches(word) -> word
+                TIME_REWRITE.matches(word) -> word.replace(":", "")
                 DIGIT_WORDS.containsKey(word) -> DIGIT_WORDS[word].toString()
                 word == POINT_WORD -> NumberFormatter.RADIX.toString()
                 else -> null
@@ -223,6 +231,18 @@ object SpokenTokens {
         while (at < words.size) {
 
             val word = words[at]
+
+            // A time-rewrite: the colon drops and the digits glue.
+            val time = TIME_REWRITE.matchEntire(word)
+            if (time != null) {
+                for (character in time.groupValues[1] + time.groupValues[2]) {
+                    out += Token.Digit(character)
+                }
+                inNumber = true
+                atExponentStart = false
+                at++
+                continue
+            }
 
             // A fraction, as the recognizer rewrites one: "7/8" becomes
             // 7 ENTER 8 DIVIDE - what the notation means. (Saying digits

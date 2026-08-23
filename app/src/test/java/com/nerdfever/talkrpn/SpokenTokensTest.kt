@@ -120,6 +120,15 @@ class SpokenTokensTest {
         assertEquals(0.875, engine.x, 0.0)
     }
 
+    @Test fun aTimeRewriteDropsItsColon() {
+        // "three fifty five" comes back as "3:55"; the colon is the
+        // recognizer's dressing, so the digits glue into 355.
+        say("3:55 enter")
+        assertEquals(355.0, engine.x, 0.0)
+
+        assertEquals("355 enter", SpokenTokens.trailLabel("3:55 enter"))
+    }
+
     @Test fun eOutsideANumberIsRejected() {
         // The constant e is not in the engine yet; a stray weak "e" must
         // fail visibly rather than vanish.
