@@ -174,7 +174,7 @@ class CalcActivity : ComponentActivity() {
         values.value = currentValues()
     }
 
-    /** Bumps on every input, applied or rejected - the idle clock's key. */
+    /** Bumps on input that MOVED the machine - the idle clock's key. */
     private val activityTick = mutableStateOf(0)
 
     /** Foreground state, as Compose state so the mic follows it. */
