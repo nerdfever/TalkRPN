@@ -179,6 +179,12 @@ class SpokenTokensTest {
         assertEquals("RAD", SpokenTokens.trailLabel("radiance"))
         assertEquals("CLx", SpokenTokens.trailLabel("clearlex"))
         assertEquals("LOG 2", SpokenTokens.trailLabel("long base 2"))
+
+        // A lone dash acted as force-negative, so it reads "negative";
+        // the minus SIGN stays reserved for subtraction.
+        assertEquals("negative", SpokenTokens.trailLabel("-"))
+        assertEquals("negative", SpokenTokens.trailLabel("negative"))
+        assertEquals("6 − 2", SpokenTokens.trailLabel("6 - 2"))
     }
 
     @Test fun theDiaryHomophones() {

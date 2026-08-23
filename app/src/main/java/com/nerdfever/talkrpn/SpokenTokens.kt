@@ -311,7 +311,6 @@ object SpokenTokens {
         listOf("positive") to "|x|",
         listOf("abs") to "|x|",
         listOf("absolute") to "|x|",
-        listOf("negative") to "-|x|",
         listOf("degrees") to "DEG",
         listOf("radians") to "RAD",
         listOf("log", "base") to "LOG",
@@ -342,6 +341,10 @@ object SpokenTokens {
 
         val words = utterance.trim().lowercase()
             .split(Regex("""\s+""")).filter { it.isNotEmpty() }
+
+        // A lone "-" ACTED as force-negative (see parse), so it reads
+        // "negative" - the minus sign is taken, it means subtract.
+        if (words == listOf("-")) return "negative"
 
         val pieces = mutableListOf<String>()
         var run: StringBuilder? = null
