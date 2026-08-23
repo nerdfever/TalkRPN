@@ -73,6 +73,8 @@
 
         // This project's own vocabulary
         "ALOG",
+        "archangent",
+        "clearlex",
         "dotfp",
         "dotg",
         "LASTX",

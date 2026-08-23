@@ -141,13 +141,27 @@ class SpokenTokensTest {
         assertEquals(0.875, engine.x, 0.0)
     }
 
-    @Test fun aTimeRewriteDropsItsColon() {
-        // "three fifty five" comes back as "3:55"; the colon is the
-        // recognizer's dressing, so the digits glue into 355.
+    @Test fun dressedDigitsShedTheirPunctuation() {
+        // Times, feet-inches, ranges - all the recognizer's clothing for
+        // spoken digits, all shed: 3:55 is 355, 5'6 is 56, 7-8 is 78.
         say("3:55 enter")
         assertEquals(355.0, engine.x, 0.0)
 
+        say("clear all 5'6 enter")
+        assertEquals(56.0, engine.x, 0.0)
+
+        say("clear all 7-8 enter")
+        assertEquals(78.0, engine.x, 0.0)
+
         assertEquals("355 ↵", SpokenTokens.trailLabel("3:55 enter"))
+        assertEquals("56", SpokenTokens.trailLabel("5'6"))
+    }
+
+    @Test fun theDiaryHomophones() {
+        assertEquals(listOf<Token>(Token.Radians), tokensOf("radiance"))
+        assertEquals(listOf<Token>(Token.ClearX), tokensOf("clearlex"))
+        assertEquals(listOf<Token>(Token.Atan), tokensOf("archangent"))
+        assertEquals(Result.Redo, SpokenTokens.parse("we do"))
     }
 
     @Test fun eOutsideANumberIsTheConstant() {

@@ -182,6 +182,7 @@ class CalcActivity : ComponentActivity() {
 
             log?.record("pad", word, "applied", engine, values.value["X"].orEmpty())
             trail.value = engine.undoLabels
+            persist()
         }
     }
 
@@ -271,6 +272,7 @@ class CalcActivity : ComponentActivity() {
 
         values.value = currentValues()
         trail.value = engine.undoLabels
+        persist()
 
         log?.record(from, utterance, outcome, engine, values.value["X"].orEmpty())
     }
@@ -288,15 +290,21 @@ class CalcActivity : ComponentActivity() {
 
     override fun onPause() {
         resumed.value = false
+        persist()
+        log?.record("system", "pause", "saved", engine, values.value["X"].orEmpty())
+        super.onPause()
+    }
 
-        // The machine sleeps whenever the app does - the idle finish, a
-        // swipe away, the charger; every exit passes through here.
+    /**
+     * The machine to disk. Called after EVERY applied input as well as
+     * on pause, because deaths without onPause are real - an adb install
+     * kills outright ("proc died without state saved", said the event
+     * log, over the tangent session it cost). apply() is asynchronous,
+     * so the per-input cost is a serialisation, not an fsync.
+     */
+    private fun persist() {
         getSharedPreferences(STATE_PREFS, MODE_PRIVATE)
             .edit().putString(STATE_KEY, engine.saveState()).apply()
-
-        log?.record("system", "pause", "saved", engine, values.value["X"].orEmpty())
-
-        super.onPause()
     }
 
     /** A whole knob state per broadcast, applied as one. */

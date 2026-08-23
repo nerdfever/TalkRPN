@@ -103,6 +103,7 @@ object SpokenTokens {
         listOf("arc", "cosine") to Token.Acos,
         listOf("arctangent") to Token.Atan,
         listOf("arc", "tangent") to Token.Atan,
+        listOf("archangent") to Token.Atan, // recognizer mash, from the diary
         listOf("rectangular") to Token.ToRectangular,
         listOf("polar") to Token.ToPolar,
         listOf("positive") to Token.Abs,
@@ -110,8 +111,10 @@ object SpokenTokens {
         listOf("absolute") to Token.Abs,
         listOf("degrees") to Token.Degrees,
         listOf("radians") to Token.Radians,
+        listOf("radiance") to Token.Radians, // homophone, from the diary
 
         listOf("clear", "x") to Token.ClearX,
+        listOf("clearlex") to Token.ClearX, // the recognizer's mash of "clear x"
         listOf("clear", "all") to Token.ClearStack,
         listOf("swap") to Token.SwapXY,
         listOf("exchange") to Token.SwapXY,
@@ -165,11 +168,12 @@ object SpokenTokens {
     }
 
     /**
-     * A number wearing time clothes: "three fifty five" can come back as
-     * "3:55". The colon is the recognizer's dressing, not the speaker's -
-     * dropped, the digits glue: 355.
+     * A number in the recognizer's clothing: times ("3:55"), feet-inches
+     * ("5'6"), ranges ("7-8"). The punctuation is its dressing, not the
+     * speaker's - dropped, the digits glue: 355, 56, 78. (Fractions are
+     * NOT here: "7/8" means the division, handled apart.)
      */
-    private val TIME_REWRITE = Regex("""(\d+):(\d+)""")
+    private val DRESSED_DIGITS = Regex("""(\d+)[:'-](\d+)""")
 
     /** A fraction as the recognizer writes one: "7/8" means 7 over 8. */
     private val FRACTION = Regex("""(\d+)/(\d+)""")
@@ -203,6 +207,7 @@ object SpokenTokens {
     /** Redo, same shape: the redo stack lives in the engine. */
     private val REDO_UTTERANCES = setOf(
         listOf("redo"), listOf("redo", "that"), listOf("redo", "it"),
+        listOf("we", "do"), // the recognizer's spelling of redo, from the diary
     )
 
     /** A numeral as the recognizer writes one: digits, one optional radix. */
@@ -354,7 +359,8 @@ object SpokenTokens {
                 NUMERAL.matches(word) -> word
                 sci != null ->
                     sci.groupValues[1] + "E" + sci.groupValues[2] + sci.groupValues[3]
-                TIME_REWRITE.matches(word) -> word.replace(":", "")
+                DRESSED_DIGITS.matches(word) ->
+                    word.filter { it.isDigit() }
                 DIGIT_WORDS.containsKey(word) -> DIGIT_WORDS[word].toString()
                 word in POINT_WORDS -> NumberFormatter.RADIX.toString()
                 word in EEX_WORDS && run != null -> "E"
@@ -442,10 +448,11 @@ object SpokenTokens {
                 continue
             }
 
-            // A time-rewrite: the colon drops and the digits glue.
-            val time = TIME_REWRITE.matchEntire(word)
-            if (time != null) {
-                for (character in time.groupValues[1] + time.groupValues[2]) {
+            // A dressed number - time, feet-inches, range: the
+            // punctuation drops and the digits glue.
+            val dressed = DRESSED_DIGITS.matchEntire(word)
+            if (dressed != null) {
+                for (character in dressed.groupValues[1] + dressed.groupValues[2]) {
                     out += Token.Digit(character)
                 }
                 inNumber = true

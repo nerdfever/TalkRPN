@@ -501,9 +501,15 @@ fun CalculatorDisplay(
     // self-cancel.
     val intrinsicRects = remember { mutableStateMapOf<String, FitRect>() }
 
+    // On a RECTANGULAR screen (a phone - adb installs there work fine)
+    // there is no circle to escape, so the rescue holds still and the
+    // layout simply uses the frame.
+    val isRound = LocalContext.current.resources.configuration.isScreenRound
+
     val shift by remember {
         derivedStateOf {
-            unclipShift(
+            if (!isRound) FitShift(0f, 0f)
+            else unclipShift(
                 intrinsicRects.values.toList(), screenPx,
                 screenPx * UNCLIP_GLASS_MARGIN_FRACTION,
                 screenPx * UNCLIP_MAX_SHIFT_FRACTION, UNCLIP_STEP_PX,
