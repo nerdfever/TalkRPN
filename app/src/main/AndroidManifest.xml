@@ -86,16 +86,17 @@
             android:value="true" />
 
         <!--
-            android:exported="true" is required for anything the launcher can start
-            on modern Android; without it the system refuses to install the app.
-        -->
-        <!--
-            taskAffinity="" keeps this activity in its own task, which is what Wear OS
-            expects - otherwise it can surface oddly in the recents carousel.
+            taskAffinity="" keeps each activity in its own task, which is what
+            Wear OS expects - otherwise they can surface oddly in the recents
+            carousel.
 
-            The label and icon here override the application's for the launcher
-            entry, so the app list shows the two test rigs as what they are -
-            "speech test" and "display test" - rather than one opaque "TalkRPN".
+            The two TEST RIGS below carry no launcher entry any more: the
+            calculator is the app, and the rigs are development tools reached
+            over adb -
+              adb shell am start -n com.nerdfever.talkrpn/.MainActivity
+              adb shell am start -n com.nerdfever.talkrpn/.DisplayTestActivity
+            Their labels and icons remain so recents shows them as what they
+            are. exported="true" is what lets the shell start them.
         -->
         <activity
             android:name=".MainActivity"
@@ -103,37 +104,15 @@
             android:icon="@drawable/ic_speech"
             android:taskAffinity=""
             android:theme="@style/Theme.TalkRPN"
-            android:exported="true">
+            android:exported="true" />
 
-            <!-- This filter is what puts the app in the watch's app list. -->
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <!--
-            The display-size test, as its own entry in the watch's app list - the
-            tuning sessions run long enough that reaching it should not require a
-            trip through the speech screen or an adb command.
-
-            It displays fixed sample digits and reads nothing, so there is nothing
-            here for another app to reach. Revisit if this screen ever survives
-            into the shipped app.
-        -->
         <activity
             android:name=".DisplayTestActivity"
             android:label="display test"
             android:icon="@drawable/ic_display"
             android:taskAffinity=""
             android:theme="@style/Theme.TalkRPN"
-            android:exported="true">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="true" />
 
         <!--
             The calculator itself: the engine behind the settled display,

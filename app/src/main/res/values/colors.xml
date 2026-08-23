@@ -4,5 +4,5 @@
 <resources>
 
     <!-- The disc the launcher icon's glyph sits on. -->
-    <color name="ic_launcher_background">#005D57</color>
+    <color name="ic_launcher_background">#000000</color>
 </resources>
