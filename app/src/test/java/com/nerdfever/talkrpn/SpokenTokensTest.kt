@@ -110,6 +110,17 @@ class SpokenTokensTest {
             say("clear all 6.5 $phrase 16 enter")
             assertEquals(phrase, 6.5e16, engine.x, 1e3)
         }
+
+        // THE BOUNDARY, per Dave: EEX only as the whole contiguous
+        // phrase. Anything less is plain multiplication - "times 10"
+        // multiplies by ten, no lookahead stitching across gaps.
+        assertEquals(
+            listOf(
+                Token.Digit('3'), Token.Multiply,
+                Token.Digit('1'), Token.Digit('0'),
+            ),
+            tokensOf("3 times 10"),
+        )
     }
 
     @Test fun aSplitUtteranceKeepsItsE() {
