@@ -74,8 +74,11 @@ private const val UTTER_EXTRA = "utterance"
 /**
  * With no calculator activity for this long, the app finishes and the
  * watch returns to its face - a calculator left on the wrist must not
- * hold the screen and microphone forever. Any applied or rejected input
- * restarts the clock.
+ * hold the screen and microphone forever. Only input that MOVES THE
+ * MACHINE restarts the clock - an applied utterance, a pad press, a
+ * successful undo. Rejected utterances deliberately do not: the open
+ * microphone hears every nearby conversation, and ambient speech must
+ * not hold the app awake.
  */
 private const val IDLE_FINISH_MS = 3L * 60L * 1000L
 
@@ -148,19 +151,27 @@ class CalcActivity : ComponentActivity() {
                 // was SAID, however many presses it contained.
                 engine.mark()
                 result.tokens.forEach { engine.press(it) }
+                activityTick.value++
             }
 
+            // A rejected utterance shows its word but does NOT touch the
+            // idle clock - this is where ambient speech lands.
             is SpokenTokens.Result.Rejected -> rejectedWord = result.word
 
             // Undo restores the machine to before the last utterance or
             // pad press; with nothing left to undo it says so, in the
-            // same asking voice as an unknown word.
+            // same asking voice as an unknown word - and only the undo
+            // that DID something counts as activity.
             SpokenTokens.Result.Undo ->
-                rejectedWord = if (engine.undo()) null else "undo"
+                if (engine.undo()) {
+                    rejectedWord = null
+                    activityTick.value++
+                } else {
+                    rejectedWord = "undo"
+                }
         }
 
         values.value = currentValues()
-        activityTick.value++
     }
 
     /** Bumps on every input, applied or rejected - the idle clock's key. */
