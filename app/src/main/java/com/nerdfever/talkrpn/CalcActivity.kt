@@ -1,18 +1,24 @@
 package com.nerdfever.talkrpn
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,16 +33,21 @@ import androidx.wear.compose.material3.AppScaffold
  * away for nudging them against live values. What the desktop tester
  * simulates, this shows for real.
  *
- * INPUT, FOR NOW, arrives by adb broadcast - one token word per TOKEN
- * broadcast from the desktop button pad (tools/engine_tester.py in watch
- * mode), or one whole utterance per UTTER broadcast through the spoken
- * parser - the same vocabularies as everywhere else:
+ * INPUT IS VOICE: the platform recognizer runs continuously while the
+ * calculator is up (PlatformSpeechSource - the app's own microphone
+ * behind a pipe, so nothing is lost between utterances), and each FINAL
+ * result goes through [SpokenTokens] - atomically, an utterance applies
+ * whole or not at all. Partial results deliberately do nothing yet:
+ * streaming digits as they are heard needs revision handling (undo),
+ * which is not built.
+ *
+ * The adb broadcasts remain as the test rig - one token word per TOKEN
+ * broadcast (the desktop pad's watch mode), one whole utterance per
+ * UTTER broadcast - the same vocabularies as the microphone:
  *
  *   adb shell am broadcast -a com.nerdfever.talkrpn.TOKEN --es token 5
  *
- * No touch keypad, deliberately: the product's input is voice, and the
- * pad already exists. The speech layer will replace the receiver's feed
- * with the same tokens.
+ * No touch keypad, deliberately: the product's input is voice.
  */
 
 /** The broadcast the pad sends, and the extra the token word rides in. */
@@ -98,19 +109,38 @@ class CalcActivity : ComponentActivity() {
     /** One utterance per broadcast: all of it presses, or none of it. */
     private val utteranceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-
-            val utterance = intent?.getStringExtra(UTTER_EXTRA) ?: return
-
-            when (val result = SpokenTokens.parse(utterance)) {
-                is SpokenTokens.Result.Parsed -> {
-                    rejectedWord = null
-                    result.tokens.forEach { engine.press(it) }
-                }
-                is SpokenTokens.Result.Rejected -> rejectedWord = result.word
-            }
-
-            values.value = currentValues()
+            speakUtterance(intent?.getStringExtra(UTTER_EXTRA) ?: return)
         }
+    }
+
+    /**
+     * One utterance into the machine - the microphone and the UTTER
+     * broadcast share this path, so they can never behave differently.
+     */
+    private fun speakUtterance(utterance: String) {
+
+        when (val result = SpokenTokens.parse(utterance)) {
+            is SpokenTokens.Result.Parsed -> {
+                rejectedWord = null
+                result.tokens.forEach { engine.press(it) }
+            }
+            is SpokenTokens.Result.Rejected -> rejectedWord = result.word
+        }
+
+        values.value = currentValues()
+    }
+
+    /** Foreground state, as Compose state so the mic follows it. */
+    private val resumed = mutableStateOf(false)
+
+    override fun onResume() {
+        super.onResume()
+        resumed.value = true
+    }
+
+    override fun onPause() {
+        resumed.value = false
+        super.onPause()
     }
 
     /** A whole knob state per broadcast, applied as one. */
@@ -159,6 +189,56 @@ class CalcActivity : ComponentActivity() {
 
         setContent {
             AppScaffold {
+
+                // ---- The microphone ---------------------------------------
+                //
+                // Same recipe as the speech-test screen: ask for the
+                // permission once, then listen continuously while in the
+                // foreground, and feed each FINAL result to the parser.
+                // Keyed on resultCount, not results: two identical
+                // utterances in a row must both apply.
+                var hasAudioPermission by remember {
+                    mutableStateOf(
+                        checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+                            PackageManager.PERMISSION_GRANTED
+                    )
+                }
+
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { granted -> hasAudioPermission = granted }
+
+                LaunchedEffect(Unit) {
+                    if (!hasAudioPermission) {
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                }
+
+                val source: SpeechSource =
+                    remember { PlatformSpeechSource(this@CalcActivity) }
+
+                DisposableEffect(Unit) {
+                    onDispose { source.dispose() }
+                }
+
+                LaunchedEffect(hasAudioPermission, resumed.value) {
+
+                    source.cancel()
+
+                    if (!hasAudioPermission || !resumed.value) return@LaunchedEffect
+
+                    source.continuous = true
+                    source.preferOffline = true
+                    source.start()
+                }
+
+                LaunchedEffect(source.resultCount) {
+
+                    val heard = source.results.firstOrNull()?.text.orEmpty()
+                    if (heard.isBlank()) return@LaunchedEffect
+
+                    speakUtterance(heard)
+                }
 
                 // The same tuning overlay as the rig, on the same gesture -
                 // tap anywhere to show or hide - so the display can be

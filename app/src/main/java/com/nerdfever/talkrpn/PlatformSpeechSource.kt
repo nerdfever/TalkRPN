@@ -167,6 +167,9 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
     override var results by mutableStateOf<List<Candidate>>(emptyList())
         private set
 
+    override var resultCount by mutableStateOf(0)
+        private set
+
     override var soundLevel by mutableStateOf(0f)
         private set
 
@@ -503,6 +506,8 @@ class PlatformSpeechSource(private val context: Context) : SpeechSource, Recogni
         this.results = texts.mapIndexed { index, text ->
             Candidate(text, scores?.getOrNull(index))
         }
+
+        if (texts.isNotEmpty()) resultCount++
 
         val now = SystemClock.elapsedRealtime()
         totalMs = now - startedAt

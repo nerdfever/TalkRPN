@@ -155,6 +155,15 @@ interface SpeechSource {
     val tokens: List<TokenArrival>
 
     val results: List<Candidate>
+
+    /**
+     * Increments once per delivered result, so a consumer can observe
+     * every utterance - [results] alone cannot distinguish saying the
+     * same thing twice, and the calculator must not drop the second
+     * "five plus" because it equals the first.
+     */
+    val resultCount: Int
+
     val soundLevel: Float
     val message: String?
 
