@@ -136,10 +136,11 @@
         </activity>
 
         <!--
-            The calculator itself: the engine behind the settled display. In the
-            app list under its own name, and exported so the desktop button pad
-            can start it and feed it token broadcasts over adb while the input
-            is not yet voice.
+            The calculator itself: the engine behind the settled display,
+            listening on the microphone. In the app list under its own name,
+            and exported so the desktop button pad can start it and feed it
+            token and utterance broadcasts over adb as the test rig beside
+            the voice input.
         -->
         <activity
             android:name=".CalcActivity"

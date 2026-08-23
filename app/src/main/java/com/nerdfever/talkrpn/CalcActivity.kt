@@ -65,7 +65,7 @@ private const val KNOBS_EXTRA = "state"
 /**
  * A whole spoken utterance, parsed by [SpokenTokens] - atomically, so a
  * rejected utterance leaves the engine untouched and shows its first
- * unknown word instead. The speech layer will feed this same path.
+ * unknown word instead. The microphone feeds this same path.
  */
 private const val UTTER_ACTION = "com.nerdfever.talkrpn.UTTER"
 private const val UTTER_EXTRA = "utterance"
